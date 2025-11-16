@@ -1,0 +1,194 @@
+⚡ TechCare React Application
+
+A modern, fully functional React website for device repair services — rebuilt from HTML templates into a clean, scalable React application.
+
+✨ Features
+🌐 Multi-Page Application
+
+Includes all essential pages:
+
+Home
+
+Schedule
+
+Reviews
+
+Payment
+
+Admin Dashboard
+
+🚦 React Router Navigation
+
+Fast, smooth transitions between pages with React Router DOM.
+
+🌙 Light & Dark Mode
+
+Toggle theme with one click
+
+Automatically saves preference in localStorage
+
+Smooth theme transitions
+
+📱 Fully Responsive
+
+Built with Tailwind CSS, optimized for mobile, tablet, and desktop.
+
+🧩 Interactive Components
+
+Technician cards with booking actions
+
+Search + filter system
+
+Appointment scheduler (date + time picker)
+
+Star rating review system
+
+Multiple payment methods
+
+Admin dashboard with charts and activity logs
+
+📄 Pages Overview
+
+Home (/)
+Featured technicians, search filters, and quick actions.
+
+Schedule (/schedule)
+Device selection, service picker, calendar, and time slots.
+
+Reviews (/reviews)
+Users can leave ratings, hover ratings, and submit reviews.
+
+Payment (/payment)
+Secure payment form with various payment options.
+
+Admin (/admin)
+Dashboard with charts, statistics, and recent activity.
+
+🚀 Getting Started
+✔ Prerequisites
+
+Node.js (v14 or higher)
+
+npm or yarn
+cd techcare-react-app
+npm install
+
+✔ Run in Development Mode
+npm run dev
+
+👉 http://localhost:5173
+
+✔ Build for Production
+npm run build
+
+The optimized build will appear in the dist folder.
+
+✔ Preview the Production Build
+npm run preview
+
+📁 Project Structure
+
+techcare-react-app/
+├── src/
+│   ├── components/
+│   │   ├── Header.jsx          # Navbar + dark mode toggle
+│   │   ├── Footer.jsx          # Footer section
+│   │   └── TechnicianCard.jsx  # Reusable technician component
+│   ├── context/
+│   │   └── ThemeContext.jsx    # Dark mode context
+│   ├── pages/
+│   │   ├── Home.jsx            # Landing page
+│   │   ├── Schedule.jsx        # Appointment booking
+│   │   ├── Reviews.jsx         # Customer reviews
+│   │   ├── Payment.jsx         # Payment page
+│   │   └── Admin.jsx           # Admin dashboard
+│   ├── App.jsx                 # App routes
+│   ├── main.jsx                # App entry point
+│   └── index.css               # Global styles
+├── index.html                  # Base HTML
+└── package.json
+
+🛠️ Technologies Used
+
+React 18 – UI library
+
+React Router DOM – Routing
+
+Tailwind CSS (CDN) – Styling
+
+Material Icons – Icon set
+
+Vite – Fast dev server & build tool
+
+🔧 Feature Details
+🌙 Dark Mode
+
+Toggle in the header
+
+Saves user preference
+
+Smooth, polished UI transition
+
+🧭 Routing
+
+All pages are accessible directly:
+
+/ – Home
+
+/schedule – Schedule
+
+/reviews – Reviews
+
+/payment – Payment
+
+/admin – Dashboard
+
+🕹 Interactive UI
+
+Clickable technician cards
+
+Real search & filtering
+
+Calendar + time picker
+
+Hoverable star ratings
+
+Payment method selection
+
+Sidebar navigation in the admin panel
+
+🎨 Customization
+Change Colors
+
+Modify Tailwind colors in index.html:
+colors: {
+  primary: "#4F46E5",
+}
+
+Use Real Data
+
+Swap out static data with API calls:
+
+Technicians → Home.jsx
+
+Reviews → Reviews.jsx
+
+Dashboard stats → Admin.jsx
+
+🌍 Browser Support
+
+Works smoothly on all modern browsers:
+
+Chrome
+
+Firefox
+
+Safari
+
+Edge
+
+📜 License
+
+This project was originally built from HTML templates and fully transformed into a React-based application.
+
+✔ Installation
