@@ -1,0 +1,119 @@
+🚀 Quick Start Guide
+Running the Application (Windows)
+Option 1: Using the Batch File
+
+Just double-click start.bat.
+It will automatically launch the development server.
+
+Option 2: Using the Command Line
+
+Open a terminal in the project folder and run:
+npm run dev
+Once it starts, open your browser and go to:
+👉 http://localhost:5173
+
+🌐 Navigation
+
+After the app is running, you can access the pages directly:
+
+Home – http://localhost:5173/
+
+Schedule – http://localhost:5173/schedule
+
+Reviews – http://localhost:5173/reviews
+
+Payment – http://localhost:5173/payment
+
+Admin Dashboard – http://localhost:5173/admin
+
+🧪 Key Features You Can Try
+1. Dark Mode
+
+Click the moon/sun icon in the header
+
+Your theme preference is saved automatically (localStorage)
+
+2. Homepage
+
+Browse the featured technicians
+
+Try the search bar and filters
+
+Click “Schedule Appointment” on any card to jump to the booking page
+
+3. Schedule Page
+
+Choose the device type (Smartphone / Laptop / PC)
+
+Select the repair service
+
+Pick a technician
+
+Select a date from the calendar
+
+Choose a time slot
+
+Click “Confirm Appointment” to move to the payment page
+
+4. Reviews Page
+
+Use the interactive star rating (hover + click)
+
+Write a review and submit it
+
+Browse customer reviews
+
+5. Payment Page
+
+Choose a payment method (Credit Card, PayPal, Google Pay, Apple Pay)
+
+Enter payment details
+
+Click “Complete Payment”
+
+6. Admin Dashboard
+
+View platform statistics
+
+Check the service distribution pie chart
+
+Review monthly registrations in the bar chart
+
+See recent activity logs
+
+Explore sidebar navigation items
+
+🛠 Troubleshooting
+⚠ Port Already in Use
+
+If port 5173 is taken, Vite will automatically choose the next free port.
+
+⚙ Installation Problems
+npm install --force
+
+🧹 Build Errors
+
+Clear the cache and reinstall:
+
+Try installing with force:
+rm -rf node_modules package-lock.json
+npm install
+
+💡 Development Tips
+🔄 Hot Reloading
+
+Any changes in .jsx files will auto-refresh the browser.
+
+🧰 Checking Errors
+
+Press F12 to open DevTools and view console errors/warnings.
+
+📁 Project Structure
+
+Pages: src/pages/
+
+Components: src/components/
+
+Context: src/context/
+
+Enjoy building and exploring TechCare! 🚀
