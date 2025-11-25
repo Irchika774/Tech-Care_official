@@ -1,76 +1,16 @@
-# Tech-Care_official
-echCare - Smartphone, Laptop, and PC Repair Scheduling Website
-Project Overview
-TechCare is a web-based platform designed to connect customers with verified technicians and repair shops for smartphones, laptops, and PCs. The system simplifies repair service scheduling by providing an easy-to-use website where users can search for nearby trusted professionals, book appointments, make secure payments, and leave feedback. Technicians and repair shops can manage service offerings, schedules, and payments through their dashboards.
+# React + Vite
 
-Project Details
-Course: IT3162 - Group Project
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-Degree: Bachelor of Science in Information Technology
+Currently, two official plugins are available:
 
-University: University of Vavuniya, Faculty of Applied Science
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-Supervisor: Mr. T. Jeyamugan, Senior Lecturer, Department of Physical Science
+## React Compiler
 
-Team Members:
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-Reg. No: 2021/ICT/21 - P.M.G.W. Irchika
+## Expanding the ESLint configuration
 
-Reg. No: 2021/ICT/79 - W.M.M.C. Wijekoon
-
-Reg. No: 2021/ICT/90 - T. Supanalogithan
-
-Reg. No: 2021/ICT/117 - N.A.K.K.S. Nissanka
-
-Reg. No: 2021/ICT/120 - M.G.R.S. Wickramasinghe
-
-Reg. No: 2021/ICT/124 - E.L. Pabasara
-
-Reg. No: 2021/ICT/125 - K.L.W.C. Senarathna
-
-Features
-Customer and technician registration and login with secure authentication
-
-Search and filter repair services by device type, location, and service category
-
-Appointment scheduling and management
-
-Feedback and rating system for quality assurance
-
-Technician and shop dashboards for service and earnings management
-
-Notification system for appointment updates
-
-Integration with payment gateways for secure payments
-
-Responsive, user-friendly interface on desktop and mobile
-
-Technologies Used
-Frontend: React.js
-
-Backend: Node.js, Express.js
-
-Database: MongoDB (with Mongoose)
-
-Authentication: JWT (JSON Web Tokens)
-
-Payment Integration: Stripe (or other payment gateway)
-
-Hosting: Netlify (frontend)
-
-Version Control: GitHub
-
-Notification Services and Other APIs
-
-System Architecture
-User Authentication Module
-
-Technician Management Module
-
-Service Scheduling Module
-
-Feedback System
-
-Notification Service
-
-Payment Gateway Integration
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.

@@ -1,0 +1,69 @@
+================================================================
+   HOW TO RUN THE TECHCARE REACT WEBSITE
+================================================================
+
+📍 Location: Z:\New folder (3)\11.04\techcare-react-app\
+
+================================================================
+   METHOD 1: DOUBLE-CLICK (EASIEST)
+================================================================
+
+1. Double-click: start.bat
+2. Wait for the server to start
+3. Browser will open at: http://localhost:5173
+
+================================================================
+   METHOD 2: COMMAND LINE
+================================================================
+
+1. Open Command Prompt or PowerShell
+2. Navigate to the folder:
+   cd "Z:\New folder (3)\11.04\techcare-react-app"
+3. Run:
+   npm run dev
+4. Open browser to: http://localhost:5173
+
+================================================================
+   PAGES TO VISIT
+================================================================
+
+Home Page:       http://localhost:5173/
+Schedule:        http://localhost:5173/schedule
+Reviews:         http://localhost:5173/reviews
+Payment:         http://localhost:5173/payment
+Admin Dashboard: http://localhost:5173/admin
+
+================================================================
+   FEATURES TO TRY
+================================================================
+
+✓ Toggle dark mode (moon/sun icon in header)
+✓ Click "Schedule Appointment" on any technician card
+✓ Fill out the booking form
+✓ Rate services with stars
+✓ Select payment methods
+✓ Explore admin dashboard statistics
+
+================================================================
+   TROUBLESHOOTING
+================================================================
+
+If you see errors:
+1. Make sure Node.js is installed
+2. Run: npm install
+3. Then: npm run dev
+
+If port 5173 is busy, Vite will use the next available port
+(it will show you the URL in the terminal)
+
+================================================================
+   TO STOP THE SERVER
+================================================================
+
+Press: Ctrl + C in the terminal window
+
+================================================================
+
+Need help? Check README_USAGE.md or QUICK_START.md
+
+================================================================
