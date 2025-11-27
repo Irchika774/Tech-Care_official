@@ -1,147 +1,84 @@
 import express from 'express';
 import User from '../models/User.js';
-import Service from '../models/Service.js';
-import Bid from '../models/Bid.js';
-import Job from '../models/Job.js';
 import Appointment from '../models/Appointment.js';
 import Review from '../models/Review.js';
 
 const router = express.Router();
 
-// --- Services ---
-router.get('/services', async (req, res) => {
-    try {
-        const services = await Service.find();
-        res.json(services);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-});
+// --- Technicians ---
 
-router.post('/services', async (req, res) => {
-    const service = new Service(req.body);
-    try {
-        const newService = await service.save();
-        res.status(201).json(newService);
-    } catch (err) {
-        res.status(400).json({ message: err.message });
-    }
-});
+// Get nearby technicians
+router.get('/technicians/nearby', async (req, res) => {
+    const { lng, lat, dist } = req.query;
+    console.log(`📡 GET /api/technicians/nearby - lng: ${lng}, lat: ${lat}, dist: ${dist}`);
 
-router.put('/services/:id', async (req, res) => {
     try {
-        const updatedService = await Service.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        res.json(updatedService);
-    } catch (err) {
-        res.status(400).json({ message: err.message });
-    }
-});
+        // Validate input
+        if (!lng || !lat) {
+            return res.status(400).json({
+                message: 'Missing required parameters: lng and lat'
+            });
+        }
 
-router.delete('/services/:id', async (req, res) => {
-    try {
-        await Service.findByIdAndDelete(req.params.id);
-        res.json({ message: 'Service deleted' });
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-});
+        const longitude = parseFloat(lng);
+        const latitude = parseFloat(lat);
+        const maxDistance = parseInt(dist) || 5000; // meters
 
-// --- Jobs (User Requests) ---
-router.get('/jobs', async (req, res) => {
-    try {
-        const jobs = await Job.find().populate('postedBy', 'name email').populate({
-            path: 'bids', // This is a virtual if we set it up, or we fetch separately. 
-            // For now, let's fetch bids separately or aggregate.
-            // Actually, let's just populate postedBy.
-        }).sort({ createdAt: -1 });
+        console.log(`🔍 Searching for technicians near [${longitude}, ${latitude}] within ${maxDistance}m`);
 
-        // To include bids, we might want to do a second query or use aggregate.
-        // For simplicity, let's just return jobs. Frontend can fetch bids for a job.
-        // Or we can lean on Mongoose virtuals if we add them.
-        // Let's manually attach bids count for now if needed, but frontend fetches details.
-        res.json(jobs);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-});
+        // Check if any technicians exist first
+        const allTechnicians = await User.find({ role: 'technician' });
+        console.log(`📊 Total technicians in database: ${allTechnicians.length}`);
 
-router.post('/jobs', async (req, res) => {
-    const job = new Job(req.body);
-    try {
-        const newJob = await job.save();
-        res.status(201).json(newJob);
-    } catch (err) {
-        res.status(400).json({ message: err.message });
-    }
-});
+        // If no technicians have location data, return all technicians
+        const techniciansWithLocation = allTechnicians.filter(t =>
+            t.location && t.location.coordinates && t.location.coordinates.length === 2
+        );
+        console.log(`📍 Technicians with location data: ${techniciansWithLocation.length}`);
 
-// --- Bids ---
-router.post('/bids', async (req, res) => {
-    const bid = new Bid(req.body);
-    try {
-        const newBid = await bid.save();
-        res.status(201).json(newBid);
-    } catch (err) {
-        res.status(400).json({ message: err.message });
-    }
-});
+        if (techniciansWithLocation.length === 0) {
+            console.log('⚠️  No technicians have location data. Returning all technicians.');
+            return res.json(allTechnicians);
+        }
 
-router.get('/bids', async (req, res) => {
-    // Get all bids or filter by jobId
-    const { jobId } = req.query;
-    try {
-        const query = jobId ? { jobId } : {};
-        const bids = await Bid.find(query).populate('technicianId', 'name rating');
-        res.json(bids);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-});
+        // Try geospatial query
+        try {
+            const technicians = await User.find({
+                role: 'technician',
+                'location.coordinates': { $exists: true, $ne: [] },
+                location: {
+                    $near: {
+                        $geometry: {
+                            type: 'Point',
+                            coordinates: [longitude, latitude],
+                        },
+                        $maxDistance: maxDistance,
+                    },
+                },
+            });
 
-// --- Users & Technicians ---
-router.get('/users', async (req, res) => {
-    try {
-        const users = await User.find();
-        res.json(users);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-});
+            console.log(`✅ Found ${technicians.length} nearby technicians`);
 
-router.post('/users', async (req, res) => {
-    const user = new User(req.body);
-    try {
-        const newUser = await user.save();
-        res.status(201).json(newUser);
-    } catch (err) {
-        res.status(400).json({ message: err.message });
-    }
-});
+            // If no technicians found within radius, return all technicians
+            if (technicians.length === 0) {
+                console.log('⚠️  No technicians found nearby. Returning all technicians as fallback.');
+                return res.json(allTechnicians);
+            }
 
-router.put('/users/:id', async (req, res) => {
-    try {
-        const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        res.json(updatedUser);
+            res.json(technicians);
+        } catch (geoError) {
+            console.error('⚠️  Geospatial query failed (might need index):', geoError.message);
+            console.log('📝 Falling back to returning all technicians');
+            // Fallback: return all technicians
+            res.json(allTechnicians);
+        }
     } catch (err) {
-        res.status(400).json({ message: err.message });
-    }
-});
-
-router.delete('/users/:id', async (req, res) => {
-    try {
-        await User.findByIdAndDelete(req.params.id);
-        res.json({ message: 'User deleted' });
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-});
-
-router.get('/technicians', async (req, res) => {
-    try {
-        const technicians = await User.find({ role: 'technician' });
-        res.json(technicians);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
+        console.error('❌ Error in nearby technicians endpoint:', err.message);
+        res.status(500).json({
+            message: err.message,
+            error: 'Failed to fetch nearby technicians',
+            hint: 'Check server logs for details'
+        });
     }
 });
 
@@ -177,6 +114,26 @@ router.put('/appointments/:id', async (req, res) => {
     }
 });
 
+// Get all technicians (admin/directory use)
+router.get('/technicians/all', async (req, res) => {
+    try {
+        const technicians = await User.find({ role: 'technician' });
+        res.json(technicians);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// Get all users (fallback for admin)
+router.get('/users', async (req, res) => {
+    try {
+        const users = await User.find();
+        res.json(users);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
 // --- Reviews ---
 router.get('/reviews', async (req, res) => {
     try {
@@ -189,25 +146,12 @@ router.get('/reviews', async (req, res) => {
     }
 });
 
-// --- Nearby Technicians ---
-router.get('/technicians/nearby', async (req, res) => {
-    const { lng, lat, dist } = req.query;
+router.put('/reviews/:id', async (req, res) => {
     try {
-        const technicians = await User.find({
-            role: 'technician',
-            location: {
-                $near: {
-                    $geometry: {
-                        type: 'Point',
-                        coordinates: [parseFloat(lng), parseFloat(lat)],
-                    },
-                    $maxDistance: parseInt(dist) || 5000, // meters
-                },
-            },
-        });
-        res.json(technicians);
+        const updatedReview = await Review.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        res.json(updatedReview);
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        res.status(400).json({ message: err.message });
     }
 });
 

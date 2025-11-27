@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import apiRoutes from './routes/index.js';
 import paymentRoutes from './routes/payment.js';
 import authRoutes from './routes/auth.js';
+import adminRoutes from './routes/admin.js';
 
 dotenv.config();
 
@@ -44,6 +45,7 @@ mongoose.connection.on('disconnected', () => {
 app.use('/api', apiRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

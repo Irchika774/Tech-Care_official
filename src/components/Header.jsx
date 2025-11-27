@@ -36,7 +36,7 @@ const Header = () => {
             <h1 className="text-2xl font-bold text-foreground">TechCare</h1>
           </Link>
           <nav className="hidden md:flex items-center space-x-6">
-            <Link to="/" className="text-muted-foreground hover:text-primary transition-colors">
+            <Link to="/mobile-repair" className="text-muted-foreground hover:text-primary transition-colors">
               Mobile Repairing
             </Link>
             <Link to="/pc-repair" className="text-muted-foreground hover:text-primary transition-colors">

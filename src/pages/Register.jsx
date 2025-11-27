@@ -20,7 +20,10 @@ const Register = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        console.log('[REGISTER] Form submitted', { name, email, role });
+
         if (password !== confirmPassword) {
+            console.log('[REGISTER] Password mismatch');
             toast({
                 variant: "destructive",
                 title: "Error",
@@ -29,16 +32,36 @@ const Register = () => {
             return;
         }
 
-        setIsLoading(true);
-        const result = await register(name, email, password, role);
-        if (!result.success) {
+        try {
+            console.log('[REGISTER] Starting registration...');
+            setIsLoading(true);
+            const result = await register(name, email, password, role);
+            console.log('[REGISTER] Registration result:', result);
+
+            if (!result.success) {
+                console.log('[REGISTER] Registration failed:', result.error);
+                toast({
+                    variant: "destructive",
+                    title: "Registration Failed",
+                    description: result.error,
+                });
+            } else {
+                console.log('[REGISTER] Registration successful!');
+                toast({
+                    title: "Success!",
+                    description: "Account created successfully. Redirecting...",
+                });
+            }
+        } catch (error) {
+            console.error('[REGISTER] Unexpected error:', error);
             toast({
                 variant: "destructive",
-                title: "Registration Failed",
-                description: result.error,
+                title: "Error",
+                description: error.message || "An unexpected error occurred",
             });
+        } finally {
+            setIsLoading(false);
         }
-        setIsLoading(false);
     };
 
     return (

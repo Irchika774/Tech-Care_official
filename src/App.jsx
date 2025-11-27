@@ -9,6 +9,7 @@ import Reviews from './pages/Reviews';
 import Payment from './pages/Payment';
 import Admin from './pages/Admin';
 import PCRepair from './pages/PCRepair';
+import MobileRepair from './pages/MobileRepair';
 import Profile from './pages/Profile';
 import History from './pages/History';
 import Favorites from './pages/Favorites';
@@ -32,6 +33,7 @@ function App() {
               {/* Public Routes */}
               <Route path="/" element={<Home />} />
               <Route path="/pc-repair" element={<PCRepair />} />
+              <Route path="/mobile-repair" element={<MobileRepair />} />
               <Route path="/reviews" element={<Reviews />} />
               <Route path="/schedule" element={<Schedule />} />
               <Route path="/payment" element={<Payment />} />
