@@ -31,6 +31,13 @@ router.post('/login', async (req, res) => {
 
         // Demo accounts (work without database)
         const demoAccounts = {
+            'demo@techcare.com': {
+                _id: 'demo-user-001',
+                name: 'Demo User',
+                email: 'demo@techcare.com',
+                password: 'demo123',
+                role: 'user'
+            },
             'admin@techcare.com': {
                 _id: 'demo-admin-001',
                 name: 'Admin User',
@@ -96,6 +103,7 @@ router.get('/me', auth, async (req, res) => {
     try {
         // Check for demo users first
         const demoAccounts = [
+            { _id: 'demo-user-001', name: 'Demo User', email: 'demo@techcare.com', role: 'user' },
             { _id: 'demo-admin-001', name: 'Admin User', email: 'admin@techcare.com', role: 'admin' },
             { _id: 'demo-customer-001', name: 'Customer User', email: 'customer@techcare.com', role: 'user' },
             { _id: 'demo-tech-001', name: 'Technician User', email: 'tech@techcare.com', role: 'technician' }
