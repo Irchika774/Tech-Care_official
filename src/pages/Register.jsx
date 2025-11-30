@@ -7,6 +7,7 @@ import { Label } from '../components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
 import { useToast } from '../hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from '../components/ui/radio-group';
+import SEO from '../components/SEO';
 
 const Register = () => {
     const [name, setName] = useState('');
@@ -66,6 +67,10 @@ const Register = () => {
 
     return (
         <div className="flex items-center justify-center min-h-[80vh]">
+            <SEO
+                title="Register - TechCare"
+                description="Create a new TechCare account. Join as a customer to book repairs or as a technician to offer your services."
+            />
             <Card className="w-full max-w-md">
                 <CardHeader>
                     <CardTitle>Register</CardTitle>

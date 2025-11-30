@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from '../hooks/use-toast';
 import { motion } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, Sparkles, LogIn } from 'lucide-react';
+import SEO from '../components/SEO';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -44,6 +45,10 @@ const Login = () => {
 
     return (
         <div className="flex items-center justify-center min-h-[90vh] relative overflow-hidden">
+            <SEO
+                title="Login - TechCare"
+                description="Sign in to your TechCare account to manage repairs, bookings, and technician services."
+            />
             {/* Animated Background */}
             <div className="absolute inset-0 -z-10">
                 <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-blue-900/20"></div>

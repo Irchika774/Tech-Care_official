@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Calendar } from '../components/ui/calendar';
 import { format } from 'date-fns';
 import { Smartphone, Laptop, Monitor, Battery, Droplets, Wrench, User, Calendar as CalendarIcon, Clock } from 'lucide-react';
+import SEO from '../components/SEO';
 
 const Schedule = () => {
   const navigate = useNavigate();
@@ -33,6 +34,11 @@ const Schedule = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
+      <SEO
+        title="Schedule Repair - TechCare"
+        description="Book a certified technician for your device repair. Select your device, service, and preferred time."
+        keywords="schedule repair, book technician, repair appointment, device repair booking"
+      />
       <Card className="w-full max-w-4xl shadow-xl">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl font-bold">Schedule Your Service</CardTitle>

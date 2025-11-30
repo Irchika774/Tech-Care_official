@@ -11,127 +11,43 @@ import {
   DialogTitle,
   DialogDescription,
 } from "../components/ui/dialog";
-import { Search, Star, MapPin, Briefcase, CheckCircle, DollarSign, Phone, Mail, Monitor, HardDrive, Cpu, SearchX } from 'lucide-react';
+import { Search, Star, MapPin, Briefcase, CheckCircle, DollarSign, Phone, Mail, Monitor, HardDrive, Cpu, SearchX, Navigation, Filter, TrendingUp, Map as MapIcon, List } from 'lucide-react';
+import { techniciansAPI } from '../lib/api';
+import { useToast } from '../hooks/use-toast';
+import { Loader2 } from 'lucide-react';
+import GoogleMap from '../components/GoogleMap';
+import SEO from '../components/SEO';
 
-const pcTechniciansData = [
-  {
-    id: 1,
-    name: "PC Masters",
-    rating: 4.9,
-    reviews: 650,
-    services: ["Motherboard Repair", "RAM Upgrade", "SSD Replacement"],
-    price: "$80 - $350",
-    priceMin: 80,
-    priceMax: 350,
-    location: "New York, NY",
-    experience: "7 years",
-    deviceType: "desktop",
-    brand: "dell",
-    specialization: "Motherboard Repair",
-    image: "https://images.unsplash.com/photo-1587829741301-dc798b83defb?w=400&h=300&fit=crop",
-    description: "Expert PC hardware repairs with focus on desktops and servers.",
-    phone: "+1 (555) 123-4567",
-    email: "info@pcmaster.com"
-  },
-  {
-    id: 2,
-    name: "Laptop Pros",
-    rating: 4.8,
-    reviews: 520,
-    services: ["Screen Replacement", "Battery Fix", "Keyboard Repair"],
-    price: "$60 - $250",
-    priceMin: 60,
-    priceMax: 250,
-    location: "Los Angeles, CA",
-    experience: "5 years",
-    deviceType: "laptop",
-    brand: "hp",
-    specialization: "Screen Replacement",
-    image: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400&h=300&fit=crop",
-    description: "Specialized in laptop repairs for all major brands.",
-    phone: "+1 (555) 234-5678",
-    email: "service@laptoppros.com"
-  },
-  {
-    id: 3,
-    name: "Hardware Heroes",
-    rating: 4.7,
-    reviews: 430,
-    services: ["GPU Upgrade", "Cooling System", "Overheating Fix"],
-    price: "$100 - $400",
-    priceMin: 100,
-    priceMax: 400,
-    location: "Chicago, IL",
-    experience: "6 years",
-    deviceType: "desktop",
-    brand: "custom",
-    specialization: "GPU Upgrade",
-    image: "https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=400&h=300&fit=crop",
-    description: "Gaming PC specialists for upgrades and performance optimization.",
-    phone: "+1 (555) 345-6789",
-    email: "support@hardwareheroes.com"
-  },
-  {
-    id: 4,
-    name: "Tech Fixers",
-    rating: 4.9,
-    reviews: 780,
-    services: ["Data Recovery", "Virus Removal", "Software Install"],
-    price: "$50 - $200",
-    priceMin: 50,
-    priceMax: 200,
-    location: "Houston, TX",
-    experience: "8 years",
-    deviceType: "laptop",
-    brand: "lenovo",
-    specialization: "Data Recovery",
-    image: "https://images.unsplash.com/photo-1517433456452-f9633a875f6f?w=400&h=300&fit=crop",
-    description: "Complete PC maintenance and data recovery services.",
-    phone: "+1 (555) 456-7890",
-    email: "help@techfixers.com"
-  },
-  {
-    id: 5,
-    name: "Circuit Experts",
-    rating: 4.8,
-    reviews: 590,
-    services: ["Power Supply Repair", "HDD to SSD", "RAM Upgrade"],
-    price: "$70 - $300",
-    priceMin: 70,
-    priceMax: 300,
-    location: "Phoenix, AZ",
-    experience: "9 years",
-    deviceType: "desktop",
-    brand: "asus",
-    specialization: "Power Supply Repair",
-    image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&h=300&fit=crop",
-    description: "Advanced hardware diagnostics and repairs.",
-    phone: "+1 (555) 567-8901",
-    email: "contact@circuitexperts.com"
-  },
-  {
-    id: 6,
-    name: "PC Wizards",
-    rating: 4.9,
-    reviews: 710,
-    services: ["BIOS Flash", "Custom Builds", "Benchmarking"],
-    price: "$90 - $450",
-    priceMin: 90,
-    priceMax: 450,
-    location: "Philadelphia, PA",
-    experience: "10 years",
-    deviceType: "desktop",
-    brand: "custom",
-    specialization: "Custom Builds",
-    image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&h=300&fit=crop",
-    description: "Custom PC builds and advanced troubleshooting.",
-    phone: "+1 (555) 678-9012",
-    email: "builds@pcwizards.com"
-  }
-];
+// Currency symbols and rates (relative to USD)
+const CURRENCY_INFO = {
+  LKR: { symbol: 'Rs.', rate: 330, name: 'Sri Lankan Rupees', countries: ['LK'] },
+  INR: { symbol: '₹', rate: 83, name: 'Indian Rupees', countries: ['IN'] },
+  USD: { symbol: '$', rate: 1, name: 'US Dollars', countries: ['US'] },
+  GBP: { symbol: '£', rate: 0.79, name: 'British Pounds', countries: ['GB'] },
+  EUR: { symbol: '€', rate: 0.92, name: 'Euros', countries: ['DE', 'FR', 'IT', 'ES'] },
+  AUD: { symbol: 'A$', rate: 1.52, name: 'Australian Dollars', countries: ['AU'] },
+  CAD: { symbol: 'C$', rate: 1.36, name: 'Canadian Dollars', countries: ['CA'] },
+  SGD: { symbol: 'S$', rate: 1.34, name: 'Singapore Dollars', countries: ['SG'] },
+  MYR: { symbol: 'RM', rate: 4.47, name: 'Malaysian Ringgit', countries: ['MY'] },
+  AED: { symbol: 'AED', rate: 3.67, name: 'UAE Dirham', countries: ['AE'] },
+};
 
 const PCRepair = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+
+  // State management
+  const [loading, setLoading] = useState(true);
+  const [technicians, setTechnicians] = useState([]);
+  const [filteredTechnicians, setFilteredTechnicians] = useState([]);
+  const [showMap, setShowMap] = useState(false);
+
+  // User location state
+  const [userLocation, setUserLocation] = useState(null);
+  const [userCountry, setUserCountry] = useState('LK'); // Default to Sri Lanka
+  const [currency, setCurrency] = useState('LKR');
+  const [locationLoading, setLocationLoading] = useState(false);
 
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -140,84 +56,278 @@ const PCRepair = () => {
   const [priceRange, setPriceRange] = useState('all');
   const [deviceType, setDeviceType] = useState('all');
   const [minimumRating, setMinimumRating] = useState('0');
+  const [maxDistance, setMaxDistance] = useState('all');
 
   // Display states
-  const [filteredTechnicians, setFilteredTechnicians] = useState(pcTechniciansData);
   const [visibleCount, setVisibleCount] = useState(6);
   const [favorites, setFavorites] = useState([]);
   const [selectedTechnician, setSelectedTechnician] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [sortBy, setSortBy] = useState('rating');
 
-  // Load favorites from localStorage
+  // Get user's location and determine currency
   useEffect(() => {
-    const savedFavorites = localStorage.getItem('pc-repair-favorites');
-    if (savedFavorites) {
-      setFavorites(JSON.parse(savedFavorites));
-    }
+    getUserLocation();
+    loadFavorites();
   }, []);
 
-  // Apply filters
-  useEffect(() => {
-    let filtered = [...pcTechniciansData];
+  const getUserLocation = async () => {
+    setLocationLoading(true);
+    try {
+      // Get geolocation
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            const { latitude, longitude } = position.coords;
+            const location = { lat: latitude, lng: longitude };
+            setUserLocation(location);
 
-    // Keyword filter
+            // Reverse geocode to get country
+            try {
+              const response = await fetch(
+                `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_MAPS_API_KEY}`
+              );
+              const data = await response.json();
+
+              if (data.results && data.results.length > 0) {
+                const addressComponents = data.results[0].address_components;
+                const countryComponent = addressComponents.find(comp =>
+                  comp.types.includes('country')
+                );
+
+                if (countryComponent) {
+                  const countryCode = countryComponent.short_name;
+                  setUserCountry(countryCode);
+
+                  // Find and set appropriate currency
+                  const currencyCode = Object.keys(CURRENCY_INFO).find(key =>
+                    CURRENCY_INFO[key].countries.includes(countryCode)
+                  ) || 'USD';
+
+                  setCurrency(currencyCode);
+
+                  toast({
+                    title: "Location Detected",
+                    description: `Currency set to ${CURRENCY_INFO[currencyCode].name}`,
+                  });
+                }
+              }
+            } catch (error) {
+              console.error('Geocoding error:', error);
+            }
+
+            // Fetch nearby technicians
+            fetchNearbyTechnicians(longitude, latitude);
+          },
+          (error) => {
+            console.error('Geolocation error:', error);
+            toast({
+              title: "Location Access Denied",
+              description: "Please enable location services to see nearby technicians.",
+              variant: "destructive",
+            });
+            // Load all technicians if location is denied
+            fetchAllTechnicians();
+          }
+        );
+      } else {
+        toast({
+          title: "Geolocation Not Supported",
+          description: "Your browser doesn't support geolocation.",
+          variant: "destructive",
+        });
+        fetchAllTechnicians();
+      }
+    } catch (error) {
+      console.error('Location error:', error);
+      fetchAllTechnicians();
+    } finally {
+      setLocationLoading(false);
+    }
+  };
+
+  const fetchNearbyTechnicians = async (lng, lat) => {
+    try {
+      setLoading(true);
+      const response = await techniciansAPI.getNearby(lng, lat, 50000); // 50km radius
+      const techData = response.data || [];
+      setTechnicians(techData);
+      setFilteredTechnicians(techData);
+    } catch (error) {
+      console.error('Error fetching nearby technicians:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch nearby technicians. Loading all technicians...",
+        variant: "destructive",
+      });
+      fetchAllTechnicians();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchAllTechnicians = async () => {
+    try {
+      setLoading(true);
+      const response = await techniciansAPI.getAll();
+      const techData = response.data || [];
+      setTechnicians(techData);
+      setFilteredTechnicians(techData);
+    } catch (error) {
+      console.error('Error fetching technicians:', error);
+      toast({
+        title: "Backend Unavailable",
+        description: "Could not connect to server. Please ensure MongoDB and backend server are running.",
+        variant: "default",
+      });
+      setTechnicians([]);
+      setFilteredTechnicians([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadFavorites = () => {
+    const saved = localStorage.getItem('pc-repair-favorites');
+    if (saved) {
+      setFavorites(JSON.parse(saved));
+    }
+  };
+
+  // Convert price from USD to current currency
+  const convertPrice = (usdPrice) => {
+    const rate = CURRENCY_INFO[currency]?.rate || 1;
+    const converted = Math.round(usdPrice * rate);
+    const symbol = CURRENCY_INFO[currency]?.symbol || '$';
+    return `${symbol}${converted.toLocaleString()}`;
+  };
+
+  // Apply filters whenever filter states change
+  useEffect(() => {
+    applyFilters();
+  }, [searchTerm, brand, issue, priceRange, deviceType, minimumRating, maxDistance, sortBy, technicians]);
+
+  const applyFilters = () => {
+    let filtered = [...technicians];
+
+    // Search filter
     if (searchTerm.trim()) {
-      const keywordLower = searchTerm.toLowerCase();
+      const search = searchTerm.toLowerCase();
       filtered = filtered.filter(tech =>
-        tech.name.toLowerCase().includes(keywordLower) ||
-        tech.services.some(service => service.toLowerCase().includes(keywordLower)) ||
-        tech.location.toLowerCase().includes(keywordLower) ||
-        tech.description.toLowerCase().includes(keywordLower)
+        tech.name?.toLowerCase().includes(search) ||
+        tech.specialization?.some(spec => spec.toLowerCase().includes(search)) ||
+        tech.location?.address?.toLowerCase().includes(search) ||
+        tech.description?.toLowerCase().includes(search)
       );
     }
 
     // Brand filter
     if (brand !== 'any') {
-      filtered = filtered.filter(tech => tech.brand === brand || tech.brand === 'any');
+      filtered = filtered.filter(tech =>
+        tech.brands?.includes(brand) || tech.brands?.includes('any') || tech.brands?.includes('all')
+      );
     }
 
     // Issue filter
     if (issue !== 'all') {
-      filtered = filtered.filter(tech => tech.specialization === issue);
+      filtered = filtered.filter(tech =>
+        tech.specialization?.includes(issue)
+      );
     }
 
-    // Price range filter
-    if (priceRange !== 'all') {
-      if (priceRange === '0-100') {
-        filtered = filtered.filter(tech => tech.priceMin <= 100);
-      } else if (priceRange === '100-200') {
-        filtered = filtered.filter(tech => tech.priceMax >= 100 && tech.priceMin <= 200);
-      } else if (priceRange === '200+') {
-        filtered = filtered.filter(tech => tech.priceMax >= 200);
-      }
-    }
-
-    // Device type filter
+    // Device Type filter
     if (deviceType !== 'all') {
-      filtered = filtered.filter(tech => tech.deviceType === deviceType);
+      // Assuming technicians have a 'deviceTypes' array or similar. If not, we might need to adjust.
+      // For now, let's assume if they do PC repair, they do both, or check specialization.
+      // Or we can check if 'deviceType' exists on the technician object.
+      // If the backend doesn't support this field yet, we might skip or check specialization.
+      filtered = filtered.filter(tech =>
+        tech.deviceTypes?.includes(deviceType) || tech.specialization?.some(s => s.toLowerCase().includes(deviceType))
+      );
     }
 
-    // Minimum rating filter
+    // Price range filter (assuming prices in USD)
+    if (priceRange !== 'all') {
+      filtered = filtered.filter(tech => {
+        const minPrice = tech.priceRange?.min || 0;
+        const maxPrice = tech.priceRange?.max || 1000;
+
+        if (priceRange === '0-100') return minPrice <= 100;
+        if (priceRange === '100-200') return maxPrice >= 100 && minPrice <= 200;
+        if (priceRange === '200+') return maxPrice >= 200;
+        return true;
+      });
+    }
+
+    // Rating filter
     const minRating = parseFloat(minimumRating);
     if (minRating > 0) {
-      filtered = filtered.filter(tech => tech.rating >= minRating);
+      filtered = filtered.filter(tech => (tech.rating || 0) >= minRating);
+    }
+
+    // Distance filter (if location is available)
+    if (maxDistance !== 'all' && userLocation) {
+      filtered = filtered.filter(tech => {
+        if (!tech.location?.coordinates) return false;
+        const distance = calculateDistance(
+          userLocation.lat,
+          userLocation.lng,
+          tech.location.coordinates[1],
+          tech.location.coordinates[0]
+        );
+
+        if (maxDistance === '0-5') return distance <= 5;
+        if (maxDistance === '5-10') return distance <= 10;
+        if (maxDistance === '10-25') return distance <= 25;
+        if (maxDistance === '25+') return distance <= 100;
+        return true;
+      });
     }
 
     // Sort
     if (sortBy === 'rating') {
-      filtered.sort((a, b) => b.rating - a.rating);
+      filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
     } else if (sortBy === 'reviews') {
-      filtered.sort((a, b) => b.reviews - a.reviews);
+      filtered.sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0));
     } else if (sortBy === 'price-low') {
-      filtered.sort((a, b) => a.priceMin - b.priceMin);
+      filtered.sort((a, b) => (a.priceRange?.min || 0) - (b.priceRange?.min || 0));
     } else if (sortBy === 'price-high') {
-      filtered.sort((a, b) => b.priceMax - a.priceMax);
+      filtered.sort((a, b) => (b.priceRange?.max || 0) - (a.priceRange?.max || 0));
+    } else if (sortBy === 'distance' && userLocation) {
+      filtered.sort((a, b) => {
+        if (!a.location?.coordinates || !b.location?.coordinates) return 0;
+        const distA = calculateDistance(
+          userLocation.lat,
+          userLocation.lng,
+          a.location.coordinates[1],
+          a.location.coordinates[0]
+        );
+        const distB = calculateDistance(
+          userLocation.lat,
+          userLocation.lng,
+          b.location.coordinates[1],
+          b.location.coordinates[0]
+        );
+        return distA - distB;
+      });
     }
 
     setFilteredTechnicians(filtered);
     setVisibleCount(6);
-  }, [searchTerm, brand, issue, priceRange, deviceType, minimumRating, sortBy]);
+  };
+
+  // Calculate distance between two coordinates (Haversine formula)
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
 
   const handleResetFilters = () => {
     setSearchTerm('');
@@ -226,6 +336,8 @@ const PCRepair = () => {
     setPriceRange('all');
     setDeviceType('all');
     setMinimumRating('0');
+    setMaxDistance('all');
+    setSortBy('rating');
   };
 
   const handleLoadMore = () => {
@@ -239,6 +351,13 @@ const PCRepair = () => {
 
     setFavorites(newFavorites);
     localStorage.setItem('pc-repair-favorites', JSON.stringify(newFavorites));
+
+    toast({
+      title: newFavorites.includes(techId) ? "Added to Favorites" : "Removed from Favorites",
+      description: newFavorites.includes(techId)
+        ? "Technician saved to your favorites"
+        : "Technician removed from favorites",
+    });
   };
 
   const handleViewDetails = (tech) => {
@@ -255,44 +374,92 @@ const PCRepair = () => {
     setSelectedTechnician(null);
   };
 
-  // Get featured technicians (top 3 by rating)
-  const featuredTechnicians = [...pcTechniciansData]
-    .sort((a, b) => b.rating - a.rating)
+  // Get top 3 technicians by rating
+  const featuredTechnicians = [...filteredTechnicians]
+    .sort((a, b) => (b.rating || 0) - (a.rating || 0))
     .slice(0, 3);
 
   return (
     <div className="min-h-screen py-16 px-4 md:px-8">
+      <SEO
+        title="PC & Laptop Repair Services - TechCare"
+        description="Expert PC and laptop repair technicians near you. Fast, reliable hardware and software solutions."
+        keywords="pc repair, laptop repair, computer technician, hardware repair, software fix"
+      />
       <div className="max-w-7xl mx-auto">
         {/* Hero Section */}
         <section className="text-center mb-16">
-          <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-6">
-            PC & Laptop Repair Experts
-          </h1>
-          <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto mb-12">
-            Professional hardware and software repairs for desktops, laptops, and gaming rigs. Fast, reliable service.
+          <div className="flex items-center justify-center gap-3 mb-6">
+            <Monitor className="h-12 w-12 text-primary" />
+            <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+              PC & Laptop Repair Experts
+            </h1>
+          </div>
+          <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto mb-8">
+            Professional hardware and software repairs for desktops, laptops, and gaming rigs.
+            {userLocation && <span className="text-primary font-semibold"> Showing technicians near you.</span>}
           </p>
+
+          {/* Location and Currency Info */}
+          <div className="flex flex-wrap items-center justify-center gap-4 mb-12">
+            {locationLoading ? (
+              <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm">Detecting location...</span>
+              </div>
+            ) : userLocation ? (
+              <div className="flex items-center gap-2 px-4 py-2 bg-green-500/10 rounded-full text-green-700 dark:text-green-400">
+                <Navigation className="h-4 w-4" />
+                <span className="text-sm font-medium">Location Enabled</span>
+              </div>
+            ) : null}
+
+            <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full">
+              <DollarSign className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">Currency: {CURRENCY_INFO[currency]?.name}</span>
+            </div>
+          </div>
+
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="px-8" onClick={() => document.getElementById('featured')?.scrollIntoView({ behavior: 'smooth' })}>
+            <Button
+              size="lg"
+              className="px-8"
+              onClick={() => document.getElementById('featured')?.scrollIntoView({ behavior: 'smooth' })}
+            >
               <Monitor className="mr-2 h-5 w-5" />
               Find PC Technicians
             </Button>
-            <Button variant="outline" size="lg" className="px-8">
+            <Button
+              variant="outline"
+              size="lg"
+              className="px-8"
+              onClick={() => navigate('/register', { state: { role: 'technician' } })}
+            >
               <Cpu className="mr-2 h-5 w-5" />
-              View All Services
+              Register as Technician
             </Button>
           </div>
         </section>
 
-        {/* Filters */}
+        {/* Filters Section */}
         <section className="bg-muted/50 rounded-2xl p-8 mb-16">
           <div className="flex flex-col md:flex-row gap-4 items-end justify-between mb-8">
-            <h2 className="text-2xl font-bold">Refine PC Repair Search</h2>
-            <Button variant="ghost" onClick={handleResetFilters} className="text-primary hover:text-primary/80">
+            <div className="flex items-center gap-3">
+              <Filter className="h-6 w-6 text-primary" />
+              <h2 className="text-2xl font-bold">Refine PC Repair Search</h2>
+            </div>
+            <Button
+              variant="ghost"
+              onClick={handleResetFilters}
+              className="text-primary hover:text-primary/80"
+            >
               Reset Filters
             </Button>
           </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="relative">
+            {/* Search */}
+            <div className="relative lg:col-span-3">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 className="pl-12"
@@ -301,6 +468,8 @@ const PCRepair = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
+
+            {/* Brand */}
             <Select value={brand} onValueChange={setBrand}>
               <SelectTrigger>
                 <SelectValue placeholder="Brand" />
@@ -314,6 +483,8 @@ const PCRepair = () => {
                 <SelectItem value="custom">Custom Build</SelectItem>
               </SelectContent>
             </Select>
+
+            {/* Issue */}
             <Select value={issue} onValueChange={setIssue}>
               <SelectTrigger>
                 <SelectValue placeholder="Issue" />
@@ -326,6 +497,8 @@ const PCRepair = () => {
                 <SelectItem value="Data Recovery">Data Recovery</SelectItem>
               </SelectContent>
             </Select>
+
+            {/* Device Type */}
             <Select value={deviceType} onValueChange={setDeviceType}>
               <SelectTrigger>
                 <SelectValue placeholder="Device" />
@@ -336,153 +509,170 @@ const PCRepair = () => {
                 <SelectItem value="laptop">Laptop</SelectItem>
               </SelectContent>
             </Select>
+
+            {/* Price Range */}
             <Select value={priceRange} onValueChange={setPriceRange}>
               <SelectTrigger>
                 <SelectValue placeholder="Price" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Prices</SelectItem>
-                <SelectItem value="0-100">$0-$100</SelectItem>
-                <SelectItem value="100-200">$100-$200</SelectItem>
-                <SelectItem value="200+">$200+</SelectItem>
+                <SelectItem value="0-100">{convertPrice(0)} - {convertPrice(100)}</SelectItem>
+                <SelectItem value="100-200">{convertPrice(100)} - {convertPrice(200)}</SelectItem>
+                <SelectItem value="200+">{convertPrice(200)}+</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-          <div className="mt-6 p-4 bg-primary/10 rounded-xl">
-            <p className="text-lg font-semibold">
-              {filteredTechnicians.length} PC technicians found
-            </p>
-          </div>
-        </section>
 
-        {/* Featured */}
-        <section id="featured">
-          <div className="flex justify-between items-center mb-12">
-            <h2 className="text-3xl font-bold">Featured PC Repair Technicians</h2>
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Sort by" />
+            {/* Rating */}
+            <Select value={minimumRating} onValueChange={setMinimumRating}>
+              <SelectTrigger>
+                <SelectValue placeholder="Minimum Rating" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="rating">Rating</SelectItem>
-                <SelectItem value="reviews">Reviews</SelectItem>
-                <SelectItem value="price-low">Price Low</SelectItem>
-                <SelectItem value="price-high">Price High</SelectItem>
+                <SelectItem value="0">All Ratings</SelectItem>
+                <SelectItem value="3">3+ Stars</SelectItem>
+                <SelectItem value="4">4+ Stars</SelectItem>
+                <SelectItem value="4.5">4.5+ Stars</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Distance */}
+            {userLocation && (
+              <Select value={maxDistance} onValueChange={setMaxDistance}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Distance" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Any Distance</SelectItem>
+                  <SelectItem value="0-5">Within 5 km</SelectItem>
+                  <SelectItem value="5-10">Within 10 km</SelectItem>
+                  <SelectItem value="10-25">Within 25 km</SelectItem>
+                  <SelectItem value="25+">Within 100 km</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+
+            {/* Sort */}
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sort By" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="rating">Highest Rating</SelectItem>
+                <SelectItem value="reviews">Most Reviews</SelectItem>
+                <SelectItem value="price-low">Price: Low to High</SelectItem>
+                <SelectItem value="price-high">Price: High to Low</SelectItem>
+                {userLocation && <SelectItem value="distance">Nearest First</SelectItem>}
               </SelectContent>
             </Select>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-20">
-            {featuredTechnicians.map((tech) => (
-              <Card key={tech.id} className="overflow-hidden hover:shadow-2xl transition-all group">
-                <div className="relative">
-                  <img src={tech.image} alt={tech.name} className="w-full h-64 object-cover group-hover:scale-105 transition-transform" />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-4 right-4"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleFavorite(tech.id);
-                    }}
-                  >
-                    <Star className={`h-5 w-5 ${favorites.includes(tech.id) ? 'fill-yellow-400 text-yellow-400' : ''}`} />
-                  </Button>
-                </div>
-                <CardContent className="p-6">
-                  <h3 className="font-bold text-xl mb-2">{tech.name}</h3>
-                  <div className="flex items-center gap-1 mb-2">
-                    <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                    <span>{tech.rating}</span>
-                    <span className="text-sm text-muted-foreground">({tech.reviews} reviews)</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-4 flex items-center">
-                    <MapPin className="h-4 w-4 mr-1" />
-                    {tech.location}
-                  </p>
-                  <div className="space-y-1 mb-4">
-                    {tech.services.slice(0, 2).map((service, i) => (
-                      <div key={i} className="flex items-center text-sm">
-                        <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                        {service}
-                      </div>
-                    ))}
-                  </div>
-                  <p className="text-2xl font-bold text-primary mb-6">{tech.price}</p>
-                  <div className="flex gap-3">
-                    <Button variant="outline" onClick={() => handleViewDetails(tech)} className="flex-1">
-                      Details
-                    </Button>
-                    <Button onClick={() => handleScheduleAppointment(tech)} className="flex-1">
-                      Schedule
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+
+          {/* Results Counter & Map Toggle */}
+          <div className="mt-6 p-4 bg-primary/10 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-lg font-semibold flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              {filteredTechnicians.length} PC technicians found
+            </p>
+
+            <div className="flex items-center gap-3">
+              {loading && (
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              )}
+              <Button
+                variant={showMap ? "default" : "outline"}
+                onClick={() => setShowMap(!showMap)}
+                className="flex items-center gap-2"
+              >
+                {showMap ? <List className="h-4 w-4" /> : <MapIcon className="h-4 w-4" />}
+                {showMap ? "Show List" : "Show Map"}
+              </Button>
+            </div>
           </div>
+
+          {/* Map View */}
+          {showMap && (
+            <div className="mt-6 animate-in fade-in zoom-in duration-300">
+              <GoogleMap
+                technicians={filteredTechnicians}
+                center={userLocation}
+                onTechnicianClick={handleViewDetails}
+              />
+            </div>
+          )}
         </section>
 
-        {/* All Results */}
+        {/* Loading State */}
+        {loading && technicians.length === 0 && (
+          <div className="text-center py-20">
+            <Loader2 className="h-16 w-16 mx-auto mb-6 text-primary animate-spin" />
+            <h3 className="text-2xl font-bold mb-4">Loading Technicians...</h3>
+            <p className="text-muted-foreground">Please wait while we fetch the best technicians for you</p>
+          </div>
+        )}
+
+        {/* Featured Technicians */}
+        {!loading && featuredTechnicians.length > 0 && (
+          <section id="featured" className="mb-16">
+            <div className="flex justify-between items-center mb-12">
+              <h2 className="text-3xl font-bold flex items-center gap-3">
+                <Star className="h-8 w-8 fill-yellow-400 text-yellow-400" />
+                Featured PC Repair Technicians
+              </h2>
+            </div>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {featuredTechnicians.map((tech) => (
+                <TechnicianCard
+                  key={tech._id || tech.id}
+                  technician={tech}
+                  currency={currency}
+                  convertPrice={convertPrice}
+                  isFavorite={favorites.includes(tech._id || tech.id)}
+                  onToggleFavorite={() => toggleFavorite(tech._id || tech.id)}
+                  onViewDetails={() => handleViewDetails(tech)}
+                  onSchedule={() => handleScheduleAppointment(tech)}
+                  userLocation={userLocation}
+                  calculateDistance={calculateDistance}
+                  featured={true}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* All Technicians */}
         <section>
           <h2 className="text-3xl font-bold mb-12">
             All PC Repair Services ({filteredTechnicians.length})
           </h2>
-          {filteredTechnicians.length === 0 ? (
+
+          {filteredTechnicians.length === 0 && !loading ? (
             <div className="text-center py-20">
               <SearchX className="h-16 w-16 mx-auto mb-6 text-muted-foreground" />
               <h3 className="text-2xl font-bold mb-4">No PC technicians found</h3>
-              <p className="text-muted-foreground mb-8">Try adjusting your search filters</p>
-              <Button onClick={handleResetFilters}>Reset Filters</Button>
+              <p className="text-muted-foreground mb-8">
+                Try adjusting your search filters or reset them to see all available technicians
+              </p>
+              <Button onClick={handleResetFilters}>Reset All Filters</Button>
             </div>
           ) : (
             <>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {filteredTechnicians.slice(0, visibleCount).map((tech) => (
-                  <Card key={tech.id} className="overflow-hidden hover:shadow-xl group">
-                    <div className="relative">
-                      <img src={tech.image} alt={tech.name} className="w-full h-48 object-cover group-hover:scale-105" />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute top-3 right-3"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleFavorite(tech.id);
-                        }}
-                      >
-                        <Star className={`h-5 w-5 ${favorites.includes(tech.id) ? 'fill-yellow-400 text-yellow-400' : ''}`} />
-                      </Button>
-                    </div>
-                    <CardContent className="p-6">
-                      <div className="flex justify-between items-start mb-3">
-                        <h3 className="font-bold text-lg">{tech.name}</h3>
-                        <div className="flex items-center gap-1">
-                          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                          <span className="font-semibold">{tech.rating}</span>
-                        </div>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-3">{tech.location} • {tech.experience}</p>
-                      <div className="space-y-1 mb-4">
-                        {tech.services.slice(0, 3).map((s, i) => (
-                          <div key={i} className="flex items-center text-sm">
-                            <CheckCircle className="h-3 w-3 text-green-500 mr-1" />
-                            {s}
-                          </div>
-                        ))}
-                      </div>
-                      <p className="text-xl font-bold text-primary mb-6">{tech.price}</p>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => handleViewDetails(tech)} className="flex-1">
-                          View Details
-                        </Button>
-                        <Button size="sm" onClick={() => handleScheduleAppointment(tech)} className="flex-1">
-                          Book Now
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <TechnicianCard
+                    key={tech._id || tech.id}
+                    technician={tech}
+                    currency={currency}
+                    convertPrice={convertPrice}
+                    isFavorite={favorites.includes(tech._id || tech.id)}
+                    onToggleFavorite={() => toggleFavorite(tech._id || tech.id)}
+                    onViewDetails={() => handleViewDetails(tech)}
+                    onSchedule={() => handleScheduleAppointment(tech)}
+                    userLocation={userLocation}
+                    calculateDistance={calculateDistance}
+                  />
                 ))}
               </div>
+
               {visibleCount < filteredTechnicians.length && (
                 <div className="text-center mt-16">
                   <Button onClick={handleLoadMore} size="lg" className="px-12">
@@ -498,100 +688,257 @@ const PCRepair = () => {
         <Dialog open={showDetailModal} onOpenChange={setShowDetailModal}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
             {selectedTechnician && (
-              <div className="p-8">
-                <DialogHeader>
-                  <DialogTitle className="text-3xl font-bold mb-2">{selectedTechnician.name}</DialogTitle>
-                  <div className="flex items-center gap-2 mb-8">
-                    <Star className="h-6 w-6 fill-yellow-400 text-yellow-400" />
-                    <span className="text-2xl font-bold">{selectedTechnician.rating}</span>
-                    <span className="text-muted-foreground">({selectedTechnician.reviews} reviews)</span>
-                  </div>
-                </DialogHeader>
-                <div className="grid lg:grid-cols-2 gap-8">
-                  <div>
-                    <img
-                      src={selectedTechnician.image}
-                      alt={selectedTechnician.name}
-                      className="w-full h-80 object-cover rounded-xl mb-6"
-                    />
-                    <p className="text-lg leading-relaxed">{selectedTechnician.description}</p>
-                  </div>
-                  <div className="space-y-6">
-                    <div>
-                      <h4 className="font-bold text-xl mb-4 flex items-center">
-                        <MapPin className="mr-2 h-5 w-5" />
-                        Location & Experience
-                      </h4>
-                      <div className="space-y-3">
-                        <div className="flex items-center p-3 bg-muted rounded-lg">
-                          <MapPin className="h-5 w-5 mr-3 text-primary" />
-                          <span>{selectedTechnician.location}</span>
-                        </div>
-                        <div className="flex items-center p-3 bg-muted rounded-lg">
-                          <Briefcase className="h-5 w-5 mr-3 text-primary" />
-                          <span>{selectedTechnician.experience}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-xl mb-4 flex items-center">
-                        <DollarSign className="mr-2 h-5 w-5" />
-                        Pricing
-                      </h4>
-                      <div className="p-4 bg-primary/10 rounded-xl text-center">
-                        <p className="text-3xl font-bold text-primary">{selectedTechnician.price}</p>
-                      </div>
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-xl mb-4">Services</h4>
-                      <div className="grid grid-cols-2 gap-2">
-                        {selectedTechnician.services.map((service, i) => (
-                          <div key={i} className="flex items-center p-3 bg-muted rounded-lg">
-                            <CheckCircle className="h-4 w-4 text-green-500 mr-3" />
-                            <span>{service}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-xl mb-4 flex items-center">
-                        <Phone className="mr-2 h-5 w-5" />
-                        Contact
-                      </h4>
-                      <div className="space-y-3">
-                        <a href={`tel:${selectedTechnician.phone}`} className="flex items-center p-4 bg-muted rounded-xl hover:bg-accent transition">
-                          <Phone className="h-5 w-5 mr-4 text-primary" />
-                          <span className="font-semibold">{selectedTechnician.phone}</span>
-                        </a>
-                        <a href={`mailto:${selectedTechnician.email}`} className="flex items-center p-4 bg-muted rounded-xl hover:bg-accent transition">
-                          <Mail className="h-5 w-5 mr-4 text-primary" />
-                          <span className="font-semibold">{selectedTechnician.email}</span>
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex gap-4 mt-12 pt-8 border-t">
-                  <Button
-                    variant={favorites.includes(selectedTechnician.id) ? "default" : "outline"}
-                    onClick={() => toggleFavorite(selectedTechnician.id)}
-                    className="flex-1 gap-2"
-                  >
-                    <Star className="h-5 w-5" />
-                    {favorites.includes(selectedTechnician.id) ? 'Saved' : 'Save'}
-                  </Button>
-                  <Button onClick={() => {
-                    handleCloseModal();
-                    handleScheduleAppointment(selectedTechnician);
-                  }} className="flex-1 gap-2">
-                    <CheckCircle className="h-5 w-5" />
-                    Schedule Repair
-                  </Button>
-                </div>
-              </div>
+              <DetailModal
+                technician={selectedTechnician}
+                currency={currency}
+                convertPrice={convertPrice}
+                isFavorite={favorites.includes(selectedTechnician._id || selectedTechnician.id)}
+                onToggleFavorite={() => toggleFavorite(selectedTechnician._id || selectedTechnician.id)}
+                onClose={handleCloseModal}
+                onSchedule={() => {
+                  handleCloseModal();
+                  handleScheduleAppointment(selectedTechnician);
+                }}
+                userLocation={userLocation}
+                calculateDistance={calculateDistance}
+              />
             )}
           </DialogContent>
         </Dialog>
+      </div>
+    </div>
+  );
+};
+
+// Technician Card Component
+const TechnicianCard = ({
+  technician,
+  currency,
+  convertPrice,
+  isFavorite,
+  onToggleFavorite,
+  onViewDetails,
+  onSchedule,
+  userLocation,
+  calculateDistance,
+  featured = false
+}) => {
+  const distance = userLocation && technician.location?.coordinates
+    ? calculateDistance(
+      userLocation.lat,
+      userLocation.lng,
+      technician.location.coordinates[1],
+      technician.location.coordinates[0]
+    )
+    : null;
+
+  const priceMin = technician.priceRange?.min || 50;
+  const priceMax = technician.priceRange?.max || 250;
+  const priceDisplay = `${convertPrice(priceMin)} - ${convertPrice(priceMax)}`;
+
+  return (
+    <Card className={`overflow-hidden hover:shadow-2xl transition-all group ${featured ? 'ring-2 ring-primary' : ''}`}>
+      <div className="relative">
+        <img
+          src={technician.profileImage || technician.image || 'https://images.unsplash.com/photo-1587829741301-dc798b83defb?w=400&h=300&fit=crop'}
+          alt={technician.name}
+          className={`w-full object-cover group-hover:scale-105 transition-transform ${featured ? 'h-64' : 'h-48'}`}
+        />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-4 right-4 bg-white/90 hover:bg-white"
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleFavorite();
+          }}
+        >
+          <Star className={`h-5 w-5 ${isFavorite ? 'fill-yellow-400 text-yellow-400' : ''}`} />
+        </Button>
+        {featured && (
+          <div className="absolute top-4 left-4 bg-primary text-white px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1">
+            <Star className="h-4 w-4 fill-white" />
+            Top Rated
+          </div>
+        )}
+      </div>
+      <CardContent className="p-6">
+        <div className="flex justify-between items-start mb-3">
+          <h3 className="font-bold text-xl">{technician.name}</h3>
+          <div className="flex items-center gap-1">
+            <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+            <span className="font-semibold">{technician.rating || '4.5'}</span>
+          </div>
+        </div>
+
+        <div className="space-y-2 mb-4">
+          {technician.location?.address && (
+            <p className="text-sm text-muted-foreground flex items-center">
+              <MapPin className="h-4 w-4 mr-1" />
+              {technician.location.address}
+              {distance && (
+                <span className="ml-2 text-primary font-semibold">
+                  ({distance.toFixed(1)} km away)
+                </span>
+              )}
+            </p>
+          )}
+          {technician.experience && (
+            <p className="text-sm text-muted-foreground flex items-center">
+              <Briefcase className="h-4 w-4 mr-1" />
+              {technician.experience} years experience
+            </p>
+          )}
+          <p className="text-sm text-muted-foreground">
+            {technician.reviewCount || 0} reviews
+          </p>
+        </div>
+
+        <div className="space-y-1 mb-4">
+          {(technician.specialization || []).slice(0, featured ? 3 : 2).map((service, i) => (
+            <div key={i} className="flex items-center text-sm">
+              <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+              <span>{service}</span>
+            </div>
+          ))}
+        </div>
+
+        <p className="text-2xl font-bold text-primary mb-6">{priceDisplay}</p>
+
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={onViewDetails} className="flex-1">
+            {featured ? 'Full Details' : 'Details'}
+          </Button>
+          <Button onClick={onSchedule} className="flex-1">
+            {featured ? 'Book Now' : 'Schedule'}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+// Detail Modal Component
+const DetailModal = ({
+  technician,
+  currency,
+  convertPrice,
+  isFavorite,
+  onToggleFavorite,
+  onClose,
+  onSchedule,
+  userLocation,
+  calculateDistance
+}) => {
+  const distance = userLocation && technician.location?.coordinates
+    ? calculateDistance(
+      userLocation.lat,
+      userLocation.lng,
+      technician.location.coordinates[1],
+      technician.location.coordinates[0]
+    )
+    : null;
+
+  const priceMin = technician.priceRange?.min || 50;
+  const priceMax = technician.priceRange?.max || 250;
+  const priceDisplay = `${convertPrice(priceMin)} - ${convertPrice(priceMax)}`;
+
+  return (
+    <div className="p-8">
+      <DialogHeader>
+        <DialogTitle className="text-3xl font-bold mb-2">{technician.name}</DialogTitle>
+        <div className="flex items-center gap-2 mb-8">
+          <Star className="h-6 w-6 fill-yellow-400 text-yellow-400" />
+          <span className="text-2xl font-bold">{technician.rating || '4.5'}</span>
+          <span className="text-muted-foreground">({technician.reviewCount || 0} reviews)</span>
+        </div>
+      </DialogHeader>
+      <div className="grid lg:grid-cols-2 gap-8">
+        <div>
+          <img
+            src={technician.profileImage || technician.image || 'https://images.unsplash.com/photo-1587829741301-dc798b83defb?w=400&h=300&fit=crop'}
+            alt={technician.name}
+            className="w-full h-80 object-cover rounded-xl mb-6"
+          />
+          <p className="text-lg leading-relaxed">{technician.description}</p>
+        </div>
+        <div className="space-y-6">
+          <div>
+            <h4 className="font-bold text-xl mb-4 flex items-center">
+              <MapPin className="mr-2 h-5 w-5" />
+              Location & Experience
+            </h4>
+            <div className="space-y-3">
+              {technician.location?.address && (
+                <div className="flex items-center p-3 bg-muted rounded-lg">
+                  <MapPin className="h-5 w-5 mr-3 text-primary" />
+                  <span>{technician.location.address}</span>
+                  {distance && <span className="ml-2 text-primary font-semibold">({distance.toFixed(1)} km)</span>}
+                </div>
+              )}
+              {technician.experience && (
+                <div className="flex items-center p-3 bg-muted rounded-lg">
+                  <Briefcase className="h-5 w-5 mr-3 text-primary" />
+                  <span>{technician.experience} years experience</span>
+                </div>
+              )}
+            </div>
+          </div>
+          <div>
+            <h4 className="font-bold text-xl mb-4 flex items-center">
+              <DollarSign className="mr-2 h-5 w-5" />
+              Pricing
+            </h4>
+            <div className="p-4 bg-primary/10 rounded-xl text-center">
+              <p className="text-3xl font-bold text-primary">{priceDisplay}</p>
+            </div>
+          </div>
+          <div>
+            <h4 className="font-bold text-xl mb-4">Services</h4>
+            <div className="grid grid-cols-2 gap-2">
+              {(technician.specialization || []).map((service, i) => (
+                <div key={i} className="flex items-center p-3 bg-muted rounded-lg">
+                  <CheckCircle className="h-4 w-4 text-green-500 mr-3" />
+                  <span>{service}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div>
+            <h4 className="font-bold text-xl mb-4 flex items-center">
+              <Phone className="mr-2 h-5 w-5" />
+              Contact
+            </h4>
+            <div className="space-y-3">
+              {technician.phone && (
+                <a href={`tel:${technician.phone}`} className="flex items-center p-4 bg-muted rounded-xl hover:bg-accent transition">
+                  <Phone className="h-5 w-5 mr-4 text-primary" />
+                  <span className="font-semibold">{technician.phone}</span>
+                </a>
+              )}
+              {technician.email && (
+                <a href={`mailto:${technician.email}`} className="flex items-center p-4 bg-muted rounded-xl hover:bg-accent transition">
+                  <Mail className="h-5 w-5 mr-4 text-primary" />
+                  <span className="font-semibold">{technician.email}</span>
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="flex gap-4 mt-12 pt-8 border-t">
+        <Button
+          variant={isFavorite ? "default" : "outline"}
+          onClick={onToggleFavorite}
+          className="flex-1 gap-2"
+        >
+          <Star className="h-5 w-5" />
+          {isFavorite ? 'Saved' : 'Save'}
+        </Button>
+        <Button onClick={onSchedule} className="flex-1 gap-2">
+          <CheckCircle className="h-5 w-5" />
+          Schedule Repair
+        </Button>
       </div>
     </div>
   );

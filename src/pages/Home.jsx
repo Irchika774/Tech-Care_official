@@ -15,6 +15,7 @@ import {
     CheckCircle2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import SEO from '../components/SEO';
 
 const Home = () => {
     const navigate = useNavigate();
@@ -81,12 +82,25 @@ const Home = () => {
 
     return (
         <div className="min-h-screen overflow-hidden">
-            {/* Animated Background */}
-            <div className="fixed inset-0 -z-10">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-blue-900/20"></div>
-                <div className="absolute top-0 right-0 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float"></div>
-                <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float" style={{ animationDelay: '2s' }}></div>
-                <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float" style={{ animationDelay: '4s' }}></div>
+            <SEO
+                title="TechCare - Professional Device Repair Services"
+                description="Connect with top-rated technicians for mobile, PC, and electronics repair. Fast, reliable, and secure service."
+            />
+            {/* Video Background */}
+            <div className="fixed inset-0 -z-10 overflow-hidden">
+                <video
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="absolute inset-0 w-full h-full object-cover"
+                    poster="https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=2070&auto=format&fit=crop"
+                >
+                    <source src="/videos/hero-background.mp4" type="video/mp4" />
+                    {/* Fallback to gradient if video fails to load or is not present */}
+                </video>
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-900/90 via-blue-900/80 to-black/60 mix-blend-multiply"></div>
+                <div className="absolute inset-0 bg-black/20"></div>
             </div>
 
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">

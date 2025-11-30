@@ -11,7 +11,9 @@ import {
     DialogTitle,
     DialogDescription,
 } from "../components/ui/dialog";
-import { Search, Star, MapPin, Briefcase, CheckCircle, DollarSign, Phone, Mail, Smartphone, Wrench, SearchX, Navigation, Filter, TrendingUp } from 'lucide-react';
+import { Search, Star, MapPin, Briefcase, CheckCircle, DollarSign, Phone, Mail, Smartphone, Wrench, SearchX, Navigation, Filter, TrendingUp, Map as MapIcon, List } from 'lucide-react';
+import GoogleMap from '../components/GoogleMap';
+import SEO from '../components/SEO';
 import { techniciansAPI } from '../lib/api';
 import { useToast } from '../hooks/use-toast';
 import { Loader2 } from 'lucide-react';
@@ -33,12 +35,13 @@ const CURRENCY_INFO = {
 const MobileRepair = () => {
     const navigate = useNavigate();
     const { toast } = useToast();
-    const GOOGLE_MAPS_API_KEY = "AIzaSyALxXDQVaYCn6poLhxXqso5eGxeqB24dZU";
+    const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
     // State management
     const [loading, setLoading] = useState(true);
     const [technicians, setTechnicians] = useState([]);
     const [filteredTechnicians, setFilteredTechnicians] = useState([]);
+    const [showMap, setShowMap] = useState(false);
 
     // User location state
     const [userLocation, setUserLocation] = useState(null);
@@ -366,6 +369,11 @@ const MobileRepair = () => {
 
     return (
         <div className="min-h-screen py-16 px-4 md:px-8">
+            <SEO
+                title="Mobile Repair Services - TechCare"
+                description="Expert mobile phone and tablet repair technicians near you. Screen replacement, battery fix, and more."
+                keywords="mobile repair, phone repair, screen replacement, battery replacement, smartphone technician"
+            />
             <div className="max-w-7xl mx-auto">
                 {/* Hero Section */}
                 <section className="text-center mb-16">
@@ -542,16 +550,38 @@ const MobileRepair = () => {
                         </Select>
                     </div>
 
-                    {/* Results Counter */}
-                    <div className="mt-6 p-4 bg-primary/10 rounded-xl flex items-center justify-between">
+                    {/* Results Counter & Map Toggle */}
+                    <div className="mt-6 p-4 bg-primary/10 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4">
                         <p className="text-lg font-semibold flex items-center gap-2">
                             <TrendingUp className="h-5 w-5 text-primary" />
                             {filteredTechnicians.length} technician{filteredTechnicians.length !== 1 ? 's' : ''} found
                         </p>
-                        {loading && (
-                            <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                        )}
+
+                        <div className="flex items-center gap-3">
+                            {loading && (
+                                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                            )}
+                            <Button
+                                variant={showMap ? "default" : "outline"}
+                                onClick={() => setShowMap(!showMap)}
+                                className="flex items-center gap-2"
+                            >
+                                {showMap ? <List className="h-4 w-4" /> : <MapIcon className="h-4 w-4" />}
+                                {showMap ? "Show List" : "Show Map"}
+                            </Button>
+                        </div>
                     </div>
+
+                    {/* Map View */}
+                    {showMap && (
+                        <div className="mt-6 animate-in fade-in zoom-in duration-300">
+                            <GoogleMap
+                                technicians={filteredTechnicians}
+                                center={userLocation}
+                                onTechnicianClick={handleViewDetails}
+                            />
+                        </div>
+                    )}
                 </section>
 
                 {/* Loading State */}

@@ -6,6 +6,7 @@ import { Search, Bell, User, Sun, Moon, Wrench, LogOut } from 'lucide-react';
 import { Button } from './ui/button';
 import SearchModal from './SearchModal';
 import NotificationsModal from './NotificationsModal';
+import NotificationBell from './NotificationBell';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,17 +48,16 @@ const Header = () => {
             </Link>
           </nav>
           <div className="flex items-center space-x-2">
-            <Button variant="ghost" size="icon" onClick={() => setIsSearchOpen(true)}>
-              <Search className="h-5 w-5" />
-              <span className="sr-only">Search</span>
-            </Button>
+            {user && (
+              <Button variant="ghost" size="icon" onClick={() => setIsSearchOpen(true)}>
+                <Search className="h-5 w-5" />
+                <span className="sr-only">Search</span>
+              </Button>
+            )}
 
             {user ? (
               <>
-                <Button variant="ghost" size="icon" onClick={() => setIsNotificationsOpen(true)}>
-                  <Bell className="h-5 w-5" />
-                  <span className="sr-only">Notifications</span>
-                </Button>
+                <NotificationBell />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon">

@@ -6,14 +6,34 @@ import apiRoutes from './routes/index.js';
 import paymentRoutes from './routes/payment.js';
 import authRoutes from './routes/auth.js';
 import adminRoutes from './routes/admin.js';
+import customerRoutes from './routes/customers.js';
+import technicianRoutes from './routes/technicians.js';
+import bookingRoutes from './routes/bookings.js';
+import notificationRoutes from './routes/notifications.js';
+import searchRoutes from './routes/search.js';
+
+// Wave 4: Security middleware
+import {
+    securityHeaders,
+    sanitizeData,
+    apiLimiter,
+    authLimiter,
+    corsOptions,
+    requestLogger,
+    securityErrorHandler
+} from './middleware/security.js';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+// Wave 4: Apply security middleware
+app.use(securityHeaders);  // Helmet security headers
+app.use(cors(corsOptions)); // Enhanced CORS
+app.use(requestLogger); // Request logging
 app.use(express.json());
+app.use(sanitizeData); // MongoDB injection prevention
 
 // MongoDB Connection with better error handling
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/techcare';
@@ -42,10 +62,15 @@ mongoose.connection.on('disconnected', () => {
 });
 
 // API Routes
-app.use('/api', apiRoutes);
-app.use('/api/payment', paymentRoutes);
-app.use('/api/auth', authRoutes);
-app.use('/api/admin', adminRoutes);
+app.use('/api', apiLimiter, apiRoutes); // Rate limited
+app.use('/api/payment', apiLimiter, paymentRoutes);
+app.use('/api/auth', authLimiter, authRoutes); // Strict rate limit for auth
+app.use('/api/admin', apiLimiter, adminRoutes);
+app.use('/api/customers', apiLimiter, customerRoutes);
+app.use('/api/technicians', apiLimiter, technicianRoutes);
+app.use('/api/bookings', apiLimiter, bookingRoutes);
+app.use('/api/notifications', apiLimiter, notificationRoutes);
+app.use('/api/search', apiLimiter, searchRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -80,6 +105,9 @@ app.use((req, res) => {
         path: req.path
     });
 });
+
+// Wave 4: Security error handler
+app.use(securityErrorHandler);
 
 // Error handler
 app.use((err, req, res, next) => {

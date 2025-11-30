@@ -25,6 +25,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from '../hooks/use-toast';
 
 import { useAuth } from '../context/AuthContext';
+import CurrencyDisplay from '../components/CurrencyDisplay';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -493,7 +494,9 @@ const Admin = () => {
             <DollarSign className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Rs.{stats.totalRevenue.toLocaleString()}</div>
+            <div className="text-2xl font-bold">
+              <CurrencyDisplay amount={stats.totalRevenue} decimals={0} />
+            </div>
             <p className="text-xs text-muted-foreground mt-1">
               <span className="text-green-500">●</span> From {stats.completedAppointments} jobs
             </p>
