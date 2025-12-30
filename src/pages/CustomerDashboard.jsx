@@ -16,45 +16,89 @@ function CustomerDashboard() {
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState('overview');
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [data, setData] = useState(null);
     const [favorites, setFavorites] = useState([]);
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
     useEffect(() => {
         const fetchData = async () => {
+            if (!user) return;
+
             try {
+                setLoading(true);
                 const token = localStorage.getItem('token');
                 const headers = { Authorization: `Bearer ${token}` };
 
                 const [dashboardRes, favoritesRes] = await Promise.all([
-                    fetch('http://localhost:5000/api/customers/dashboard', { headers }),
-                    fetch('http://localhost:5000/api/customers/favorites', { headers })
+                    fetch(`${API_URL}/api/customers/dashboard`, { headers }),
+                    fetch(`${API_URL}/api/customers/favorites`, { headers })
                 ]);
 
-                if (dashboardRes.ok) {
-                    const dashboardData = await dashboardRes.json();
-                    setData(dashboardData);
+                if (!dashboardRes.ok) {
+                    throw new Error(`Failed to fetch dashboard data: ${dashboardRes.statusText}`);
                 }
+
+                const dashboardData = await dashboardRes.json();
+                setData(dashboardData);
 
                 if (favoritesRes.ok) {
                     const favoritesData = await favoritesRes.json();
                     setFavorites(favoritesData.favorites || []);
                 }
-            } catch (error) {
-                console.error('Error fetching dashboard data:', error);
+            } catch (err) {
+                console.error('Error fetching dashboard data:', err);
+                setError(err.message);
             } finally {
                 setLoading(false);
             }
         };
 
-        if (user) {
-            fetchData();
-        }
+        fetchData();
+
+        // Refresh data every 30 seconds for real-time updates
+        const interval = setInterval(fetchData, 30000);
+        return () => clearInterval(interval);
     }, [user]);
 
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        );
+    }
+
+    if (error) {
+        const isAuthError = error.includes('404') || error.includes('Not Found') ||
+            error.includes('401') || error.includes('403') ||
+            error.includes('Forbidden');
+
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen text-center p-4">
+                <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+                <h2 className="text-2xl font-bold mb-2">
+                    {isAuthError ? 'Session Update Required' : 'Something went wrong'}
+                </h2>
+                <p className="text-muted-foreground mb-4">
+                    {isAuthError
+                        ? 'Please login again to update your account permissions.'
+                        : error}
+                </p>
+                <div className="flex gap-4">
+                    <Button variant="outline" onClick={() => window.location.reload()}>
+                        Retry
+                    </Button>
+                    {isAuthError && (
+                        <Button onClick={() => {
+                            localStorage.removeItem('token');
+                            localStorage.removeItem('user');
+                            window.location.href = '/login';
+                        }}>
+                            Login Again
+                        </Button>
+                    )}
+                </div>
             </div>
         );
     }
@@ -200,12 +244,34 @@ function CustomerDashboard() {
                                                 </div>
                                                 <p className="text-sm text-muted-foreground">Technician: {apt.technician?.name || 'Pending Assignment'}</p>
                                                 <p className="text-sm text-muted-foreground">Issue: {apt.issue?.description}</p>
-                                                <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-muted-foreground">
-                                                    <span className="flex items-center"><Calendar className="mr-1 h-3 w-3" /> {formatDate(apt.scheduledDate)}</span>
-                                                    <span className="font-semibold text-primary">
-                                                        <CurrencyDisplay amount={apt.estimatedCost} decimals={0} />
-                                                    </span>
-                                                </div>
+                                                  <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-muted-foreground">
+                                                      <span className="flex items-center"><Calendar className="mr-1 h-3 w-3" /> {formatDate(apt.scheduledDate)}</span>
+                                                      <span className="font-semibold text-primary">
+                                                          <CurrencyDisplay amount={apt.estimatedCost} decimals={0} />
+                                                      </span>
+                                                  </div>
+                                                  <div className="flex gap-2 mt-4">
+                                                      <Button 
+                                                          size="sm" 
+                                                          variant="outline"
+                                                          onClick={() => navigate(`/tracker/${apt._id || apt.id}`)}
+                                                          className="flex-1"
+                                                      >
+                                                          <Activity className="mr-2 h-4 w-4" />
+                                                          Track
+                                                      </Button>
+                                                      {apt.technician && (
+                                                          <Button 
+                                                              size="sm"
+                                                              onClick={() => navigate(`/chat/${apt._id || apt.id}`)}
+                                                              className="flex-1"
+                                                          >
+                                                              <User className="mr-2 h-4 w-4" />
+                                                              Chat
+                                                          </Button>
+                                                      )}
+                                                  </div>
+
                                             </div>
                                         ))
                                     )}
@@ -244,97 +310,77 @@ function CustomerDashboard() {
                     </TabsContent>
 
                     {/* Appointments Tab */}
-                    <TabsContent value="appointments" className="space-y-4">
-                        <Card className="shadow-lg">
+                    <TabsContent value="appointments">
+                        <Card>
                             <CardHeader>
-                                <CardTitle className="text-xl">All Appointments</CardTitle>
-                                <CardDescription>View and manage your bookings</CardDescription>
+                                <CardTitle>All Appointments</CardTitle>
+                                <CardDescription>History of all your service requests</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <div className="space-y-4">
-                                    {recentBookings.length === 0 ? (
-                                        <div className="text-center py-8 text-muted-foreground">No bookings found</div>
-                                    ) : (
-                                        recentBookings.map(apt => (
-                                            <div key={apt._id} className="p-4 sm:p-6 bg-card rounded-lg border shadow hover:shadow-lg transition-all">
-                                                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                                                    <div className="flex-1">
-                                                        <div className="flex flex-wrap items-center gap-2 mb-2">
-                                                            <h3 className="text-lg font-bold">{apt.device?.brand} {apt.device?.model}</h3>
-                                                            <Badge variant={getStatusBadgeVariant(apt.status)}>
-                                                                {apt.status}
-                                                            </Badge>
-                                                        </div>
-                                                        <div className="space-y-1 text-sm text-muted-foreground">
-                                                            <p className="flex items-center"><User className="mr-2 h-4 w-4" /> Technician: <span className="font-medium ml-1">{apt.technician?.name || 'Pending'}</span></p>
-                                                            <p className="flex items-center"><Calendar className="mr-2 h-4 w-4" /> Date: <span className="font-medium ml-1">{formatDate(apt.scheduledDate)}</span></p>
-                                                            <p className="text-lg font-bold text-primary mt-2">
-                                                                <CurrencyDisplay amount={apt.estimatedCost} decimals={0} />
-                                                            </p>
-                                                        </div>
+                                {recentBookings.length === 0 ? (
+                                    <div className="text-center py-8 text-muted-foreground">No booking history found</div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {recentBookings.map(booking => (
+                                            <div key={booking._id} className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 bg-muted rounded-lg gap-4">
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <h4 className="font-semibold">{booking.device?.brand} {booking.device?.model}</h4>
+                                                        <Badge variant={getStatusBadgeVariant(booking.status)}>{booking.status}</Badge>
                                                     </div>
-                                                    <div className="flex flex-col gap-2">
-                                                        {apt.status === 'pending' && (
-                                                            <Button variant="outline" size="sm" className="w-full sm:w-auto">
-                                                                Cancel
-                                                            </Button>
-                                                        )}
-                                                        {apt.status === 'confirmed' && (
-                                                            <Button variant="outline" size="sm" className="w-full sm:w-auto">
-                                                                Reschedule
-                                                            </Button>
-                                                        )}
-                                                        {apt.status === 'completed' && (
-                                                            <Button variant="default" size="sm" className="w-full sm:w-auto">
-                                                                Review
-                                                            </Button>
-                                                        )}
+                                                    <p className="text-sm text-muted-foreground mt-1">
+                                                        {formatDate(booking.scheduledDate)} • {booking.issue?.type}
+                                                    </p>
+                                                </div>
+                                                <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
+                                                    <div className="text-right">
+                                                        <div className="font-bold text-primary">
+                                                            <CurrencyDisplay amount={booking.estimatedCost} decimals={0} />
+                                                        </div>
+                                                        <div className="text-xs text-muted-foreground">Estimated Cost</div>
                                                     </div>
+                                                    <Button variant="outline" size="sm">View Details</Button>
                                                 </div>
                                             </div>
-                                        ))
-                                    )}
-                                </div>
+                                        ))}
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     </TabsContent>
 
                     {/* Favorites Tab */}
-                    <TabsContent value="favorites" className="space-y-4">
-                        <Card className="shadow-lg">
+                    <TabsContent value="favorites">
+                        <Card>
                             <CardHeader>
-                                <CardTitle className="text-xl">Favorite Technicians</CardTitle>
-                                <CardDescription>Your trusted repair experts</CardDescription>
+                                <CardTitle>Favorite Technicians</CardTitle>
+                                <CardDescription>Technicians you've saved for quick access</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 {favorites.length === 0 ? (
-                                    <div className="text-center py-8 text-muted-foreground">No favorite technicians yet</div>
+                                    <div className="text-center py-8 text-muted-foreground">
+                                        <Heart className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
+                                        <p>No favorite technicians yet</p>
+                                        <Button variant="link" onClick={() => navigate('/technicians')}>Browse Technicians</Button>
+                                    </div>
                                 ) : (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                         {favorites.map(tech => (
-                                            <div key={tech._id} className="p-6 bg-card rounded-lg border shadow hover:shadow-lg transition-all">
-                                                <div className="flex items-center gap-4 mb-4">
-                                                    <Avatar className="h-16 w-16 border-2 border-primary">
-                                                        <AvatarImage src={tech.profileImage} alt={tech.name} />
-                                                        <AvatarFallback className="bg-primary text-primary-foreground font-bold">
-                                                            {tech.name.split(' ').map(n => n[0]).join('')}
-                                                        </AvatarFallback>
+                                            <div key={tech._id} className="p-4 border rounded-lg hover:shadow-md transition-all">
+                                                <div className="flex items-center gap-3 mb-3">
+                                                    <Avatar>
+                                                        <AvatarImage src={tech.profileImage} />
+                                                        <AvatarFallback>{tech.name[0]}</AvatarFallback>
                                                     </Avatar>
                                                     <div>
-                                                        <h3 className="font-bold">{tech.name}</h3>
-                                                        <p className="text-sm text-muted-foreground">{tech.specialization}</p>
+                                                        <h4 className="font-semibold">{tech.name}</h4>
+                                                        <div className="flex items-center text-sm text-yellow-500">
+                                                            <Star className="h-3 w-3 fill-current mr-1" />
+                                                            {tech.rating} ({tech.reviewCount})
+                                                        </div>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center justify-between text-sm">
-                                                    <div className="flex items-center gap-1">
-                                                        <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-                                                        <span className="font-semibold">{tech.rating}</span>
-                                                    </div>
-                                                    <span className="text-muted-foreground">{tech.completedJobs} jobs</span>
-                                                </div>
-                                                <Button className="w-full mt-4">
-                                                    Book Now
-                                                </Button>
+                                                <Button className="w-full" variant="secondary">Book Again</Button>
                                             </div>
                                         ))}
                                     </div>
@@ -344,22 +390,26 @@ function CustomerDashboard() {
                     </TabsContent>
 
                     {/* Activity Tab */}
-                    <TabsContent value="activity" className="space-y-4">
-                        <Card className="shadow-lg">
+                    <TabsContent value="activity">
+                        <Card>
                             <CardHeader>
-                                <CardTitle className="text-xl">Activity History</CardTitle>
-                                <CardDescription>All your recent actions</CardDescription>
+                                <CardTitle>Account Activity</CardTitle>
+                                <CardDescription>Recent actions and notifications</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <div className="space-y-3">
-                                    {recentBookings.map(booking => (
-                                        <div key={booking._id} className="flex items-start gap-4 p-4 bg-muted rounded-lg hover:bg-accent transition-all">
-                                            <div className="w-3 h-3 bg-primary rounded-full mt-1.5"></div>
-                                            <div className="flex-1">
-                                                <p className="font-semibold">Booking {booking.status}</p>
-                                                <p className="text-sm text-muted-foreground">{booking.device?.brand} {booking.device?.model} - {booking.issue?.description}</p>
+                                <div className="space-y-4">
+                                    {recentBookings.slice(0, 10).map((action, i) => (
+                                        <div key={i} className="flex gap-4 pb-4 border-b last:border-0 last:pb-0">
+                                            <div className="mt-1">
+                                                <div className="h-2 w-2 rounded-full bg-primary" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-medium">Booking Status Update</p>
+                                                <p className="text-sm text-muted-foreground">
+                                                    Your booking for {action.device?.brand} {action.device?.model} is now {action.status}
+                                                </p>
                                                 <p className="text-xs text-muted-foreground mt-1">
-                                                    {new Date(booking.createdAt).toLocaleString()}
+                                                    {formatDistanceToNow(new Date(action.updatedAt), { addSuffix: true })}
                                                 </p>
                                             </div>
                                         </div>

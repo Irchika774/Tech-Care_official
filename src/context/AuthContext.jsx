@@ -1,51 +1,73 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { supabase, signIn, signUp, signOut, getProfile, getCustomerProfile, getTechnicianProfile } from '../lib/supabase';
 
 const AuthContext = createContext();
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
+    const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
-    // Check if user is logged in on mount
-    useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            // Verify token and get user data
-            axios.get(`${API_URL}/api/auth/me`, {
-                headers: { Authorization: `Bearer ${token}` }
-            })
-                .then(response => {
-                    setUser(response.data);
-                })
-                .catch(() => {
-                    localStorage.removeItem('token');
-                    setUser(null);
-                })
-                .finally(() => {
-                    setLoading(false);
-                });
-        } else {
-            setLoading(false);
+    const loadUserProfile = async (authUser) => {
+        try {
+            const profileData = await getProfile(authUser.id);
+            setProfile(profileData);
+
+            let extendedProfile = null;
+            if (profileData.role === 'technician') {
+                extendedProfile = await getTechnicianProfile(authUser.id);
+            } else if (profileData.role === 'user' || profileData.role === 'customer') {
+                extendedProfile = await getCustomerProfile(authUser.id);
+            }
+
+            setUser({
+                ...authUser,
+                ...profileData,
+                extendedProfile,
+                _id: authUser.id
+            });
+        } catch (error) {
+            console.error('Error loading profile:', error);
+            setUser({
+                ...authUser,
+                _id: authUser.id,
+                role: authUser.user_metadata?.role || 'user',
+                name: authUser.user_metadata?.name || authUser.email
+            });
         }
+    };
+
+    useEffect(() => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session?.user) {
+                loadUserProfile(session.user);
+            }
+            setLoading(false);
+        });
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (event === 'SIGNED_IN' && session?.user) {
+                await loadUserProfile(session.user);
+            } else if (event === 'SIGNED_OUT') {
+                setUser(null);
+                setProfile(null);
+            }
+        });
+
+        return () => subscription.unsubscribe();
     }, []);
 
     const login = async (email, password) => {
         try {
-            const response = await axios.post(`${API_URL}/api/auth/login`, { email, password });
-            const { token, user: userData } = response.data;
+            const { user: authUser } = await signIn(email, password);
+            await loadUserProfile(authUser);
 
-            localStorage.setItem('token', token);
-            setUser(userData);
-
-            // Navigate based on role
-            if (userData.role === 'admin') {
+            const profileData = await getProfile(authUser.id);
+            if (profileData.role === 'admin') {
                 navigate('/admin');
-            } else if (userData.role === 'technician') {
+            } else if (profileData.role === 'technician') {
                 navigate('/technician-dashboard');
             } else {
                 navigate('/customer-dashboard');
@@ -55,44 +77,61 @@ export const AuthProvider = ({ children }) => {
         } catch (error) {
             return {
                 success: false,
-                error: error.response?.data?.error || 'Login failed. Please try again.'
+                error: error.message || 'Login failed. Please try again.'
             };
         }
     };
 
     const register = async (name, email, password, role = 'user') => {
         try {
-            const response = await axios.post(`${API_URL}/api/auth/register`, {
-                name,
-                email,
-                password,
-                role
-            });
-            const { token, user: userData } = response.data;
-
-            localStorage.setItem('token', token);
-            setUser(userData);
-
-            // Navigate to home after registration
-            navigate('/');
-
-            return { success: true };
+            await signUp(email, password, name, role);
+            navigate('/login');
+            return { success: true, message: 'Registration successful! Please login with your credentials.' };
         } catch (error) {
             return {
                 success: false,
-                error: error.response?.data?.error || 'Registration failed. Please try again.'
+                error: error.message || 'Registration failed. Please try again.'
             };
         }
     };
 
-    const logout = () => {
-        localStorage.removeItem('token');
-        setUser(null);
-        navigate('/');
+    const logout = async () => {
+        try {
+            await signOut();
+            setUser(null);
+            setProfile(null);
+            navigate('/');
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
     };
 
+    const hasRole = (requiredRole) => {
+        if (!user) return false;
+        if (Array.isArray(requiredRole)) {
+            return requiredRole.includes(user.role);
+        }
+        return user.role === requiredRole;
+    };
+
+    const isAdmin = () => hasRole('admin');
+    const isTechnician = () => hasRole('technician');
+    const isCustomer = () => hasRole(['user', 'customer']);
+
     return (
-        <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+        <AuthContext.Provider value={{ 
+            user, 
+            profile,
+            login, 
+            register, 
+            logout, 
+            loading,
+            hasRole,
+            isAdmin,
+            isTechnician,
+            isCustomer,
+            supabase
+        }}>
             {!loading && children}
         </AuthContext.Provider>
     );

@@ -1,40 +1,42 @@
 import express from 'express';
-import Notification from '../models/Notification.js';
+import { supabaseAdmin } from '../lib/supabase.js';
 
 const router = express.Router();
 
-// GET /api/notifications - Get user notifications
 router.get('/', async (req, res) => {
     try {
         const { userId, role, limit = 20, skip = 0, unreadOnly = false } = req.query;
-
-        if (!userId || !role) {
-            return res.status(400).json({ error: 'userId and role are required' });
+        
+        if (!userId) {
+            return res.json({ notifications: [], unreadCount: 0, total: 0, hasMore: false });
         }
-
-        const query = { recipient: userId, recipientRole: role };
+        
+        let query = supabaseAdmin
+            .from('notifications')
+            .select('*', { count: 'exact' })
+            .eq('user_id', userId);
+        
         if (unreadOnly === 'true') {
-            query.isRead = false;
+            query = query.eq('read', false);
         }
-
-        const notifications = await Notification.find(query)
-            .sort({ createdAt: -1 })
-            .limit(parseInt(limit))
-            .skip(parseInt(skip));
-
-        const unreadCount = await Notification.countDocuments({
-            recipient: userId,
-            recipientRole: role,
-            isRead: false
-        });
-
-        const total = await Notification.countDocuments(query);
-
+        
+        const { data: notifications, count, error } = await query
+            .order('created_at', { ascending: false })
+            .range(parseInt(skip), parseInt(skip) + parseInt(limit) - 1);
+        
+        if (error) throw error;
+        
+        const { count: unreadCount } = await supabaseAdmin
+            .from('notifications')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', userId)
+            .eq('read', false);
+        
         res.json({
-            notifications,
-            unreadCount,
-            total,
-            hasMore: total > parseInt(skip) + parseInt(limit)
+            notifications: notifications || [],
+            unreadCount: unreadCount || 0,
+            total: count || 0,
+            hasMore: (count || 0) > parseInt(skip) + parseInt(limit)
         });
     } catch (error) {
         console.error('Notifications fetch error:', error);
@@ -42,16 +44,16 @@ router.get('/', async (req, res) => {
     }
 });
 
-// PATCH /api/notifications/:id/read - Mark notification as read
 router.patch('/:id/read', async (req, res) => {
     try {
-        const notification = await Notification.findById(req.params.id);
-
-        if (!notification) {
-            return res.status(404).json({ error: 'Notification not found' });
-        }
-
-        await notification.markAsRead();
+        const { data: notification, error } = await supabaseAdmin
+            .from('notifications')
+            .update({ read: true })
+            .eq('id', req.params.id)
+            .select()
+            .single();
+        
+        if (error) throw error;
         res.json({ message: 'Notification marked as read', notification });
     } catch (error) {
         console.error('Notification update error:', error);
@@ -59,20 +61,21 @@ router.patch('/:id/read', async (req, res) => {
     }
 });
 
-// PATCH /api/notifications/read-all - Mark all as read
 router.patch('/read-all', async (req, res) => {
     try {
-        const { userId, role } = req.body;
-
-        if (!userId || !role) {
-            return res.status(400).json({ error: 'userId and role are required' });
+        const { userId } = req.body;
+        
+        if (!userId) {
+            return res.status(400).json({ error: 'userId is required' });
         }
-
-        await Notification.updateMany(
-            { recipient: userId, recipientRole: role, isRead: false },
-            { $set: { isRead: true, readAt: new Date() } }
-        );
-
+        
+        const { error } = await supabaseAdmin
+            .from('notifications')
+            .update({ read: true })
+            .eq('user_id', userId)
+            .eq('read', false);
+        
+        if (error) throw error;
         res.json({ message: 'All notifications marked as read' });
     } catch (error) {
         console.error('Mark all read error:', error);
@@ -80,15 +83,14 @@ router.patch('/read-all', async (req, res) => {
     }
 });
 
-// DELETE /api/notifications/:id - Delete notification
 router.delete('/:id', async (req, res) => {
     try {
-        const notification = await Notification.findByIdAndDelete(req.params.id);
-
-        if (!notification) {
-            return res.status(404).json({ error: 'Notification not found' });
-        }
-
+        const { error } = await supabaseAdmin
+            .from('notifications')
+            .delete()
+            .eq('id', req.params.id);
+        
+        if (error) throw error;
         res.json({ message: 'Notification deleted' });
     } catch (error) {
         console.error('Notification deletion error:', error);
@@ -96,11 +98,21 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
-// Helper function to create notification (can be called from other routes)
 export const createNotification = async (data) => {
     try {
-        const notification = new Notification(data);
-        await notification.save();
+        const { data: notification, error } = await supabaseAdmin
+            .from('notifications')
+            .insert([{
+                user_id: data.userId || data.recipient,
+                title: data.title,
+                message: data.message,
+                type: data.type,
+                data: data.data || {}
+            }])
+            .select()
+            .single();
+        
+        if (error) throw error;
         return notification;
     } catch (error) {
         console.error('Create notification error:', error);

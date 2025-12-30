@@ -1,9 +1,8 @@
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
-import mongoSanitize from 'express-mongo-sanitize';
 
-// Rate limiting middleware
-export const createRateLimiter = (windowMs = 15 * 60 * 1000, max = 100) => {
+// Rate limiting middleware with localhost bypass for testing
+export const createRateLimiter = (windowMs = 15 * 60 * 1000, max = 100, options = {}) => {
     return rateLimit({
         windowMs, // 15 minutes by default
         max, // limit each IP to max requests per windowMs
@@ -13,6 +12,23 @@ export const createRateLimiter = (windowMs = 15 * 60 * 1000, max = 100) => {
         },
         standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
         legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+        skip: (req) => {
+            // Skip rate limiting for localhost (for testing)
+            const ip = req.ip || req.connection?.remoteAddress || req.socket?.remoteAddress;
+            const isLocalhost = ip === '127.0.0.1' ||
+                ip === '::1' ||
+                ip === '::ffff:127.0.0.1' ||
+                ip?.includes('127.0.0.1') ||
+                ip === 'localhost';
+
+            if (isLocalhost && process.env.NODE_ENV === 'development') {
+                // Silently skip for localhost in development
+                return true;
+            }
+
+            // Use custom skip function if provided
+            return options.skip ? options.skip(req) : false;
+        }
     });
 };
 
@@ -43,14 +59,6 @@ export const securityHeaders = helmet({
     noSniff: true,
     xssFilter: true,
     referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
-});
-
-// MongoDB sanitization to prevent NoSQL injection
-export const sanitizeData = mongoSanitize({
-    replaceWith: '_',
-    onSanitize: ({ req, key }) => {
-        console.warn(`Sanitized ${key} in request from ${req.ip}`);
-    },
 });
 
 // Input validation helper

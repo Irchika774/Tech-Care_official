@@ -15,35 +15,82 @@ const TechnicianDashboard = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [data, setData] = useState(null);
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   useEffect(() => {
     const fetchDashboardData = async () => {
+      if (!user) return;
+
       try {
+        setLoading(true);
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:5000/api/technicians/dashboard', {
+        const response = await fetch(`${API_URL}/api/technicians/dashboard`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        if (response.ok) {
-          const result = await response.json();
-          setData(result);
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch dashboard data: ${response.statusText}`);
         }
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
+
+        const result = await response.json();
+        setData(result);
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err);
+        setError(err.message);
       } finally {
         setLoading(false);
       }
     };
 
-    if (user) {
-      fetchDashboardData();
-    }
+    fetchDashboardData();
+
+    // Refresh data every 30 seconds for real-time updates
+    const interval = setInterval(fetchDashboardData, 30000);
+    return () => clearInterval(interval);
   }, [user]);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (error) {
+    const isAuthError = error.includes('404') || error.includes('Not Found') ||
+      error.includes('401') || error.includes('403') ||
+      error.includes('Forbidden');
+
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen text-center p-4">
+        <div className="bg-destructive/10 p-4 rounded-full mb-4">
+          <TrendingUp className="h-12 w-12 text-destructive" />
+        </div>
+        <h2 className="text-2xl font-bold mb-2">
+          {isAuthError ? 'Session Update Required' : 'Dashboard Error'}
+        </h2>
+        <p className="text-muted-foreground mb-4">
+          {isAuthError
+            ? 'Please login again to update your account permissions.'
+            : error}
+        </p>
+        <div className="flex gap-4 justify-center">
+          <Button variant="outline" onClick={() => window.location.reload()}>
+            Retry
+          </Button>
+          {isAuthError && (
+            <Button onClick={() => {
+              localStorage.removeItem('token');
+              localStorage.removeItem('user');
+              window.location.href = '/login';
+            }}>
+              Login Again
+            </Button>
+          )}
+        </div>
       </div>
     );
   }
@@ -204,12 +251,24 @@ const TechnicianDashboard = () => {
                     activeJobs.map(job => (
                       <div key={job._id} className="flex items-center gap-3 p-3 bg-muted rounded-lg">
                         <CheckCircle className="h-5 w-5 text-green-500" />
-                        <div className="flex-1">
-                          <div className="font-medium">{job.device?.brand} {job.device?.model}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {job.customer?.name}
+                          <div className="flex-1">
+                            <div className="font-medium">{job.device?.brand} {job.device?.model}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {job.customer?.name}
+                            </div>
+                            <div className="mt-2">
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => navigate(`/chat/${job._id || job.id}`)}
+                                className="h-7 text-xs"
+                              >
+                                <User className="mr-1 h-3 w-3" />
+                                Chat
+                              </Button>
+                            </div>
                           </div>
-                        </div>
+
                         <Badge variant={getStatusBadgeVariant(job.status)}>{job.status}</Badge>
                       </div>
                     ))

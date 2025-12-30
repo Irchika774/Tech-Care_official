@@ -1,6 +1,8 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import Customer from '../models/Customer.js';
+import Technician from '../models/Technician.js';
 import auth from '../middleware/auth.js';
 
 const router = express.Router();
@@ -13,13 +15,75 @@ router.post('/register', async (req, res) => {
         let user = await User.findOne({ email });
         if (user) return res.status(400).json({ error: 'User already exists' });
 
+        // Create User
         user = new User({ name, email, password, role });
         await user.save();
 
-        const token = jwt.sign({ _id: user._id, role: user.role }, process.env.JWT_SECRET || 'your_jwt_secret', { expiresIn: '1d' });
+        let profileId = null;
 
-        res.status(201).json({ token, user: { _id: user._id, name: user.name, email: user.email, role: user.role } });
+        try {
+            // Create specific profile based on role
+            if (role === 'technician') {
+                const technician = new Technician({
+                    userId: user._id,
+                    name: user.name,
+                    email: user.email,
+                    phone: 'Not provided', // Required field
+                    location: {
+                        type: 'Point',
+                        coordinates: [0, 0]
+                    }
+                    // Initialize other required fields if any
+                });
+                await technician.save();
+                profileId = technician._id;
+            } else {
+                // Default to customer for 'user' or 'customer' role
+                const customer = new Customer({
+                    userId: user._id,
+                    name: user.name,
+                    email: user.email,
+                    location: {
+                        type: 'Point',
+                        coordinates: [0, 0]
+                    }
+                });
+                await customer.save();
+                profileId = customer._id;
+            }
+        } catch (profileError) {
+            // Rollback user creation if profile creation fails
+            await User.findByIdAndDelete(user._id);
+            throw new Error(`Failed to create user profile: ${profileError.message}`);
+        }
+
+        // Generate Token
+        const payload = {
+            _id: user._id,
+            role: user.role,
+            userId: user._id // Redundant but useful
+        };
+
+        if (role === 'technician') {
+            payload.technicianId = profileId;
+        } else {
+            payload.customerId = profileId;
+        }
+
+        const token = jwt.sign(payload, process.env.JWT_SECRET || 'your_jwt_secret', { expiresIn: '1d' });
+
+        res.status(201).json({
+            token,
+            user: {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                profileId // Return profile ID for frontend convenience
+            }
+        });
     } catch (error) {
+        console.error('Registration error:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -36,7 +100,8 @@ router.post('/login', async (req, res) => {
                 name: 'Demo User',
                 email: 'demo@techcare.com',
                 password: 'demo123',
-                role: 'user'
+                role: 'user',
+                customerId: 'demo-customer-001'
             },
             'admin@techcare.com': {
                 _id: 'demo-admin-001',
@@ -50,14 +115,16 @@ router.post('/login', async (req, res) => {
                 name: 'Customer User',
                 email: 'customer@techcare.com',
                 password: 'customer123',
-                role: 'user'
+                role: 'user',
+                customerId: 'demo-customer-001'
             },
             'tech@techcare.com': {
                 _id: 'demo-tech-001',
                 name: 'Technician User',
                 email: 'tech@techcare.com',
                 password: 'tech123',
-                role: 'technician'
+                role: 'technician',
+                technicianId: 'demo-tech-001'
             }
         };
 
@@ -65,8 +132,17 @@ router.post('/login', async (req, res) => {
         if (demoAccounts[email]) {
             const demoUser = demoAccounts[email];
             if (password === demoUser.password) {
+                const payload = {
+                    _id: demoUser._id,
+                    role: demoUser.role,
+                    userId: demoUser._id
+                };
+
+                if (demoUser.customerId) payload.customerId = demoUser.customerId;
+                if (demoUser.technicianId) payload.technicianId = demoUser.technicianId;
+
                 const token = jwt.sign(
-                    { _id: demoUser._id, role: demoUser.role },
+                    payload,
                     process.env.JWT_SECRET || 'your_jwt_secret',
                     { expiresIn: '1d' }
                 );
@@ -83,17 +159,79 @@ router.post('/login', async (req, res) => {
             }
         }
 
-        // Try database authentication if MongoDB is connected
+        // Database Authentication
         const user = await User.findOne({ email });
         if (!user) return res.status(400).json({ error: 'Invalid email or password' });
 
         const isMatch = await user.comparePassword(password);
         if (!isMatch) return res.status(400).json({ error: 'Invalid email or password' });
 
-        const token = jwt.sign({ _id: user._id, role: user.role }, process.env.JWT_SECRET || 'your_jwt_secret', { expiresIn: '1d' });
+        // Find associated profile
+        let profileId = null;
+        if (user.role === 'technician') {
+            const tech = await Technician.findOne({ userId: user._id });
+            if (tech) {
+                profileId = tech._id;
+            } else {
+                // Auto-create if missing (migration/fallback)
+                const newTech = new Technician({
+                    userId: user._id,
+                    name: user.name,
+                    email: user.email,
+                    phone: 'Not provided',
+                    location: {
+                        type: 'Point',
+                        coordinates: [0, 0]
+                    }
+                });
+                await newTech.save();
+                profileId = newTech._id;
+            }
+        } else if (user.role === 'user' || user.role === 'customer') {
+            const cust = await Customer.findOne({ userId: user._id });
+            if (cust) {
+                profileId = cust._id;
+            } else {
+                // Auto-create if missing (migration/fallback)
+                const newCust = new Customer({
+                    userId: user._id,
+                    name: user.name,
+                    email: user.email,
+                    location: {
+                        type: 'Point',
+                        coordinates: [0, 0]
+                    }
+                });
+                await newCust.save();
+                profileId = newCust._id;
+            }
+        }
 
-        res.status(200).json({ token, user: { _id: user._id, name: user.name, email: user.email, role: user.role } });
+        const payload = {
+            _id: user._id,
+            role: user.role,
+            userId: user._id
+        };
+
+        if (user.role === 'technician') {
+            payload.technicianId = profileId;
+        } else if (user.role === 'user' || user.role === 'customer') {
+            payload.customerId = profileId;
+        }
+
+        const token = jwt.sign(payload, process.env.JWT_SECRET || 'your_jwt_secret', { expiresIn: '1d' });
+
+        res.status(200).json({
+            token,
+            user: {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role
+            }
+        });
     } catch (error) {
+        console.error('Login error:', error);
         res.status(500).json({ error: error.message });
     }
 });

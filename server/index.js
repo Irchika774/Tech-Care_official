@@ -1,21 +1,26 @@
 import express from 'express';
-import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
+
+dotenv.config();
+
+import { validateEnv } from './lib/validateEnv.js';
+validateEnv();
+
 import apiRoutes from './routes/index.js';
 import paymentRoutes from './routes/payment.js';
 import authRoutes from './routes/auth.js';
+import supabaseAuthRoutes from './routes/supabaseAuth.js';
 import adminRoutes from './routes/admin.js';
 import customerRoutes from './routes/customers.js';
 import technicianRoutes from './routes/technicians.js';
 import bookingRoutes from './routes/bookings.js';
 import notificationRoutes from './routes/notifications.js';
 import searchRoutes from './routes/search.js';
+import { supabaseAdmin } from './lib/supabase.js';
 
-// Wave 4: Security middleware
 import {
     securityHeaders,
-    sanitizeData,
     apiLimiter,
     authLimiter,
     corsOptions,
@@ -23,58 +28,31 @@ import {
     securityErrorHandler
 } from './middleware/security.js';
 
-dotenv.config();
-
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Wave 4: Apply security middleware
-app.use(securityHeaders);  // Helmet security headers
-app.use(cors(corsOptions)); // Enhanced CORS
-app.use(requestLogger); // Request logging
+app.use(securityHeaders);
+app.use(cors(corsOptions));
+app.use(requestLogger);
 app.use(express.json());
-app.use(sanitizeData); // MongoDB injection prevention
 
-// MongoDB Connection with better error handling
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/techcare';
-const connectDB = async () => {
-    try {
-        await mongoose.connect(MONGO_URI, {
-            serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
-        });
-        console.log('✅ MongoDB Connected Successfully');
-    } catch (err) {
-        console.log('⚠️  MongoDB Connection Failed:', err.message);
-        console.log('📝 Note: App will continue running without database. Install MongoDB or use MongoDB Atlas for full functionality.');
-    }
-};
-
-// Connect to database
-connectDB();
-
-// Handle MongoDB connection errors after initial connection
-mongoose.connection.on('error', err => {
-    console.log('⚠️  MongoDB Error:', err.message);
-});
-
-mongoose.connection.on('disconnected', () => {
-    console.log('⚠️  MongoDB Disconnected');
-});
-
-// API Routes
-app.use('/api', apiLimiter, apiRoutes); // Rate limited
-app.use('/api/payment', apiLimiter, paymentRoutes);
-app.use('/api/auth', authLimiter, authRoutes); // Strict rate limit for auth
-app.use('/api/admin', apiLimiter, adminRoutes);
-app.use('/api/customers', apiLimiter, customerRoutes);
 app.use('/api/technicians', apiLimiter, technicianRoutes);
+app.use('/api', apiLimiter, apiRoutes);
+app.use('/api/payment', apiLimiter, paymentRoutes);
 app.use('/api/bookings', apiLimiter, bookingRoutes);
 app.use('/api/notifications', apiLimiter, notificationRoutes);
 app.use('/api/search', apiLimiter, searchRoutes);
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-    const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+app.get('/api/health', async (req, res) => {
+    let dbStatus = 'disconnected';
+    try {
+        if (supabaseAdmin) {
+            const { data, error } = await supabaseAdmin.from('profiles').select('count').limit(1);
+            dbStatus = error ? 'error' : 'connected';
+        }
+    } catch (e) {
+        dbStatus = 'error';
+    }
 
     res.json({
         status: 'running',
@@ -85,7 +63,6 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-// Root endpoint
 app.get('/', (req, res) => {
     res.json({
         message: 'TechCare API is running',
@@ -98,7 +75,6 @@ app.get('/', (req, res) => {
     });
 });
 
-// 404 handler
 app.use((req, res) => {
     res.status(404).json({
         error: 'Route not found',
@@ -106,10 +82,8 @@ app.use((req, res) => {
     });
 });
 
-// Wave 4: Security error handler
 app.use(securityErrorHandler);
 
-// Error handler
 app.use((err, req, res, next) => {
     console.error('Server Error:', err.message);
     res.status(500).json({
@@ -118,16 +92,13 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Start Server
 app.listen(PORT, () => {
     console.log(`🚀 TechCare Server running on port ${PORT}`);
     console.log(`📍 API: http://localhost:${PORT}`);
     console.log(`🏥 Health: http://localhost:${PORT}/api/health`);
 });
 
-// Graceful shutdown
-process.on('SIGINT', async () => {
+process.on('SIGINT', () => {
     console.log('\n🛑 Shutting down gracefully...');
-    await mongoose.connection.close();
     process.exit(0);
 });

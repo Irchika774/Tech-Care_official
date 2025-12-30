@@ -1,82 +1,123 @@
 import express from 'express';
-import Booking from '../models/Booking.js';
-import Bid from '../models/Bid.js';
-import Notification from '../models/Notification.js';
+import { supabaseAdmin } from '../lib/supabase.js';
 
 const router = express.Router();
 
-// GET /api/bookings/:id - Get booking details
+router.post('/', async (req, res) => {
+    try {
+        const {
+            customer_id,
+            technician_id,
+            device_type,
+            device_brand,
+            device_model,
+            issue_description,
+            scheduled_date,
+            estimated_cost
+        } = req.body;
+
+        const { data: booking, error } = await supabaseAdmin
+            .from('bookings')
+            .insert([{
+                customer_id,
+                technician_id: technician_id === 'pending' ? null : technician_id,
+                device_type,
+                device_brand,
+                device_model,
+                issue_description,
+                scheduled_date,
+                estimated_cost,
+                status: 'pending',
+                payment_status: 'pending'
+            }])
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        res.status(201).json(booking);
+    } catch (error) {
+        console.error('Booking creation error:', error);
+        res.status(500).json({ error: 'Failed to create booking' });
+    }
+});
+
 router.get('/:id', async (req, res) => {
     try {
-        const booking = await Booking.findById(req.params.id)
-            .populate('customer')
-            .populate('technician')
-            .populate('selectedBid');
-
-        if (!booking) {
-            return res.status(404).json({ error: 'Booking not found' });
-        }
-
-        // Get all bids for this booking if it's in bidding status
-        let bids = [];
-        if (booking.hasBids) {
-            bids = await Bid.find({ booking: booking._id })
-                .populate('technician')
-                .sort({ amount: 1 });
-        }
-
-        res.json({ booking, bids });
+        const { data: booking, error } = await supabaseAdmin
+            .from('bookings')
+            .select(`
+                *,
+                customer:customers(id, name, email, phone),
+                technician:technicians(id, name, email, phone, rating)
+            `)
+            .eq('id', req.params.id)
+            .single();
+        
+        if (error) throw error;
+        if (!booking) return res.status(404).json({ error: 'Booking not found' });
+        
+        const { data: bids } = await supabaseAdmin
+            .from('bids')
+            .select('*, technician:technicians!bids_technician_id_fkey(id, name, rating, review_count)')
+            .eq('booking_id', req.params.id)
+            .order('amount', { ascending: true });
+        
+        res.json({ booking, bids: bids || [] });
     } catch (error) {
         console.error('Booking fetch error:', error);
         res.status(500).json({ error: 'Failed to fetch booking' });
     }
 });
 
-// POST /api/bookings/:id/select-bid - Select a bid (customer action)
 router.post('/:id/select-bid', async (req, res) => {
     try {
         const { bidId } = req.body;
         const bookingId = req.params.id;
-
-        const booking = await Booking.findById(bookingId);
-        if (!booking) {
-            return res.status(404).json({ error: 'Booking not found' });
-        }
-
-        const bid = await Bid.findById(bidId);
-        if (!bid || bid.booking.toString() !== bookingId) {
+        
+        const { data: bid, error: bidError } = await supabaseAdmin
+            .from('bids')
+            .select('*')
+            .eq('id', bidId)
+            .single();
+        
+        if (bidError || !bid) {
             return res.status(404).json({ error: 'Bid not found' });
         }
-
-        // Update booking
-        booking.selectedBid = bidId;
-        booking.technician = bid.technician;
-        booking.estimatedCost = bid.amount;
-        booking.status = 'bid_accepted';
-        await booking.save();
-
-        // Update bid status
-        bid.status = 'accepted';
-        await bid.save();
-
-        // Reject other bids
-        await Bid.updateMany(
-            { booking: bookingId, _id: { $ne: bidId } },
-            { status: 'rejected' }
-        );
-
-        // Notify winning technician
-        await Notification.create({
-            recipient: bid.technician,
-            recipientRole: 'technician',
-            type: 'bid_accepted',
+        
+        const { data: booking, error } = await supabaseAdmin
+            .from('bookings')
+            .update({
+                technician_id: bid.technician_id,
+                price: bid.amount,
+                status: 'bid_accepted',
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', bookingId)
+            .select()
+            .single();
+        
+        if (error) throw error;
+        
+        await supabaseAdmin
+            .from('bids')
+            .update({ status: 'accepted' })
+            .eq('id', bidId);
+        
+        await supabaseAdmin
+            .from('bids')
+            .update({ status: 'rejected' })
+            .eq('booking_id', bookingId)
+            .neq('id', bidId);
+        
+        await supabaseAdmin.from('notifications').insert([{
+            user_id: bid.technician_id,
             title: 'Bid Accepted!',
             message: 'Your bid has been accepted by the customer.',
-            booking: bookingId,
-            bid: bidId,
-            priority: 'high'
-        });
-
+            type: 'bid_accepted',
+            data: { booking_id: bookingId, bid_id: bidId }
+        }]);
+        
         res.json({ booking, message: 'Bid selected successfully' });
     } catch (error) {
         console.error('Select bid error:', error);
@@ -84,58 +125,79 @@ router.post('/:id/select-bid', async (req, res) => {
     }
 });
 
-// POST /api/bookings/:id/review - Submit review for booking
 router.post('/:id/review', async (req, res) => {
     try {
         const bookingId = req.params.id;
         const { rating, comment } = req.body;
-
-        const booking = await Booking.findById(bookingId);
+        
+        const { data: booking } = await supabaseAdmin
+            .from('bookings')
+            .select('*')
+            .eq('id', bookingId)
+            .single();
+        
         if (!booking) {
             return res.status(404).json({ error: 'Booking not found' });
         }
-
+        
         if (booking.status !== 'completed') {
             return res.status(400).json({ error: 'Can only review completed bookings' });
         }
-
-        // Create review (assuming Review model exists or will be created)
-        const Review = (await import('../models/Review.js')).default;
-        const review = new Review({
-            booking: bookingId,
-            customer: booking.customer,
-            technician: booking.technician,
-            rating,
-            comment
-        });
-        await review.save();
-
-        // Update booking
-        booking.hasReview = true;
-        booking.review = review._id;
-        await booking.save();
-
-        // Update technician rating
-        const Technician = (await import('../models/Technician.js')).default;
-        const technician = await Technician.findById(booking.technician);
-
-        if (technician) {
-            technician.reviewCount += 1;
-            technician.ratingBreakdown[rating] = (technician.ratingBreakdown[rating] || 0) + 1;
-            technician.rating = technician.calculateRating();
-            await technician.save();
-
-            // Notify technician
-            await Notification.create({
-                recipient: booking.technician,
-                recipientRole: 'technician',
-                type: 'review_received',
-                title: 'New Review',
-                message: `You received a ${rating}-star review.`,
-                booking: bookingId
-            });
+        
+        const { data: review, error } = await supabaseAdmin
+            .from('reviews')
+            .insert([{
+                booking_id: bookingId,
+                customer_id: booking.customer_id,
+                technician_id: booking.technician_id,
+                rating,
+                comment
+            }])
+            .select()
+            .single();
+        
+        if (error) throw error;
+        
+        if (booking.technician_id) {
+            const { data: technician } = await supabaseAdmin
+                .from('technicians')
+                .select('review_count, rating, rating_5, rating_4, rating_3, rating_2, rating_1')
+                .eq('id', booking.technician_id)
+                .single();
+            
+            if (technician) {
+                const ratingKey = `rating_${rating}`;
+                const newReviewCount = (technician.review_count || 0) + 1;
+                const newRatingCount = (technician[ratingKey] || 0) + 1;
+                
+                const total = 
+                    ((technician.rating_5 || 0) + (rating === 5 ? 1 : 0)) * 5 +
+                    ((technician.rating_4 || 0) + (rating === 4 ? 1 : 0)) * 4 +
+                    ((technician.rating_3 || 0) + (rating === 3 ? 1 : 0)) * 3 +
+                    ((technician.rating_2 || 0) + (rating === 2 ? 1 : 0)) * 2 +
+                    ((technician.rating_1 || 0) + (rating === 1 ? 1 : 0)) * 1;
+                
+                const newRating = total / newReviewCount;
+                
+                await supabaseAdmin
+                    .from('technicians')
+                    .update({
+                        review_count: newReviewCount,
+                        rating: newRating.toFixed(1),
+                        [ratingKey]: newRatingCount
+                    })
+                    .eq('id', booking.technician_id);
+                
+                await supabaseAdmin.from('notifications').insert([{
+                    user_id: booking.technician_id,
+                    title: 'New Review',
+                    message: `You received a ${rating}-star review.`,
+                    type: 'review_received',
+                    data: { booking_id: bookingId }
+                }]);
+            }
         }
-
+        
         res.status(201).json({ review, message: 'Review submitted successfully' });
     } catch (error) {
         console.error('Review submission error:', error);

@@ -1,26 +1,49 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const ProtectedRoute = ({ children, allowedRoles = [] }) => {
+function ProtectedRoute({ children, allowedRoles }) {
     const { user, loading } = useAuth();
     const location = useLocation();
 
     if (loading) {
-        // You might want to render a loading spinner here
-        return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            </div>
+        );
     }
 
     if (!user) {
-        // Redirect to login page with the return url
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
-    if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-        // User role not authorized, redirect to home or unauthorized page
-        return <Navigate to="/" replace />;
+    if (allowedRoles && !allowedRoles.includes(user.role)) {
+        if (user.role === 'admin') {
+            return <Navigate to="/admin" replace />;
+        } else if (user.role === 'technician') {
+            return <Navigate to="/technician-dashboard" replace />;
+        } else {
+            return <Navigate to="/customer-dashboard" replace />;
+        }
     }
 
     return children;
-};
+}
+
+export function AdminRoute({ children }) {
+    return <ProtectedRoute allowedRoles={['admin']}>{children}</ProtectedRoute>;
+}
+
+export function TechnicianRoute({ children }) {
+    return <ProtectedRoute allowedRoles={['technician', 'admin']}>{children}</ProtectedRoute>;
+}
+
+export function CustomerRoute({ children }) {
+    return <ProtectedRoute allowedRoles={['user', 'customer', 'admin']}>{children}</ProtectedRoute>;
+}
+
+export function AuthenticatedRoute({ children }) {
+    return <ProtectedRoute>{children}</ProtectedRoute>;
+}
 
 export default ProtectedRoute;
