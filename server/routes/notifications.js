@@ -1,37 +1,57 @@
 import express from 'express';
 import { supabaseAdmin } from '../lib/supabase.js';
+import { supabaseAuth } from '../middleware/supabaseAuth.js';
 
 const router = express.Router();
 
-router.get('/', async (req, res) => {
+router.get('/', supabaseAuth, async (req, res) => {
     try {
-        const { userId, role, limit = 20, skip = 0, unreadOnly = false } = req.query;
-        
-        if (!userId) {
+        const { limit = 20, skip = 0, unreadOnly = false, userId: requestedUserId } = req.query;
+
+        // Determine the target User ID from the token context
+        // We prioritize the specialized profile IDs (technician/customer) if available, 
+        // but often the client knows which ID it wants to query for.
+        // We must verify the client isn't asking for someone else' data.
+
+        let targetUserId = requestedUserId;
+
+        // Validation: Ensure the requestedUserId belongs to the authenticated user
+        const allowedIds = [req.user.id, req.user.customerId, req.user.technicianId].filter(id => id);
+
+        if (targetUserId && !allowedIds.includes(targetUserId)) {
+            return res.status(403).json({ error: 'Access denied. You can only view your own notifications.' });
+        }
+
+        // If no userId provided, default to best guess (Customer or Technician ID, then Auth ID)
+        if (!targetUserId) {
+            targetUserId = req.user.technicianId || req.user.customerId || req.user.id;
+        }
+
+        if (!targetUserId) {
             return res.json({ notifications: [], unreadCount: 0, total: 0, hasMore: false });
         }
-        
+
         let query = supabaseAdmin
             .from('notifications')
             .select('*', { count: 'exact' })
-            .eq('user_id', userId);
-        
+            .eq('user_id', targetUserId);
+
         if (unreadOnly === 'true') {
             query = query.eq('read', false);
         }
-        
+
         const { data: notifications, count, error } = await query
             .order('created_at', { ascending: false })
             .range(parseInt(skip), parseInt(skip) + parseInt(limit) - 1);
-        
+
         if (error) throw error;
-        
+
         const { count: unreadCount } = await supabaseAdmin
             .from('notifications')
             .select('*', { count: 'exact', head: true })
-            .eq('user_id', userId)
+            .eq('user_id', targetUserId)
             .eq('read', false);
-        
+
         res.json({
             notifications: notifications || [],
             unreadCount: unreadCount || 0,
@@ -44,15 +64,28 @@ router.get('/', async (req, res) => {
     }
 });
 
-router.patch('/:id/read', async (req, res) => {
+router.patch('/:id/read', supabaseAuth, async (req, res) => {
     try {
+        const allowedIds = [req.user.id, req.user.customerId, req.user.technicianId].filter(id => id);
+
+        // Security check: verify the notification belongs to one of the user's IDs
+        const { data: notificationCheck } = await supabaseAdmin
+            .from('notifications')
+            .select('user_id')
+            .eq('id', req.params.id)
+            .single();
+
+        if (notificationCheck && !allowedIds.includes(notificationCheck.user_id)) {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+
         const { data: notification, error } = await supabaseAdmin
             .from('notifications')
             .update({ read: true })
             .eq('id', req.params.id)
             .select()
             .single();
-        
+
         if (error) throw error;
         res.json({ message: 'Notification marked as read', notification });
     } catch (error) {
@@ -61,20 +94,30 @@ router.patch('/:id/read', async (req, res) => {
     }
 });
 
-router.patch('/read-all', async (req, res) => {
+router.patch('/read-all', supabaseAuth, async (req, res) => {
     try {
         const { userId } = req.body;
-        
-        if (!userId) {
-            return res.status(400).json({ error: 'userId is required' });
+
+        let targetUserId = userId;
+        const allowedIds = [req.user.id, req.user.customerId, req.user.technicianId].filter(id => id);
+
+        if (targetUserId && !allowedIds.includes(targetUserId)) {
+            return res.status(403).json({ error: 'Access denied.' });
         }
-        
+
+        if (!targetUserId) {
+            // Default to all known IDs for this user
+            // But 'in' query might be safer?
+            // For now, default to the main profile ID
+            targetUserId = req.user.technicianId || req.user.customerId || req.user.id;
+        }
+
         const { error } = await supabaseAdmin
             .from('notifications')
             .update({ read: true })
-            .eq('user_id', userId)
+            .eq('user_id', targetUserId)
             .eq('read', false);
-        
+
         if (error) throw error;
         res.json({ message: 'All notifications marked as read' });
     } catch (error) {
@@ -83,13 +126,26 @@ router.patch('/read-all', async (req, res) => {
     }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', supabaseAuth, async (req, res) => {
     try {
+        const allowedIds = [req.user.id, req.user.customerId, req.user.technicianId].filter(id => id);
+
+        // Security check
+        const { data: notificationCheck } = await supabaseAdmin
+            .from('notifications')
+            .select('user_id')
+            .eq('id', req.params.id)
+            .single();
+
+        if (notificationCheck && !allowedIds.includes(notificationCheck.user_id)) {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+
         const { error } = await supabaseAdmin
             .from('notifications')
             .delete()
             .eq('id', req.params.id);
-        
+
         if (error) throw error;
         res.json({ message: 'Notification deleted' });
     } catch (error) {
@@ -111,7 +167,7 @@ export const createNotification = async (data) => {
             }])
             .select()
             .single();
-        
+
         if (error) throw error;
         return notification;
     } catch (error) {

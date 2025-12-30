@@ -25,6 +25,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from '../hooks/use-toast';
 
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 import CurrencyDisplay from '../components/CurrencyDisplay';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -34,6 +35,11 @@ const Admin = () => {
   const { user, logout } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('dashboard');
+
+  const getAuthHeader = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    return { Authorization: `Bearer ${session?.access_token}` };
+  };
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState('');
   const [editingItem, setEditingItem] = useState(null);
@@ -123,7 +129,7 @@ const Admin = () => {
   const fetchUsers = async () => {
     try {
       const response = await axios.get(`${API_URL}/api/admin/users`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        headers: await getAuthHeader()
       });
       setUsers(response.data);
     } catch (error) {
@@ -142,7 +148,7 @@ const Admin = () => {
   const fetchTechnicians = async () => {
     try {
       const response = await axios.get(`${API_URL}/api/technicians/all`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        headers: await getAuthHeader()
       });
       setTechnicians(response.data);
     } catch (error) {
@@ -161,7 +167,7 @@ const Admin = () => {
   const fetchAppointments = async () => {
     try {
       const response = await axios.get(`${API_URL}/api/appointments`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        headers: await getAuthHeader()
       });
       setAppointments(response.data);
     } catch (error) {
@@ -174,7 +180,7 @@ const Admin = () => {
   const fetchReviews = async () => {
     try {
       const response = await axios.get(`${API_URL}/api/reviews`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        headers: await getAuthHeader()
       });
       setReviews(response.data);
     } catch (error) {
@@ -243,7 +249,7 @@ const Admin = () => {
   const handleUpdateUser = async (userId, data) => {
     try {
       await axios.put(`${API_URL}/api/admin/users/${userId}`, data, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        headers: await getAuthHeader()
       });
       toast({
         title: "Success",
@@ -268,7 +274,7 @@ const Admin = () => {
 
     try {
       await axios.delete(`${API_URL}/api/admin/users/${userId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        headers: await getAuthHeader()
       });
       toast({
         title: "Success",
@@ -291,7 +297,7 @@ const Admin = () => {
 
     try {
       await axios.delete(`${API_URL}/api/admin/users/${techId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        headers: await getAuthHeader()
       });
       toast({
         title: "Success",
@@ -313,7 +319,7 @@ const Admin = () => {
     try {
       await axios.put(`${API_URL}/api/appointments/${appointmentId}`,
         { status: newStatus },
-        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+        { headers: await getAuthHeader() }
       );
       toast({
         title: "Success",
@@ -335,7 +341,7 @@ const Admin = () => {
     try {
       await axios.put(`${API_URL}/api/reviews/${reviewId}`,
         { status: newStatus },
-        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+        { headers: await getAuthHeader() }
       );
       toast({
         title: "Success",

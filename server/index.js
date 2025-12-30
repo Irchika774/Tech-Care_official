@@ -37,6 +37,10 @@ app.use(requestLogger);
 app.use(express.json());
 
 app.use('/api/technicians', apiLimiter, technicianRoutes);
+app.use('/api/customers', apiLimiter, customerRoutes);
+app.use('/api/admin', apiLimiter, adminRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/supabase-auth', authLimiter, supabaseAuthRoutes);
 app.use('/api', apiLimiter, apiRoutes);
 app.use('/api/payment', apiLimiter, paymentRoutes);
 app.use('/api/bookings', apiLimiter, bookingRoutes);

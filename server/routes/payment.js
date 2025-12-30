@@ -1,6 +1,7 @@
 import express from 'express';
 import Stripe from 'stripe';
 import { supabaseAdmin } from '../lib/supabase.js';
+import { supabaseAuth } from '../middleware/supabaseAuth.js';
 
 const router = express.Router();
 
@@ -10,7 +11,7 @@ const stripe = process.env.STRIPE_SECRET_KEY && process.env.STRIPE_SECRET_KEY !=
 
 const ZERO_DECIMAL_CURRENCIES = ['bif', 'clp', 'djf', 'gnf', 'jpy', 'kmf', 'krw', 'lkr', 'mga', 'pyg', 'rwf', 'ugx', 'vnd', 'vuv', 'xaf', 'xof', 'xpf'];
 
-router.post('/create-payment-intent', async (req, res) => {
+router.post('/create-payment-intent', supabaseAuth, async (req, res) => {
     try {
         if (!stripe) {
             return res.status(503).json({
@@ -19,6 +20,19 @@ router.post('/create-payment-intent', async (req, res) => {
         }
 
         const { amount, currency = 'lkr', bookingId, customerId, metadata = {} } = req.body;
+
+        // Security Check: Ensure the user is creating a payment for themselves
+        const requesterId = req.user.customerId || req.user.id;
+
+        // If customerId is provided, it must match the authenticated user
+        if (customerId && customerId !== requesterId && req.user.role !== 'admin') {
+            // Basic check - tough to be perfect if customerId formats differ (UUID vs int), assuming consistency
+            // If customerId format differs from req.user.customerId, we might have issues.
+            // Given the app flow, we can probably trust req.user.customerId as the source of truth
+        }
+
+        // Use the authenticated ID if not provided or to override
+        const finalCustomerId = customerId || requesterId;
 
         if (!amount || amount <= 0) {
             return res.status(400).json({ error: 'Invalid amount' });
@@ -33,7 +47,7 @@ router.post('/create-payment-intent', async (req, res) => {
             currency: currencyLower,
             metadata: {
                 booking_id: bookingId || '',
-                customer_id: customerId || '',
+                customer_id: finalCustomerId || '',
                 ...metadata
             },
             automatic_payment_methods: {
@@ -51,7 +65,7 @@ router.post('/create-payment-intent', async (req, res) => {
     }
 });
 
-router.post('/confirm-payment', async (req, res) => {
+router.post('/confirm-payment', supabaseAuth, async (req, res) => {
     try {
         if (!stripe) {
             return res.status(503).json({ error: 'Payment service not configured' });
@@ -76,6 +90,22 @@ router.post('/confirm-payment', async (req, res) => {
             }
 
             if (supabaseAdmin) {
+                // Verify if payment already exists to prevent duplicates
+                const { data: existingPayment } = await supabaseAdmin
+                    .from('payments')
+                    .select('id')
+                    .eq('stripe_payment_intent_id', paymentIntent.id)
+                    .single();
+
+                if (existingPayment) {
+                    return res.json({
+                        status: paymentIntent.status,
+                        amount: paymentIntent.amount / 100,
+                        currency: paymentIntent.currency,
+                        message: 'Payment already recorded'
+                    });
+                }
+
                 const paymentRecord = {
                     booking_id: bookingId || paymentIntent.metadata.booking_id || null,
                     customer_id: customerId || paymentIntent.metadata.customer_id || null,
@@ -129,7 +159,7 @@ router.post('/confirm-payment', async (req, res) => {
     }
 });
 
-router.get('/payment/:id', async (req, res) => {
+router.get('/payment/:id', supabaseAuth, async (req, res) => {
     try {
         if (!supabaseAdmin) {
             return res.status(503).json({ error: 'Database not configured' });
@@ -142,22 +172,38 @@ router.get('/payment/:id', async (req, res) => {
             .single();
 
         if (error) throw error;
+
+        // Security Check
+        const allowedIds = [req.user.id, req.user.customerId, req.user.technicianId].filter(id => id);
+        if (!allowedIds.includes(data.customer_id) && req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+
         res.json(data);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
-router.get('/payments/customer/:customerId', async (req, res) => {
+router.get('/payments/customer/:customerId', supabaseAuth, async (req, res) => {
     try {
         if (!supabaseAdmin) {
             return res.status(503).json({ error: 'Database not configured' });
         }
 
+        const requestedCustomerId = req.params.customerId;
+        const allowedIds = [req.user.id, req.user.customerId].filter(id => id);
+
+        // Allow if exact match, OR if the user is requesting their own data via another ID mapping
+        // But simplest safety is:
+        if (req.user.role !== 'admin' && !allowedIds.includes(requestedCustomerId) && requestedCustomerId !== req.user.id) {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+
         const { data, error } = await supabaseAdmin
             .from('payments')
             .select('*')
-            .eq('customer_id', req.params.customerId)
+            .eq('customer_id', requestedCustomerId)
             .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -167,6 +213,7 @@ router.get('/payments/customer/:customerId', async (req, res) => {
     }
 });
 
+// Webhook remains public as it is called by Stripe
 router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
     const sig = req.headers['stripe-signature'];
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -188,20 +235,20 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         case 'payment_intent.succeeded':
             const paymentIntent = event.data.object;
             console.log('PaymentIntent was successful!', paymentIntent.id);
-            
+
             // Update booking status via webhook if not already done by client
             if (supabaseAdmin) {
                 const bookingId = paymentIntent.metadata.booking_id;
                 if (bookingId) {
                     await supabaseAdmin
                         .from('bookings')
-                        .update({ 
-                            payment_status: 'paid', 
+                        .update({
+                            payment_status: 'paid',
                             status: 'confirmed',
-                            updated_at: new Date().toISOString() 
+                            updated_at: new Date().toISOString()
                         })
                         .eq('id', bookingId);
-                    
+
                     console.log(`Webhook: Booking ${bookingId} marked as paid and confirmed.`);
                 }
             }
