@@ -14,6 +14,15 @@
 
 ---
 
+### 🌐 Live Demo
+
+| Component | URL |
+|-----------|-----|
+| **🖥️ Frontend** | [https://techcareofficial.netlify.app](https://techcareofficial.netlify.app) |
+| **⚙️ Backend API** | [https://techcare-flax.vercel.app](https://techcare-flax.vercel.app) |
+
+---
+
 </div>
 
 ## 📖 Overview
