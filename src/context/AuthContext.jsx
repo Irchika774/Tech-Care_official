@@ -119,12 +119,12 @@ export const AuthProvider = ({ children }) => {
     const isCustomer = () => hasRole(['user', 'customer']);
 
     return (
-        <AuthContext.Provider value={{ 
-            user, 
+        <AuthContext.Provider value={{
+            user,
             profile,
-            login, 
-            register, 
-            logout, 
+            login,
+            register,
+            logout,
             loading,
             hasRole,
             isAdmin,
@@ -132,7 +132,16 @@ export const AuthProvider = ({ children }) => {
             isCustomer,
             supabase
         }}>
-            {!loading && children}
+            {loading ? (
+                <div className="min-h-screen flex items-center justify-center bg-background">
+                    <div className="text-center">
+                        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                        <p className="mt-4 text-muted-foreground">Loading...</p>
+                    </div>
+                </div>
+            ) : (
+                children
+            )}
         </AuthContext.Provider>
     );
 };

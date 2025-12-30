@@ -9,6 +9,7 @@ import { Calendar } from '../components/ui/calendar';
 import { Badge } from '../components/ui/badge';
 import { format } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 import {
   Smartphone,
   Laptop,
@@ -84,10 +85,9 @@ const Schedule = () => {
     fetchTechs();
   }, []);
 
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!user) {
       navigate('/login', { state: { from: '/schedule' } });
       return;
@@ -95,11 +95,18 @@ const Schedule = () => {
 
     setLoading(true);
     try {
+      // Get the access token from Supabase session
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      if (!token) {
+        throw new Error('No authentication token available');
+      }
+
       const selectedTech = technicianOptions[technician];
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      
+
       const bookingPayload = {
-        customer_id: user.extendedProfile?.id,
         technician_id: technician === 'pending' ? null : technician,
         device_type: deviceType,
         device_brand: deviceBrand || deviceType,
@@ -111,17 +118,17 @@ const Schedule = () => {
 
       const response = await fetch(`${apiUrl}/api/bookings`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(bookingPayload)
       });
 
       if (!response.ok) throw new Error('Failed to create booking');
-      
+
       const bookingData = await response.json();
-      
+
       const enrichedBooking = {
         ...bookingData,
         serviceType: selectedServiceInfo?.label || 'General Repair',
@@ -169,18 +176,18 @@ const Schedule = () => {
           <div className="absolute top-20 left-10 w-72 h-72 bg-white/5 rounded-full blur-3xl" />
           <div className="absolute bottom-20 right-10 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
         </div>
-        
+
         <div className="relative container mx-auto px-4">
           <div className="text-center max-w-3xl mx-auto">
             <Badge className="mb-6 bg-white/10 text-white border-white/30 backdrop-blur-sm px-4 py-2">
               <Sparkles className="w-4 h-4 mr-2" />
               Book Your Repair
             </Badge>
-            
+
             <h1 className="text-4xl md:text-6xl font-bold mb-6 text-white">
               Schedule Your Service
             </h1>
-            
+
             <p className="text-xl text-zinc-400 mb-8">
               Book a certified technician for your device repair in just a few simple steps
             </p>
@@ -209,11 +216,10 @@ const Schedule = () => {
             ].map((s, idx) => (
               <div key={s.num} className="flex items-center flex-1">
                 <div className="flex flex-col items-center">
-                  <div className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all ${
-                    step >= s.num 
-                      ? 'bg-white border-white text-black' 
-                      : 'border-zinc-700 text-zinc-500 bg-zinc-900'
-                  }`}>
+                  <div className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all ${step >= s.num
+                    ? 'bg-white border-white text-black'
+                    : 'border-zinc-700 text-zinc-500 bg-zinc-900'
+                    }`}>
                     {step > s.num ? <CheckCircle2 className="h-6 w-6" /> : s.num}
                   </div>
                   <span className={`text-sm mt-2 ${step >= s.num ? 'text-white font-semibold' : 'text-zinc-500'}`}>
@@ -221,9 +227,8 @@ const Schedule = () => {
                   </span>
                 </div>
                 {idx < 2 && (
-                  <div className={`flex-1 h-1 mx-4 transition-all ${
-                    step > s.num ? 'bg-white' : 'bg-zinc-800'
-                  }`} />
+                  <div className={`flex-1 h-1 mx-4 transition-all ${step > s.num ? 'bg-white' : 'bg-zinc-800'
+                    }`} />
                 )}
               </div>
             ))}
@@ -404,9 +409,9 @@ const Schedule = () => {
                       </Select>
                     </div>
 
-                    <Button 
-                      type="button" 
-                      onClick={() => setStep(2)} 
+                    <Button
+                      type="button"
+                      onClick={() => setStep(2)}
                       className="w-full h-14 text-lg bg-white text-black hover:bg-gray-100 font-semibold rounded-full"
                     >
                       Continue <ArrowRight className="ml-2 h-5 w-5" />
@@ -446,11 +451,10 @@ const Schedule = () => {
                               key={slot}
                               type="button"
                               onClick={() => setTimeSlot(slot)}
-                              className={`px-4 py-4 rounded-xl border-2 font-semibold transition-all ${
-                                timeSlot === slot
-                                  ? 'border-white bg-white/10 text-white'
-                                  : 'border-zinc-700 hover:border-zinc-500 bg-zinc-800 text-zinc-300'
-                              }`}
+                              className={`px-4 py-4 rounded-xl border-2 font-semibold transition-all ${timeSlot === slot
+                                ? 'border-white bg-white/10 text-white'
+                                : 'border-zinc-700 hover:border-zinc-500 bg-zinc-800 text-zinc-300'
+                                }`}
                             >
                               {slot}
                             </button>
@@ -460,17 +464,17 @@ const Schedule = () => {
                     </div>
 
                     <div className="flex gap-4">
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        onClick={() => setStep(1)} 
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setStep(1)}
                         className="flex-1 h-14 text-lg bg-transparent border-2 border-zinc-600 text-white hover:bg-zinc-800 rounded-full"
                       >
                         Back
                       </Button>
-                      <Button 
-                        type="button" 
-                        onClick={() => setStep(3)} 
+                      <Button
+                        type="button"
+                        onClick={() => setStep(3)}
                         className="flex-1 h-14 text-lg bg-white text-black hover:bg-gray-100 font-semibold rounded-full"
                       >
                         Continue <ArrowRight className="ml-2 h-5 w-5" />
@@ -564,16 +568,16 @@ const Schedule = () => {
                     </div>
 
                     <div className="flex gap-4">
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        onClick={() => setStep(2)} 
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setStep(2)}
                         className="flex-1 h-14 text-lg bg-transparent border-2 border-zinc-600 text-white hover:bg-zinc-800 rounded-full"
                       >
                         Back
                       </Button>
-                      <Button 
-                        type="submit" 
+                      <Button
+                        type="submit"
                         disabled={loading}
                         className="flex-1 h-14 text-lg bg-white text-black hover:bg-gray-100 font-semibold rounded-full disabled:opacity-50"
                       >

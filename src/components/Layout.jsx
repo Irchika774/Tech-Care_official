@@ -6,7 +6,13 @@ import Footer from './Footer';
 const Layout = ({ children }) => {
     const location = useLocation();
     const isHomePage = location.pathname === '/';
-    const isDarkPage = location.pathname === '/mobile-repair' || location.pathname === '/pc-repair' || location.pathname === '/company' || location.pathname === '/services' || location.pathname === '/schedule' || location.pathname === '/technicians' || location.pathname === '/support' || location.pathname === '/login' || location.pathname === '/register';
+    const isDarkPage = [
+        '/mobile-repair', '/pc-repair', '/company', '/services', '/schedule',
+        '/technicians', '/support', '/login', '/register', '/customer-dashboard',
+        '/technician-dashboard', '/admin', '/bidding', '/account', '/settings',
+        '/history', '/favorites', '/compare', '/payment', '/payment-success',
+        '/reviews', '/terms', '/privacy'
+    ].includes(location.pathname);
 
     if (isHomePage) {
         return (

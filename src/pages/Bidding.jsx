@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 import CurrencyDisplay from '../components/CurrencyDisplay';
 import SEO from '../components/SEO';
@@ -42,8 +45,9 @@ const Bidding = () => {
     const fetchAvailableJobs = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/technicians/jobs', {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            const response = await fetch(`${API_URL}/api/technicians/jobs`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -66,8 +70,9 @@ const Bidding = () => {
 
     const fetchMyBids = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/technicians/bids', {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            const response = await fetch(`${API_URL}/api/technicians/bids`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -86,7 +91,8 @@ const Bidding = () => {
         e.preventDefault();
 
         try {
-            const token = localStorage.getItem('token');
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
             const bidData = {
                 bookingId: selectedJob._id,
                 amount: parseFloat(bidAmount),
@@ -94,7 +100,7 @@ const Bidding = () => {
                 estimatedDuration: parseInt(estimatedDuration)
             };
 
-            const response = await fetch('http://localhost:5000/api/technicians/bids', {
+            const response = await fetch(`${API_URL}/api/technicians/bids`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

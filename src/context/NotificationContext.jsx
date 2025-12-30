@@ -1,5 +1,8 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
+import { supabase } from '../lib/supabase';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const NotificationContext = createContext();
 
@@ -14,7 +17,8 @@ export const NotificationProvider = ({ children }) => {
         // Poll for notifications every 30 seconds
         const fetchNotifications = async () => {
             try {
-                const token = localStorage.getItem('token');
+                const { data: { session } } = await supabase.auth.getSession();
+                const token = session?.access_token;
                 // Use the generic notifications endpoint or role-specific one
                 // Using the generic one from server/routes/notifications.js which expects userId and role in query
                 // OR the one in customers.js/technicians.js. 
@@ -30,7 +34,7 @@ export const NotificationProvider = ({ children }) => {
                 // But server/routes/notifications.js explicitly checks req.query.userId and req.query.role.
 
                 // Let's adjust to pass the query params correctly.
-                const response = await fetch(`http://localhost:5000/api/notifications?userId=${user._id}&role=${user.role}`, {
+                const response = await fetch(`${API_URL}/api/notifications?userId=${user._id}&role=${user.role}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -52,8 +56,9 @@ export const NotificationProvider = ({ children }) => {
 
     const markAsRead = async (notificationId) => {
         try {
-            const token = localStorage.getItem('token');
-            await fetch(`http://localhost:5000/api/notifications/${notificationId}/read`, {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            await fetch(`${API_URL}/api/notifications/${notificationId}/read`, {
                 method: 'PATCH',
                 headers: { 'Authorization': `Bearer ${token}` }
             });

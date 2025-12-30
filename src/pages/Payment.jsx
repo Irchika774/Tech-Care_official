@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 import CurrencyDisplay from '../components/CurrencyDisplay';
 import SEO from '../components/SEO';
 
@@ -70,7 +71,7 @@ const CheckoutForm = ({ bookingDetails, clientSecret, paymentIntentId, onSuccess
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 min-h-[200px] max-h-[400px] overflow-y-auto">
-                <PaymentElement 
+                <PaymentElement
                     onReady={() => setIsReady(true)}
                     options={{
                         layout: 'tabs'
@@ -170,8 +171,11 @@ const Payment = () => {
     const [paymentHistory, setPaymentHistory] = useState([]);
     const [historyLoading, setHistoryLoading] = useState(false);
 
+
+
     useEffect(() => {
         const initializePayment = async () => {
+            // ... (mock booking setup) ...
             const mockBooking = {
                 _id: 'BK001',
                 serviceType: 'Mobile Repair',
@@ -187,10 +191,21 @@ const Payment = () => {
             setBookingDetails(booking);
 
             try {
+                // Get the access token from Supabase session
+                const { data: { session } } = await supabase.auth.getSession();
+                const token = session?.access_token;
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
                 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
                 const response = await fetch(`${apiUrl}/api/payment/create-payment-intent`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: headers,
                     body: JSON.stringify({
                         amount: booking.total,
                         currency: 'lkr',
@@ -311,10 +326,10 @@ const Payment = () => {
             />
 
             {paymentSuccess && (
-                <PaymentSuccessModal 
-                    payment={paymentSuccess} 
-                    booking={bookingDetails} 
-                    onClose={() => setPaymentSuccess(null)} 
+                <PaymentSuccessModal
+                    payment={paymentSuccess}
+                    booking={bookingDetails}
+                    onClose={() => setPaymentSuccess(null)}
                 />
             )}
 
@@ -333,7 +348,7 @@ const Payment = () => {
                     className={`pb-3 px-4 font-medium transition-colors ${activeTab === 'pay'
                         ? 'border-b-2 border-primary text-primary'
                         : 'text-gray-600 dark:text-gray-400 hover:text-text-light dark:hover:text-text-dark'
-                    }`}
+                        }`}
                 >
                     Make Payment
                 </button>
@@ -342,7 +357,7 @@ const Payment = () => {
                     className={`pb-3 px-4 font-medium transition-colors ${activeTab === 'history'
                         ? 'border-b-2 border-primary text-primary'
                         : 'text-gray-600 dark:text-gray-400 hover:text-text-light dark:hover:text-text-dark'
-                    }`}
+                        }`}
                 >
                     Payment History
                 </button>
@@ -426,8 +441,8 @@ const Payment = () => {
                             </h2>
 
                             {clientSecret ? (
-                                <Elements 
-                                    stripe={stripePromise} 
+                                <Elements
+                                    stripe={stripePromise}
                                     options={{
                                         clientSecret,
                                         appearance: {
@@ -441,7 +456,7 @@ const Payment = () => {
                                         }
                                     }}
                                 >
-                                    <CheckoutForm 
+                                    <CheckoutForm
                                         bookingDetails={bookingDetails}
                                         clientSecret={clientSecret}
                                         paymentIntentId={paymentIntentId}
@@ -515,9 +530,9 @@ const Payment = () => {
                                                 {payment.card_brand} •••• {payment.card_last4}
                                             </p>
                                             {payment.receipt_url && (
-                                                <a 
-                                                    href={payment.receipt_url} 
-                                                    target="_blank" 
+                                                <a
+                                                    href={payment.receipt_url}
+                                                    target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="text-sm text-primary hover:text-primary-dark"
                                                 >

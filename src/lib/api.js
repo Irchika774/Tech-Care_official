@@ -1,5 +1,7 @@
 import axios from 'axios';
 
+import { supabase } from './supabase';
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 // API client with error handling
@@ -12,9 +14,10 @@ const apiClient = axios.create({
 
 // Request interceptor
 apiClient.interceptors.request.use(
-    (config) => {
+    async (config) => {
         // Add auth token if available
-        const token = localStorage.getItem('token');
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
