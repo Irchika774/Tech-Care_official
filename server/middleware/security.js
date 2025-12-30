@@ -88,7 +88,7 @@ export const validateInput = (schema) => {
 // CORS configuration
 export const corsOptions = {
     origin: function (origin, callback) {
-        const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:5173', 'http://localhost:3000'];
+        const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:5173', 'http://localhost:3000', 'https://techcareofficial.netlify.app', 'https://techcare-flax.vercel.app'];
 
         // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
