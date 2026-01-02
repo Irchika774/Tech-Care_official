@@ -6,13 +6,15 @@ import Footer from './Footer';
 const Layout = ({ children }) => {
     const location = useLocation();
     const isHomePage = location.pathname === '/';
-    const isDarkPage = [
+    const normalizedPath = location.pathname.toLowerCase().replace(/\/$/, '') || '/';
+    const darkRoutes = [
         '/mobile-repair', '/pc-repair', '/company', '/services', '/schedule',
         '/technicians', '/support', '/login', '/register', '/customer-dashboard',
         '/technician-dashboard', '/admin', '/bidding', '/account', '/settings',
         '/history', '/favorites', '/compare', '/payment', '/payment-success',
         '/reviews', '/terms', '/privacy', '/diagnostics', '/service-areas'
-    ].includes(location.pathname);
+    ];
+    const isDarkPage = darkRoutes.includes(normalizedPath);
 
     if (isHomePage) {
         return (
