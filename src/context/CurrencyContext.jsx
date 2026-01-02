@@ -19,31 +19,20 @@ export const useCurrency = () => {
 };
 
 export const CurrencyProvider = ({ children }) => {
+    // Always use LKR for Sri Lanka - no currency switching
     const [currency, setCurrency] = useState('LKR');
     const [country, setCountry] = useState('Sri Lanka');
-    const [loading, setLoading] = useState(true);
-    const [initialized, setInitialized] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [initialized, setInitialized] = useState(true);
 
+    // No auto-detection - always use LKR
     useEffect(() => {
-        initializeCurrency();
+        // Force LKR currency
+        setCurrency('LKR');
+        setCountry('Sri Lanka');
+        setInitialized(true);
+        setLoading(false);
     }, []);
-
-    const initializeCurrency = async () => {
-        try {
-            setLoading(true);
-            const result = await detectUserCurrency();
-            setCurrency(result.currency);
-            setCountry(result.country);
-            setInitialized(true);
-        } catch (error) {
-            console.error('Failed to initialize currency:', error);
-            setCurrency('LKR');
-            setCountry('Sri Lanka');
-            setInitialized(true);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const changeCurrency = (newCurrency, newCountry = null) => {
         setCurrency(newCurrency);

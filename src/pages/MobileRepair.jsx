@@ -13,6 +13,7 @@ import { Search, Star, MapPin, Briefcase, CheckCircle, DollarSign, Phone, Mail, 
 import GoogleMap from '../components/GoogleMap';
 import SEO from '../components/SEO';
 import { techniciansAPI } from '../lib/api';
+import { fetchRepairShops } from '../lib/googleSheetsService';
 import { useToast } from '../hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
@@ -157,21 +158,63 @@ const MobileRepair = () => {
     const fetchAllTechnicians = async () => {
         try {
             setLoading(true);
+            // Try API first
             const response = await techniciansAPI.getAll();
             const techData = response.data || [];
+            if (techData.length > 0) {
+                setTechnicians(techData);
+                setFilteredTechnicians(techData);
+            } else {
+                // Fallback to Google Sheets data
+                await loadFromGoogleSheets();
+            }
+        } catch (error) {
+            console.error('API error, falling back to Google Sheets:', error);
+            await loadFromGoogleSheets();
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const loadFromGoogleSheets = async () => {
+        try {
+            const shops = await fetchRepairShops();
+            // Transform shop data to technician format
+            const techData = shops
+                .filter(shop => shop.services?.some(s => s.toLowerCase().includes('mobile')))
+                .map(shop => ({
+                    _id: shop.id,
+                    id: shop.id,
+                    name: shop.name,
+                    specialization: shop.services || ['Mobile Repair'],
+                    rating: shop.rating || 4.5,
+                    reviewCount: shop.reviews || 50,
+                    location: {
+                        address: shop.address,
+                        coordinates: shop.latitude && shop.longitude ? [shop.longitude, shop.latitude] : null
+                    },
+                    priceRange: { min: 500, max: 15000 },
+                    verified: shop.verified,
+                    phone: shop.phone,
+                    district: shop.district,
+                    hours: shop.hours,
+                    completedJobs: shop.completedJobs || 100
+                }));
             setTechnicians(techData);
             setFilteredTechnicians(techData);
-        } catch (error) {
-            console.error('Error fetching technicians:', error);
             toast({
-                title: "Backend Unavailable",
-                description: "Could not connect to server. Please ensure MongoDB and backend server are running.",
-                variant: "default",
+                title: "Data Loaded",
+                description: `Found ${techData.length} mobile repair shops from real-time data`,
+            });
+        } catch (sheetError) {
+            console.error('Google Sheets also failed:', sheetError);
+            toast({
+                title: "Data Unavailable",
+                description: "Could not load technician data. Please try again later.",
+                variant: "destructive",
             });
             setTechnicians([]);
             setFilteredTechnicians([]);
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -324,7 +367,7 @@ const MobileRepair = () => {
                 const { lat, lng } = data.results[0].geometry.location;
                 const location = { lat, lng };
                 setUserLocation(location);
-                
+
                 const countryComp = data.results[0].address_components.find(c => c.types.includes('country'));
                 if (countryComp) {
                     const countryCode = countryComp.short_name;
@@ -339,7 +382,7 @@ const MobileRepair = () => {
                     title: "Location Updated",
                     description: `Showing technicians near ${data.results[0].formatted_address}`,
                 });
-                
+
                 fetchNearbyTechnicians(lng, lat);
             } else {
                 toast({
@@ -405,7 +448,7 @@ const MobileRepair = () => {
                 description="Expert mobile phone and tablet repair technicians near you. Screen replacement, battery fix, and more."
                 keywords="mobile repair, phone repair, screen replacement, battery replacement, smartphone technician"
             />
-            
+
             {/* Hero Section - Landing Page Style */}
             <section className="relative pt-16 pb-24 px-4 md:px-8 overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-b from-black via-gray-900 to-black"></div>
@@ -413,7 +456,7 @@ const MobileRepair = () => {
                     <div className="absolute top-20 left-20 w-72 h-72 bg-white/5 rounded-full blur-3xl"></div>
                     <div className="absolute bottom-20 right-20 w-96 h-96 bg-white/5 rounded-full blur-3xl"></div>
                 </div>
-                
+
                 <div className="max-w-7xl mx-auto relative z-10">
                     <div className="text-center mb-16">
                         <div className="flex items-center justify-center gap-4 mb-8">
@@ -421,13 +464,13 @@ const MobileRepair = () => {
                             <span className="text-sm tracking-[0.3em] uppercase text-gray-400">Mobile Repair</span>
                             <div className="w-3 h-3 bg-white"></div>
                         </div>
-                        
+
                         <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold mb-6 tracking-tight">
                             Expert Mobile
                             <br />
                             <span className="text-gray-500">Repair Services</span>
                         </h1>
-                        
+
                         <p className="text-xl md:text-2xl text-gray-400 max-w-3xl mx-auto mb-12">
                             Find trusted technicians for your smartphone and tablet repairs.
                             {userLocation && <span className="text-white font-medium"> Showing technicians near you.</span>}
@@ -444,7 +487,7 @@ const MobileRepair = () => {
                                 <div className="flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/20 rounded-none text-white">
                                     <Navigation className="h-4 w-4" />
                                     <span className="text-sm font-medium">Location Enabled</span>
-                                    <button 
+                                    <button
                                         className="ml-2 px-3 py-1 text-xs border border-white/30 hover:bg-white hover:text-black transition-all"
                                         onClick={() => setShowManualLocation(true)}
                                     >
@@ -453,14 +496,14 @@ const MobileRepair = () => {
                                 </div>
                             ) : (
                                 <div className="flex items-center gap-3">
-                                    <button 
+                                    <button
                                         className="px-6 py-3 border border-white/30 text-white hover:bg-white hover:text-black transition-all flex items-center gap-2"
                                         onClick={getUserLocation}
                                     >
                                         <MapPin className="h-4 w-4" />
                                         Detect Location
                                     </button>
-                                    <button 
+                                    <button
                                         className="px-6 py-3 text-gray-400 hover:text-white transition-all"
                                         onClick={() => setShowManualLocation(true)}
                                     >
@@ -480,7 +523,7 @@ const MobileRepair = () => {
                                 <form onSubmit={handleManualLocationSubmit} className="flex gap-3">
                                     <div className="relative flex-1">
                                         <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                                        <input 
+                                        <input
                                             type="text"
                                             placeholder="Enter city, zip, or address..."
                                             className="w-full pl-12 pr-4 py-3 bg-black border border-white/20 text-white placeholder-gray-500 focus:border-white focus:outline-none"
@@ -489,15 +532,15 @@ const MobileRepair = () => {
                                             autoFocus
                                         />
                                     </div>
-                                    <button 
-                                        type="submit" 
+                                    <button
+                                        type="submit"
                                         disabled={locationLoading}
                                         className="px-6 py-3 bg-white text-black font-medium hover:bg-gray-200 transition-all disabled:opacity-50"
                                     >
                                         {locationLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Update"}
                                     </button>
-                                    <button 
-                                        type="button" 
+                                    <button
+                                        type="button"
                                         onClick={() => setShowManualLocation(false)}
                                         className="px-4 py-3 text-gray-400 hover:text-white transition-all"
                                     >
@@ -515,7 +558,7 @@ const MobileRepair = () => {
                                 <Smartphone className="h-5 w-5" />
                                 <span>Find Technicians</span>
                                 <svg className="w-4 h-4 group-hover:rotate-45 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path d="M7 17L17 7M17 7H7M17 7V17"/>
+                                    <path d="M7 17L17 7M17 7H7M17 7V17" />
                                 </svg>
                             </button>
                             <button
@@ -665,11 +708,10 @@ const MobileRepair = () => {
                             )}
                             <button
                                 onClick={() => setShowMap(!showMap)}
-                                className={`flex items-center gap-2 px-6 py-3 border transition-all ${
-                                    showMap 
-                                        ? 'bg-white text-black border-white' 
+                                className={`flex items-center gap-2 px-6 py-3 border transition-all ${showMap
+                                        ? 'bg-white text-black border-white'
                                         : 'border-white/30 text-white hover:bg-white hover:text-black'
-                                }`}
+                                    }`}
                             >
                                 {showMap ? <List className="h-4 w-4" /> : <MapIcon className="h-4 w-4" />}
                                 {showMap ? "Show List" : "Show Map"}
@@ -747,7 +789,7 @@ const MobileRepair = () => {
                             <p className="text-gray-400 mb-8">
                                 Try adjusting your search filters or reset them to see all available technicians
                             </p>
-                            <button 
+                            <button
                                 onClick={handleResetFilters}
                                 className="px-8 py-4 bg-white text-black font-medium hover:bg-gray-200 transition-all"
                             >
@@ -775,8 +817,8 @@ const MobileRepair = () => {
 
                             {visibleCount < filteredTechnicians.length && (
                                 <div className="text-center mt-16">
-                                    <button 
-                                        onClick={handleLoadMore} 
+                                    <button
+                                        onClick={handleLoadMore}
                                         className="px-12 py-4 border border-white/30 text-white hover:bg-white hover:text-black transition-all"
                                     >
                                         Load More ({visibleCount} of {filteredTechnicians.length})
@@ -907,14 +949,14 @@ const TechnicianCard = ({
                 <p className="text-2xl font-bold text-white mb-6">{priceDisplay}</p>
 
                 <div className="flex gap-3">
-                    <button 
-                        onClick={onViewDetails} 
+                    <button
+                        onClick={onViewDetails}
                         className="flex-1 py-3 border border-white/30 text-white hover:bg-white hover:text-black transition-all text-sm font-medium"
                     >
                         {featured ? 'Full Details' : 'Details'}
                     </button>
-                    <button 
-                        onClick={onSchedule} 
+                    <button
+                        onClick={onSchedule}
                         className="flex-1 py-3 bg-white text-black hover:bg-gray-200 transition-all text-sm font-medium"
                     >
                         {featured ? 'Book Now' : 'Schedule'}
@@ -1058,17 +1100,16 @@ const DetailModal = ({
             <div className="flex gap-4 mt-12 pt-8 border-t border-white/10">
                 <button
                     onClick={onToggleFavorite}
-                    className={`flex-1 py-4 flex items-center justify-center gap-2 font-medium transition-all ${
-                        isFavorite 
-                            ? 'bg-white text-black' 
+                    className={`flex-1 py-4 flex items-center justify-center gap-2 font-medium transition-all ${isFavorite
+                            ? 'bg-white text-black'
                             : 'border border-white/30 text-white hover:bg-white hover:text-black'
-                    }`}
+                        }`}
                 >
                     <Star className={`h-5 w-5 ${isFavorite ? 'fill-black' : ''}`} />
                     {isFavorite ? 'Saved' : 'Save to Favorites'}
                 </button>
-                <button 
-                    onClick={onSchedule} 
+                <button
+                    onClick={onSchedule}
                     className="flex-1 py-4 bg-white text-black font-medium hover:bg-gray-200 transition-all flex items-center justify-center gap-2"
                 >
                     <CheckCircle className="h-5 w-5" />

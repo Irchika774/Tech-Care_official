@@ -145,7 +145,14 @@ npm run dev
 
 ---
 
-## 🛠️ Tech Stack
+## � Documentation
+
+- [🏗️ Architecture & PRD](docs/PRD_ARCHITECTURE.md) - Detailed technical specifications and architecture.
+- [👥 Role Access & Visibility](docs/ROLE_ACCESS_AND_VISIBILITY.md) - Comprehensive guide on user roles, permissions, and UI visibility.
+
+---
+
+## �🛠️ Tech Stack
 
 ### Frontend
 - **Framework:** React 18 + Vite
@@ -169,7 +176,7 @@ Verified structure as of December 2025:
 
 ```bash
 Tech-Care_official/
-├── 📂 Documentation/        # Project documentation & .md files
+├── 📂 docs/                 # Project documentation & .md files
 ├── 📂 scripts/              # Automation batch scripts (.bat)
 │   ├── start-techcare.bat   # Main launcher
 │   ├── verify-setup.bat     # Dependency checker

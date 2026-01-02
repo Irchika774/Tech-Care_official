@@ -17,6 +17,9 @@ import technicianRoutes from './routes/technicians.js';
 import bookingRoutes from './routes/bookings.js';
 import notificationRoutes from './routes/notifications.js';
 import searchRoutes from './routes/search.js';
+import reviewRoutes from './routes/reviews.js';
+import loyaltyRoutes from './routes/loyalty.js';
+import emailRoutes from './routes/emails.js';
 import { supabaseAdmin } from './lib/supabase.js';
 
 import {
@@ -46,6 +49,9 @@ app.use('/api/payment', apiLimiter, paymentRoutes);
 app.use('/api/bookings', apiLimiter, bookingRoutes);
 app.use('/api/notifications', apiLimiter, notificationRoutes);
 app.use('/api/search', apiLimiter, searchRoutes);
+app.use('/api/reviews', apiLimiter, reviewRoutes);
+app.use('/api/loyalty', apiLimiter, loyaltyRoutes);
+app.use('/api/emails', apiLimiter, emailRoutes);
 
 app.get('/api/health', async (req, res) => {
     let dbStatus = 'disconnected';

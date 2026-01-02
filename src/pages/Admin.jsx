@@ -45,6 +45,28 @@ const Admin = () => {
   const [editingItem, setEditingItem] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [techFilter, setTechFilter] = useState('all');
+
+  const handleToggleVerification = async (techId, currentStatus) => {
+    try {
+      await axios.put(`${API_URL}/api/admin/users/${techId}`,
+        { verified: !currentStatus },
+        { headers: await getAuthHeader() }
+      );
+      toast({
+        title: !currentStatus ? "Technician Verified" : "Verification Removed",
+        description: `Technician status has been updated.`
+      });
+      fetchTechnicians(); // Refresh list
+    } catch (error) {
+      console.error('Error toggling verification:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update status"
+      });
+    }
+  };
 
   // Real-time data states
   const [users, setUsers] = useState([]);
@@ -758,91 +780,139 @@ const Admin = () => {
     </div>
   );
 
-  const renderTechnicians = () => (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Manage Technicians</h2>
-          <p className="text-muted-foreground">{technicians.length} registered technicians</p>
-        </div>
-        <Button onClick={() => handleOpenModal('technician')}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add New Technician
-        </Button>
-      </div>
+  const renderTechnicians = () => {
+    const filteredTechnicians = technicians.filter(tech => {
+      if (techFilter === 'verified') return tech.verified;
+      if (techFilter === 'unverified') return !tech.verified;
+      return true;
+    });
 
-      {technicians.length === 0 ? (
-        <Card>
-          <CardContent className="text-center py-12">
-            <Wrench className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-            <p className="text-muted-foreground">No technicians found</p>
-            <Button onClick={() => handleOpenModal('technician')} variant="link" className="mt-2">
-              Add your first technician
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">Manage Technicians</h2>
+            <p className="text-muted-foreground">{technicians.length} registered technicians</p>
+          </div>
+          <div className="flex gap-2">
+            <div className="flex bg-muted p-1 rounded-lg">
+              <Button
+                variant={techFilter === 'all' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setTechFilter('all')}
+              >
+                All
+              </Button>
+              <Button
+                variant={techFilter === 'unverified' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setTechFilter('unverified')}
+                className="gap-1"
+              >
+                Pending <Badge variant="secondary" className="px-1 text-[10px]">{technicians.filter(t => !t.verified).length}</Badge>
+              </Button>
+              <Button
+                variant={techFilter === 'verified' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setTechFilter('verified')}
+              >
+                Verified
+              </Button>
+            </div>
+            <Button onClick={() => handleOpenModal('technician')}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add New
             </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {technicians.map((tech) => (
-            <Card key={tech._id} className="hover:shadow-lg transition-shadow">
-              <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src={tech.profileImage} />
-                    <AvatarFallback className="bg-primary text-primary-foreground">
-                      {tech.name?.substring(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <CardTitle className="text-base">{tech.name}</CardTitle>
-                    <CardDescription className="text-xs">
-                      {tech.experience || 0} years exp.
-                    </CardDescription>
-                  </div>
-                </div>
-                <Badge variant="default">{tech.role}</Badge>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center text-sm">
-                  <Mail className="mr-2 h-4 w-4 text-muted-foreground" />
-                  <span className="truncate">{tech.email}</span>
-                </div>
-                <div className="flex items-center text-sm">
-                  <Phone className="mr-2 h-4 w-4 text-muted-foreground" />
-                  {tech.phone || '-'}
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center text-sm">
-                    <Star className="mr-1 h-4 w-4 text-yellow-500 fill-yellow-500" />
-                    <span className="font-semibold mr-1">{tech.rating || 0}</span>
-                    <span className="text-muted-foreground">({tech.reviewCount || 0})</span>
-                  </div>
-                  {tech.specialization && tech.specialization.length > 0 && (
-                    <Badge variant="secondary" className="text-xs">
-                      {tech.specialization[0]}
-                    </Badge>
-                  )}
-                </div>
-              </CardContent>
-              <CardFooter className="gap-2">
-                <Button variant="outline" className="flex-1" onClick={() => handleOpenModal('technician', tech)}>
-                  <Edit className="mr-2 h-4 w-4" />
-                  Edit
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="icon"
-                  onClick={() => handleDeleteTechnician(tech._id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
+          </div>
         </div>
-      )}
-    </div>
-  );
+
+        {filteredTechnicians.length === 0 ? (
+          <Card>
+            <CardContent className="text-center py-12">
+              <Wrench className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+              <p className="text-muted-foreground">No technicians found in this category</p>
+              {techFilter === 'all' && (
+                <Button onClick={() => handleOpenModal('technician')} variant="link" className="mt-2">
+                  Add your first technician
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredTechnicians.map((tech) => (
+              <Card key={tech._id} className="hover:shadow-lg transition-shadow">
+                <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-12 w-12">
+                      <AvatarImage src={tech.profileImage} />
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        {tech.name?.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        {tech.name}
+                        {tech.verified && <CheckCircle className="h-4 w-4 text-blue-500 fill-blue-500/10" />}
+                      </CardTitle>
+                      <CardDescription className="text-xs">
+                        {tech.experience || 0} years exp.
+                      </CardDescription>
+                    </div>
+                  </div>
+                  <Badge variant={tech.verified ? "default" : "outline"}>{tech.role}</Badge>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center text-sm">
+                    <Mail className="mr-2 h-4 w-4 text-muted-foreground" />
+                    <span className="truncate">{tech.email}</span>
+                  </div>
+                  <div className="flex items-center text-sm">
+                    <Phone className="mr-2 h-4 w-4 text-muted-foreground" />
+                    {tech.phone || '-'}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center text-sm">
+                      <Star className="mr-1 h-4 w-4 text-yellow-500 fill-yellow-500" />
+                      <span className="font-semibold mr-1">{tech.rating || 0}</span>
+                      <span className="text-muted-foreground">({tech.reviewCount || 0})</span>
+                    </div>
+                    {tech.specialization && tech.specialization.length > 0 && (
+                      <Badge variant="secondary" className="text-xs">
+                        {tech.specialization[0]}
+                      </Badge>
+                    )}
+                  </div>
+                </CardContent>
+                <CardFooter className="gap-2">
+                  <Button
+                    variant={tech.verified ? "outline" : "default"}
+                    className={!tech.verified ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+                    size="sm"
+                    onClick={() => handleToggleVerification(tech._id, tech.verified)}
+                  >
+                    {tech.verified ? "Unverify" : "Verify"}
+                  </Button>
+                  <Button variant="outline" size="sm" className="flex-1" onClick={() => handleOpenModal('technician', tech)}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    className="h-9 w-9"
+                    onClick={() => handleDeleteTechnician(tech._id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const renderAppointments = () => (
     <div className="space-y-6">

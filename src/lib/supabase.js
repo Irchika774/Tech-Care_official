@@ -6,11 +6,18 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export const signUp = async (email, password, name, role = 'user') => {
+    // Determine redirect URL based on environment
+    const siteUrl = import.meta.env.VITE_SITE_URL || window.location.origin;
+    const redirectUrl = role === 'technician'
+        ? `${siteUrl}/technician-dashboard`
+        : `${siteUrl}/customer-dashboard`;
+
     const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
-            data: { name, role }
+            data: { name, role },
+            emailRedirectTo: redirectUrl
         }
     });
 
@@ -60,6 +67,8 @@ export const signIn = async (email, password) => {
     });
 
     if (error) throw error;
+
+    // Return immediately - let AuthContext handle profile loading
     return data;
 };
 

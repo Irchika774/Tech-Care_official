@@ -1,70 +1,209 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import { useAuth } from './AuthContext';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from './AuthContext';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const NotificationContext = createContext(null);
 
-const NotificationContext = createContext();
+export const useNotifications = () => {
+    const context = useContext(NotificationContext);
+    if (!context) {
+        // Return a safe fallback if not wrapped in provider
+        return {
+            notifications: [],
+            unreadCount: 0,
+            loading: false,
+            fetchNotifications: () => { },
+            markAsRead: () => { },
+            markAllAsRead: () => { },
+            deleteNotification: () => { },
+            requestPermission: () => { },
+            getNotificationIcon: () => '🔔',
+            formatNotificationTime: () => ''
+        };
+    }
+    return context;
+};
 
 export const NotificationProvider = ({ children }) => {
-    const { user } = useAuth();
+    const auth = useAuth();
+    const user = auth?.user;
+    const profile = auth?.profile;
+
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
+    const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        if (!user) return;
+    // Get the user ID for notifications
+    const getUserId = useCallback(() => {
+        if (!user && !profile) return null;
+        return profile?.id || user?.id;
+    }, [user, profile]);
 
-        // Poll for notifications every 30 seconds
-        const fetchNotifications = async () => {
-            try {
-                const { data: { session } } = await supabase.auth.getSession();
-                const token = session?.access_token;
-                // Use the generic notifications endpoint or role-specific one
-                // Using the generic one from server/routes/notifications.js which expects userId and role in query
-                // OR the one in customers.js/technicians.js. 
-                // Let's use the generic one: /api/notifications?userId=...&role=...
-                // But wait, the guide used: http://localhost:5000/api/notifications
-                // Let's check server/routes/notifications.js again.
-                // It expects query params: userId, role.
+    // Fetch notifications from API
+    const fetchNotifications = useCallback(async () => {
+        const userId = getUserId();
+        if (!userId) return;
 
-                // However, the guide code used: 
-                // const response = await fetch('http://localhost:5000/api/notifications', ...
-                // And didn't pass query params in the fetch call in the guide snippet? 
-                // Ah, the guide snippet might be simplified or assuming the backend extracts from token.
-                // But server/routes/notifications.js explicitly checks req.query.userId and req.query.role.
+        setLoading(true);
+        try {
+            const { data: sessionData } = await supabase.auth.getSession();
+            const token = sessionData?.session?.access_token;
 
-                // Let's adjust to pass the query params correctly.
-                const response = await fetch(`${API_URL}/api/notifications?userId=${user._id}&role=${user.role}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+            if (!token) {
+                setLoading(false);
+                return;
+            }
 
-                if (response.ok) {
-                    const data = await response.json();
-                    setNotifications(data.notifications || []);
-                    setUnreadCount(data.unreadCount || 0);
+            const response = await fetch(`/api/notifications?userId=${userId}&limit=50`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
                 }
-            } catch (error) {
-                console.error('Error fetching notifications:', error);
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setNotifications(data.notifications || []);
+                setUnreadCount(data.unreadCount || 0);
+            }
+        } catch (error) {
+            console.error('Error fetching notifications:', error);
+        } finally {
+            setLoading(false);
+        }
+    }, [getUserId]);
+
+    // Subscribe to real-time notifications
+    useEffect(() => {
+        const userId = getUserId();
+        if (!userId) return;
+
+        // Fetch initial notifications
+        fetchNotifications();
+
+        // Set up real-time subscription
+        let channel = null;
+        try {
+            channel = supabase
+                .channel(`notifications:${userId}`)
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'notifications',
+                        filter: `user_id=eq.${userId}`
+                    },
+                    (payload) => {
+                        const newNotification = payload.new;
+                        setNotifications(prev => [newNotification, ...prev]);
+                        setUnreadCount(prev => prev + 1);
+                        showToastNotification(newNotification);
+                        playNotificationSound();
+                    }
+                )
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'UPDATE',
+                        schema: 'public',
+                        table: 'notifications',
+                        filter: `user_id=eq.${userId}`
+                    },
+                    (payload) => {
+                        setNotifications(prev =>
+                            prev.map(n => n.id === payload.new.id ? payload.new : n)
+                        );
+                    }
+                )
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'DELETE',
+                        schema: 'public',
+                        table: 'notifications',
+                        filter: `user_id=eq.${userId}`
+                    },
+                    (payload) => {
+                        setNotifications(prev => prev.filter(n => n.id !== payload.old.id));
+                    }
+                )
+                .subscribe();
+        } catch (err) {
+            console.error('Failed to set up notification subscription:', err);
+        }
+
+        // Cleanup subscription
+        return () => {
+            if (channel) {
+                supabase.removeChannel(channel);
             }
         };
+    }, [getUserId, fetchNotifications]);
 
-        fetchNotifications();
-        const interval = setInterval(fetchNotifications, 30000); // 30 seconds
+    // Show toast notification
+    const showToastNotification = (notification) => {
+        try {
+            const settingsStr = localStorage.getItem('techcare_settings');
+            const settings = settingsStr ? JSON.parse(settingsStr) : {};
 
-        return () => clearInterval(interval);
-    }, [user]);
+            // Request browser notification permission and show
+            if (settings.pushNotifications !== false && typeof window !== 'undefined' && 'Notification' in window) {
+                if (Notification.permission === 'granted') {
+                    new Notification(notification.title || 'TechCare', {
+                        body: notification.message || '',
+                        icon: '/favicon.ico'
+                    });
+                } else if (Notification.permission !== 'denied') {
+                    Notification.requestPermission().then(permission => {
+                        if (permission === 'granted') {
+                            new Notification(notification.title || 'TechCare', {
+                                body: notification.message || '',
+                                icon: '/favicon.ico'
+                            });
+                        }
+                    });
+                }
+            }
+        } catch (err) {
+            console.error('Error showing toast notification:', err);
+        }
+    };
 
+    // Play notification sound
+    const playNotificationSound = () => {
+        try {
+            const settingsStr = localStorage.getItem('techcare_settings');
+            const settings = settingsStr ? JSON.parse(settingsStr) : {};
+
+            if (settings.soundEnabled !== false) {
+                const audio = new Audio('/notification.mp3');
+                audio.volume = 0.5;
+                audio.play().catch(() => {
+                    // Audio play failed, likely due to autoplay restrictions
+                });
+            }
+        } catch (err) {
+            // Audio not available
+        }
+    };
+
+    // Mark notification as read
     const markAsRead = async (notificationId) => {
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            const token = session?.access_token;
-            await fetch(`${API_URL}/api/notifications/${notificationId}/read`, {
+            const { data: sessionData } = await supabase.auth.getSession();
+            const token = sessionData?.session?.access_token;
+
+            await fetch(`/api/notifications/${notificationId}/read`, {
                 method: 'PATCH',
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
             });
 
             setNotifications(prev =>
-                prev.map(n => n._id === notificationId ? { ...n, isRead: true } : n)
+                prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
             );
             setUnreadCount(prev => Math.max(0, prev - 1));
         } catch (error) {
@@ -72,11 +211,113 @@ export const NotificationProvider = ({ children }) => {
         }
     };
 
+    // Mark all as read
+    const markAllAsRead = async () => {
+        const userId = getUserId();
+        if (!userId) return;
+
+        try {
+            const { data: sessionData } = await supabase.auth.getSession();
+            const token = sessionData?.session?.access_token;
+
+            await fetch('/api/notifications/read-all', {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ userId })
+            });
+
+            setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+            setUnreadCount(0);
+        } catch (error) {
+            console.error('Error marking all notifications as read:', error);
+        }
+    };
+
+    // Delete notification
+    const deleteNotification = async (notificationId) => {
+        try {
+            const { data: sessionData } = await supabase.auth.getSession();
+            const token = sessionData?.session?.access_token;
+
+            await fetch(`/api/notifications/${notificationId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const deleted = notifications.find(n => n.id === notificationId);
+            setNotifications(prev => prev.filter(n => n.id !== notificationId));
+            if (deleted && !deleted.read) {
+                setUnreadCount(prev => Math.max(0, prev - 1));
+            }
+        } catch (error) {
+            console.error('Error deleting notification:', error);
+        }
+    };
+
+    // Request notification permission
+    const requestPermission = async () => {
+        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+            await Notification.requestPermission();
+        }
+    };
+
+    // Get notification icon based on type
+    const getNotificationIcon = (type) => {
+        const icons = {
+            booking: '📅',
+            payment: '💳',
+            review: '⭐',
+            message: '💬',
+            system: '🔔',
+            promotion: '🎉',
+            warning: '⚠️',
+            success: '✅',
+            error: '❌'
+        };
+        return icons[type] || '🔔';
+    };
+
+    // Format notification time
+    const formatNotificationTime = (dateString) => {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins}m ago`;
+        if (diffHours < 24) return `${diffHours}h ago`;
+        if (diffDays < 7) return `${diffDays}d ago`;
+        return date.toLocaleDateString();
+    };
+
+    const value = {
+        notifications,
+        unreadCount,
+        loading,
+        fetchNotifications,
+        markAsRead,
+        markAllAsRead,
+        deleteNotification,
+        requestPermission,
+        getNotificationIcon,
+        formatNotificationTime
+    };
+
     return (
-        <NotificationContext.Provider value={{ notifications, unreadCount, markAsRead }}>
+        <NotificationContext.Provider value={value}>
             {children}
         </NotificationContext.Provider>
     );
 };
 
-export const useNotifications = () => useContext(NotificationContext);
+export default NotificationProvider;

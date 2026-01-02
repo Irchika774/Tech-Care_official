@@ -9,7 +9,10 @@ const stripe = process.env.STRIPE_SECRET_KEY && process.env.STRIPE_SECRET_KEY !=
     ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-11-20.acacia' })
     : null;
 
-const ZERO_DECIMAL_CURRENCIES = ['bif', 'clp', 'djf', 'gnf', 'jpy', 'kmf', 'krw', 'lkr', 'mga', 'pyg', 'rwf', 'ugx', 'vnd', 'vuv', 'xaf', 'xof', 'xpf'];
+// Zero-decimal currencies do not have minor units (cents)
+// LKR (Sri Lankan Rupee) is NOT zero-decimal - it uses decimal places
+// Reference: https://stripe.com/docs/currencies#zero-decimal
+const ZERO_DECIMAL_CURRENCIES = ['bif', 'clp', 'djf', 'gnf', 'jpy', 'kmf', 'krw', 'mga', 'pyg', 'rwf', 'ugx', 'vnd', 'vuv', 'xaf', 'xof', 'xpf'];
 
 router.post('/create-payment-intent', supabaseAuth, async (req, res) => {
     try {
@@ -262,6 +265,90 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
     }
 
     res.json({ received: true });
+});
+
+// Refund a payment
+router.post('/refund', supabaseAuth, async (req, res) => {
+    try {
+        if (!stripe) {
+            return res.status(503).json({
+                error: 'Payment service not configured.'
+            });
+        }
+
+        const { payment_intent_id, amount, booking_id, reason = 'requested_by_customer' } = req.body;
+
+        if (!payment_intent_id) {
+            return res.status(400).json({ error: 'Payment intent ID is required' });
+        }
+
+        // Verify the booking belongs to the user
+        if (booking_id) {
+            const { data: booking, error: bookingError } = await supabaseAdmin
+                .from('bookings')
+                .select('customer_id')
+                .eq('id', booking_id)
+                .single();
+
+            if (bookingError || !booking) {
+                return res.status(404).json({ error: 'Booking not found' });
+            }
+
+            const customerId = req.user.customerId || req.user.id;
+            if (booking.customer_id !== customerId && req.user.role !== 'admin') {
+                return res.status(403).json({ error: 'Access denied' });
+            }
+        }
+
+        // Create refund
+        const refundParams = {
+            payment_intent: payment_intent_id,
+            reason: reason,
+            metadata: {
+                booking_id: booking_id,
+                refunded_by: req.user.id,
+                refunded_at: new Date().toISOString()
+            }
+        };
+
+        // If partial refund, convert amount
+        if (amount) {
+            const currency = 'lkr'; // Default currency
+            const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(currency);
+            refundParams.amount = isZeroDecimal ? Math.round(amount) : Math.round(amount * 100);
+        }
+
+        const refund = await stripe.refunds.create(refundParams);
+
+        // Update booking status
+        if (booking_id && supabaseAdmin) {
+            await supabaseAdmin
+                .from('bookings')
+                .update({
+                    payment_status: refund.amount === undefined ? 'refunded' : 'partially_refunded',
+                    refund_amount: amount || 0,
+                    refund_id: refund.id,
+                    refunded_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', booking_id);
+        }
+
+        res.json({
+            success: true,
+            refund: {
+                id: refund.id,
+                amount: refund.amount,
+                status: refund.status,
+                created: refund.created
+            }
+        });
+    } catch (error) {
+        console.error('Refund error:', error);
+        res.status(500).json({
+            error: error.message || 'Failed to process refund'
+        });
+    }
 });
 
 export default router;
