@@ -40,34 +40,93 @@ export const AuthProvider = ({ children }) => {
     };
 
     useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            if (session?.user) {
-                loadUserProfile(session.user);
+        let isMounted = true;
+
+        const initializeAuth = async () => {
+            try {
+                const { data: { session }, error } = await supabase.auth.getSession();
+
+                if (error) {
+                    console.error('Session error:', error);
+                    if (isMounted) setLoading(false);
+                    return;
+                }
+
+                if (session?.user && isMounted) {
+                    await loadUserProfile(session.user);
+                }
+            } catch (error) {
+                console.error('Auth initialization error:', error);
+            } finally {
+                if (isMounted) setLoading(false);
             }
-            setLoading(false);
-        });
+        };
+
+        // Set a timeout fallback to ensure loading never gets stuck
+        const timeout = setTimeout(() => {
+            if (isMounted) {
+                console.warn('Auth initialization timeout - forcing loading state to false');
+                setLoading(false);
+            }
+        }, 5000);
+
+        initializeAuth();
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            console.log('Auth event:', event);
+
             if (event === 'SIGNED_IN' && session?.user) {
-                await loadUserProfile(session.user);
+                // Set user immediately for faster UI update
+                setUser({
+                    ...session.user,
+                    _id: session.user.id,
+                    role: session.user.user_metadata?.role || 'user',
+                    name: session.user.user_metadata?.name || session.user.email
+                });
+                // Then load full profile
+                loadUserProfile(session.user);
             } else if (event === 'SIGNED_OUT') {
                 setUser(null);
                 setProfile(null);
+            } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+                // Update user on token refresh
+                if (!user) {
+                    await loadUserProfile(session.user);
+                }
+            } else if (event === 'USER_UPDATED' && session?.user) {
+                // Handle email confirmation or profile updates
+                await loadUserProfile(session.user);
             }
         });
 
-        return () => subscription.unsubscribe();
+        return () => {
+            isMounted = false;
+            clearTimeout(timeout);
+            subscription.unsubscribe();
+        };
     }, []);
 
     const login = async (email, password) => {
         try {
+            setLoading(true);
             const { user: authUser } = await signIn(email, password);
-            await loadUserProfile(authUser);
 
-            const profileData = await getProfile(authUser.id);
-            if (profileData.role === 'admin') {
+            // Set basic user info immediately for faster UI response
+            setUser({
+                ...authUser,
+                _id: authUser.id,
+                role: authUser.user_metadata?.role || 'user',
+                name: authUser.user_metadata?.name || authUser.email
+            });
+
+            // Load full profile in background
+            loadUserProfile(authUser).finally(() => setLoading(false));
+
+            // Navigate based on role from metadata (immediate, no wait)
+            const role = authUser.user_metadata?.role || 'user';
+            if (role === 'admin') {
                 navigate('/admin');
-            } else if (profileData.role === 'technician') {
+            } else if (role === 'technician') {
                 navigate('/technician-dashboard');
             } else {
                 navigate('/customer-dashboard');
@@ -75,6 +134,7 @@ export const AuthProvider = ({ children }) => {
 
             return { success: true };
         } catch (error) {
+            setLoading(false);
             return {
                 success: false,
                 error: error.message || 'Login failed. Please try again.'
@@ -117,6 +177,7 @@ export const AuthProvider = ({ children }) => {
     const isAdmin = () => hasRole('admin');
     const isTechnician = () => hasRole('technician');
     const isCustomer = () => hasRole(['user', 'customer']);
+    const isAuthenticated = () => !!user;
 
     return (
         <AuthContext.Provider value={{
@@ -130,6 +191,7 @@ export const AuthProvider = ({ children }) => {
             isAdmin,
             isTechnician,
             isCustomer,
+            isAuthenticated,
             supabase
         }}>
             {loading ? (

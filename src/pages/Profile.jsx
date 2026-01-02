@@ -18,10 +18,12 @@ import {
   Calendar, Star, Truck, Briefcase, Award, DollarSign, TrendingUp, Clock,
   CheckCircle, Users, BarChart3, Wrench, Package, Loader2, AlertCircle
 } from 'lucide-react';
+import { useToast } from '../hooks/use-toast';
 
 const Profile = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [profileData, setProfileData] = useState(null);
@@ -118,9 +120,25 @@ const Profile = () => {
 
       if (response.ok) {
         await fetchProfileData(); // Refresh data
+        toast({
+          title: "Profile Updated",
+          description: "Your profile has been updated successfully.",
+        });
+      } else {
+        const errorData = await response.json();
+        toast({
+          variant: "destructive",
+          title: "Update Failed",
+          description: errorData.error || "Failed to update profile. Please try again.",
+        });
       }
     } catch (err) {
       console.error('Profile update error:', err);
+      toast({
+        variant: "destructive",
+        title: "Update Failed",
+        description: "An error occurred while updating your profile.",
+      });
     }
   };
 
@@ -174,57 +192,57 @@ const Profile = () => {
     return (
       <>
         <TabsContent value="overview">
-          <Card>
+          <Card className="bg-zinc-900 border-zinc-800">
             <CardHeader>
-              <CardTitle>Account Overview</CardTitle>
-              <CardDescription>Your recent activity and stats</CardDescription>
+              <CardTitle className="text-white">Account Overview</CardTitle>
+              <CardDescription className="text-zinc-400">Your recent activity and stats</CardDescription>
             </CardHeader>
             <CardContent className="grid md:grid-cols-4 gap-6">
-              <div className="text-center p-6 bg-gradient-to-br from-blue-500/10 to-blue-600/10 rounded-xl border border-blue-200">
-                <div className="text-3xl font-bold text-blue-600 mb-2">{stats.completedBookings || 0}</div>
-                <div className="text-sm text-muted-foreground">Completed Repairs</div>
+              <div className="text-center p-6 bg-gradient-to-br from-blue-500/20 to-blue-600/20 rounded-xl border border-blue-500/30">
+                <div className="text-3xl font-bold text-blue-400 mb-2">{stats.completedBookings || 0}</div>
+                <div className="text-sm text-zinc-400">Completed Repairs</div>
               </div>
-              <div className="text-center p-6 bg-gradient-to-br from-green-500/10 to-green-600/10 rounded-xl border border-green-200">
-                <div className="text-3xl font-bold text-green-600 mb-2">
+              <div className="text-center p-6 bg-gradient-to-br from-green-500/20 to-green-600/20 rounded-xl border border-green-500/30">
+                <div className="text-3xl font-bold text-green-400 mb-2">
                   <CurrencyDisplay amount={stats.totalSpent || 0} decimals={0} />
                 </div>
-                <div className="text-sm text-muted-foreground">Total Spent</div>
+                <div className="text-sm text-zinc-400">Total Spent</div>
               </div>
-              <div className="text-center p-6 bg-gradient-to-br from-purple-500/10 to-purple-600/10 rounded-xl border border-purple-200">
-                <div className="text-3xl font-bold text-purple-600 mb-2">{stats.totalBookings || 0}</div>
-                <div className="text-sm text-muted-foreground">Total Orders</div>
+              <div className="text-center p-6 bg-gradient-to-br from-purple-500/20 to-purple-600/20 rounded-xl border border-purple-500/30">
+                <div className="text-3xl font-bold text-purple-400 mb-2">{stats.totalBookings || 0}</div>
+                <div className="text-sm text-zinc-400">Total Orders</div>
               </div>
-              <div className="text-center p-6 bg-gradient-to-br from-yellow-500/10 to-yellow-600/10 rounded-xl border border-yellow-200">
-                <div className="text-3xl font-bold text-yellow-600 mb-2">{stats.activeBookings || 0}</div>
-                <div className="text-sm text-muted-foreground">Active Orders</div>
+              <div className="text-center p-6 bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 rounded-xl border border-yellow-500/30">
+                <div className="text-3xl font-bold text-yellow-400 mb-2">{stats.activeBookings || 0}</div>
+                <div className="text-sm text-zinc-400">Active Orders</div>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="orders">
-          <Card>
+          <Card className="bg-zinc-900 border-zinc-800">
             <CardHeader>
-              <CardTitle>Order History</CardTitle>
-              <CardDescription>Track all your repair orders</CardDescription>
+              <CardTitle className="text-white">Order History</CardTitle>
+              <CardDescription className="text-zinc-400">Track all your repair orders</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {recentBookings.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">No orders found</div>
+                  <div className="text-center py-8 text-zinc-500">No orders found</div>
                 ) : (
                   recentBookings.map((order) => (
-                    <div key={order._id} className="flex items-center justify-between p-6 border rounded-xl hover:bg-muted/50 transition">
+                    <div key={order._id} className="flex items-center justify-between p-6 border border-zinc-700 rounded-xl hover:bg-zinc-800/50 transition bg-zinc-800/30">
                       <div className="space-y-1 flex-1">
-                        <div className="font-semibold text-lg">{order.device?.brand} {order.device?.model}</div>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <div className="font-semibold text-lg text-white">{order.device?.brand} {order.device?.model}</div>
+                        <div className="flex items-center gap-4 text-sm text-zinc-400">
                           <span className="flex items-center gap-1"><Wrench className="h-4 w-4" />{order.technician?.name || 'Pending'}</span>
                           <span className="flex items-center gap-1"><Calendar className="h-4 w-4" />{new Date(order.scheduledDate).toLocaleDateString()}</span>
                           <span className="flex items-center gap-1">ID: {order._id.substring(0, 8)}</span>
                         </div>
                       </div>
                       <div className="text-right space-y-2">
-                        <div className="font-bold text-xl">
+                        <div className="font-bold text-xl text-white">
                           <CurrencyDisplay amount={order.estimatedCost || order.actualCost || 0} decimals={0} />
                         </div>
                         <Badge variant={order.status === 'completed' ? 'default' : order.status === 'in_progress' ? 'secondary' : 'destructive'}>
@@ -435,20 +453,20 @@ const Profile = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background py-12 px-4 md:px-8">
+    <div className="min-h-screen bg-black text-white py-12 px-4 md:px-8">
       <div className="max-w-6xl mx-auto space-y-8">
         {/* Header */}
         <div className="text-center md:text-left">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
             <div className="flex items-center gap-6">
-              <Avatar className="h-24 w-24 ring-4 ring-primary/20">
+              <Avatar className="h-24 w-24 ring-4 ring-zinc-700 border-4 border-zinc-800">
                 <AvatarImage src={profileData?.profileImage || user.avatar} />
-                <AvatarFallback className="text-2xl">{(profileData?.name || user.name)?.charAt(0)}</AvatarFallback>
+                <AvatarFallback className="text-2xl bg-zinc-800 text-white">{(profileData?.name || user.name)?.charAt(0)}</AvatarFallback>
               </Avatar>
               <div>
                 <h1 className="text-4xl font-bold">{profileData?.name || user.name}</h1>
                 <div className="flex items-center gap-2 mt-2">
-                  <Badge variant="secondary" className="capitalize">{userRole}</Badge>
+                  <Badge variant="secondary" className="capitalize bg-zinc-800 text-zinc-200 border-zinc-700">{userRole}</Badge>
                   {userRole === 'technician' && dashboardData?.stats && (
                     <div className="flex items-center gap-1 text-sm text-muted-foreground">
                       <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
@@ -461,7 +479,7 @@ const Profile = () => {
             <div className="flex gap-3">
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="lg">
+                  <Button variant="outline" size="lg" className="border-zinc-700 text-white hover:bg-zinc-800">
                     <Edit3 className="mr-2 h-4 w-4" />
                     Edit Profile
                   </Button>
@@ -472,27 +490,27 @@ const Profile = () => {
                   </DialogHeader>
                   <form onSubmit={handleProfileUpdate} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="name">Full Name</Label>
-                      <Input id="name" value={profileForm.name} onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })} />
+                      <Label htmlFor="name" className="text-zinc-300">Full Name</Label>
+                      <Input id="name" value={profileForm.name} onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })} className="bg-zinc-800 border-zinc-700 text-white focus:border-zinc-500" />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input id="email" type="email" value={profileForm.email} onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })} />
+                      <Label htmlFor="email" className="text-zinc-300">Email</Label>
+                      <Input id="email" type="email" value={profileForm.email} onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })} className="bg-zinc-800 border-zinc-700 text-white focus:border-zinc-500" />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="phone">Phone</Label>
-                      <Input id="phone" value={profileForm.phone} onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })} />
+                      <Label htmlFor="phone" className="text-zinc-300">Phone</Label>
+                      <Input id="phone" value={profileForm.phone} onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })} className="bg-zinc-800 border-zinc-700 text-white focus:border-zinc-500" />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="address">Address</Label>
-                      <Input id="address" value={profileForm.address} onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })} />
+                      <Label htmlFor="address" className="text-zinc-300">Address</Label>
+                      <Input id="address" value={profileForm.address} onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })} className="bg-zinc-800 border-zinc-700 text-white focus:border-zinc-500" />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="bio">Bio</Label>
-                      <Textarea id="bio" value={profileForm.bio} onChange={(e) => setProfileForm({ ...profileForm, bio: e.target.value })} rows={3} />
+                      <Label htmlFor="bio" className="text-zinc-300">Bio</Label>
+                      <Textarea id="bio" value={profileForm.bio} onChange={(e) => setProfileForm({ ...profileForm, bio: e.target.value })} rows={3} className="bg-zinc-800 border-zinc-700 text-white focus:border-zinc-500" />
                     </div>
                     <div className="flex gap-2 pt-4">
-                      <Button type="submit" className="flex-1">Save Changes</Button>
+                      <Button type="submit" className="flex-1 bg-white text-black hover:bg-gray-100">Save Changes</Button>
                     </div>
                   </form>
                 </DialogContent>
@@ -506,12 +524,12 @@ const Profile = () => {
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="overview"><User className="mr-2 h-4 w-4" />Overview</TabsTrigger>
-            <TabsTrigger value="orders"><Truck className="mr-2 h-4 w-4" />{userRole === 'admin' ? 'Manage' : userRole === 'technician' ? 'Jobs' : 'Orders'}</TabsTrigger>
-            <TabsTrigger value="settings"><Settings className="mr-2 h-4 w-4" />Settings</TabsTrigger>
-            <TabsTrigger value="security"><Shield className="mr-2 h-4 w-4" />Security</TabsTrigger>
-            <TabsTrigger value="notifications"><Bell className="mr-2 h-4 w-4" />Notifications</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-5 bg-zinc-900 border border-zinc-800 p-1">
+            <TabsTrigger value="overview" className="data-[state=active]:bg-white data-[state=active]:text-black text-zinc-400"><User className="mr-2 h-4 w-4" />Overview</TabsTrigger>
+            <TabsTrigger value="orders" className="data-[state=active]:bg-white data-[state=active]:text-black text-zinc-400"><Truck className="mr-2 h-4 w-4" />{userRole === 'admin' ? 'Manage' : userRole === 'technician' ? 'Jobs' : 'Orders'}</TabsTrigger>
+            <TabsTrigger value="settings" className="data-[state=active]:bg-white data-[state=active]:text-black text-zinc-400"><Settings className="mr-2 h-4 w-4" />Settings</TabsTrigger>
+            <TabsTrigger value="security" className="data-[state=active]:bg-white data-[state=active]:text-black text-zinc-400"><Shield className="mr-2 h-4 w-4" />Security</TabsTrigger>
+            <TabsTrigger value="notifications" className="data-[state=active]:bg-white data-[state=active]:text-black text-zinc-400"><Bell className="mr-2 h-4 w-4" />Notifications</TabsTrigger>
           </TabsList>
 
           {/* Role-specific content */}
@@ -521,22 +539,22 @@ const Profile = () => {
 
           {/* Common Settings Tab */}
           <TabsContent value="settings">
-            <Card>
+            <Card className="bg-zinc-900 border-zinc-800">
               <CardHeader>
-                <CardTitle>Account Settings</CardTitle>
+                <CardTitle className="text-white">Account Settings</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-4">
-                  <h3 className="font-semibold text-lg flex items-center gap-2">
-                    <Settings className="h-5 w-5" />
+                  <h3 className="font-semibold text-lg flex items-center gap-2 text-white">
+                    <Settings className="h-5 w-5 text-zinc-400" />
                     Preferences
                   </h3>
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
-                      <Label>Theme</Label>
+                      <Label className="text-zinc-300">Theme</Label>
                       <Select defaultValue="system">
-                        <SelectTrigger><SelectValue placeholder="Theme" /></SelectTrigger>
-                        <SelectContent>
+                        <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white"><SelectValue placeholder="Theme" /></SelectTrigger>
+                        <SelectContent className="bg-zinc-900 border-zinc-700">
                           <SelectItem value="light">Light</SelectItem>
                           <SelectItem value="dark">Dark</SelectItem>
                           <SelectItem value="system">System</SelectItem>
@@ -544,10 +562,10 @@ const Profile = () => {
                       </Select>
                     </div>
                     <div>
-                      <Label>Language</Label>
+                      <Label className="text-zinc-300">Language</Label>
                       <Select defaultValue="en">
-                        <SelectTrigger><SelectValue placeholder="Language" /></SelectTrigger>
-                        <SelectContent>
+                        <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white"><SelectValue placeholder="Language" /></SelectTrigger>
+                        <SelectContent className="bg-zinc-900 border-zinc-700">
                           <SelectItem value="en">English</SelectItem>
                           <SelectItem value="es">Spanish</SelectItem>
                         </SelectContent>
@@ -556,15 +574,15 @@ const Profile = () => {
                   </div>
                 </div>
                 <div className="space-y-4">
-                  <h3 className="font-semibold text-lg flex items-center gap-2">
-                    <CreditCard className="h-5 w-5" />
+                  <h3 className="font-semibold text-lg flex items-center gap-2 text-white">
+                    <CreditCard className="h-5 w-5 text-zinc-400" />
                     Payment Methods
                   </h3>
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <span>**** **** **** 1234</span>
-                    <Button variant="outline" size="sm">Edit</Button>
+                  <div className="flex items-center justify-between p-4 border border-zinc-700 rounded-lg bg-zinc-800/50">
+                    <span className="text-zinc-300">**** **** **** 1234</span>
+                    <Button variant="outline" size="sm" className="border-zinc-600 text-white hover:bg-zinc-700">Edit</Button>
                   </div>
-                  <Button variant="outline" className="w-full">Add Payment Method</Button>
+                  <Button variant="outline" className="w-full border-zinc-700 text-white hover:bg-zinc-800">Add Payment Method</Button>
                 </div>
               </CardContent>
             </Card>
@@ -572,29 +590,29 @@ const Profile = () => {
 
           {/* Common Security Tab */}
           <TabsContent value="security">
-            <Card>
+            <Card className="bg-zinc-900 border-zinc-800">
               <CardHeader>
-                <CardTitle>Security & Privacy</CardTitle>
+                <CardTitle className="text-white">Security & Privacy</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-4">
-                  <h3 className="font-semibold text-lg flex items-center gap-2">
-                    <Shield className="h-5 w-5" />
+                  <h3 className="font-semibold text-lg flex items-center gap-2 text-white">
+                    <Shield className="h-5 w-5 text-zinc-400" />
                     Change Password
                   </h3>
                   <div className="grid md:grid-cols-2 gap-4">
-                    <Input placeholder="Current Password" type="password" />
-                    <Input placeholder="New Password" type="password" />
-                    <Input placeholder="Confirm New Password" type="password" className="md:col-span-2" />
-                    <Button className="md:col-span-2">Update Password</Button>
+                    <Input placeholder="Current Password" type="password" className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500" />
+                    <Input placeholder="New Password" type="password" className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500" />
+                    <Input placeholder="Confirm New Password" type="password" className="md:col-span-2 bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500" />
+                    <Button className="md:col-span-2 bg-white text-black hover:bg-gray-100">Update Password</Button>
                   </div>
                 </div>
                 <div className="space-y-4">
-                  <h3 className="font-semibold text-lg">Active Sessions</h3>
+                  <h3 className="font-semibold text-lg text-white">Active Sessions</h3>
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                      <span>Chrome on Windows • Today</span>
-                      <Button variant="ghost" size="sm">Log out</Button>
+                    <div className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg border border-zinc-700">
+                      <span className="text-zinc-300">Chrome on Windows • Today</span>
+                      <Button variant="ghost" size="sm" className="text-zinc-400 hover:text-white hover:bg-zinc-700">Log out</Button>
                     </div>
                   </div>
                 </div>
@@ -604,35 +622,35 @@ const Profile = () => {
 
           {/* Common Notifications Tab */}
           <TabsContent value="notifications">
-            <Card>
+            <Card className="bg-zinc-900 border-zinc-800">
               <CardHeader>
-                <CardTitle>Notification Preferences</CardTitle>
+                <CardTitle className="text-white">Notification Preferences</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                      <input type="checkbox" checked={notifications.email} onChange={(e) => setNotifications({ ...notifications, email: e.target.checked })} className="w-5 h-5 rounded" />
+                    <Label className="flex items-center gap-2 text-white cursor-pointer">
+                      <input type="checkbox" checked={notifications.email} onChange={(e) => setNotifications({ ...notifications, email: e.target.checked })} className="w-5 h-5 rounded bg-zinc-800 border-zinc-600 text-green-500 focus:ring-green-500" />
                       Email notifications
                     </Label>
-                    <p className="text-sm text-muted-foreground ml-7">Order updates, promotions, new messages</p>
+                    <p className="text-sm text-zinc-500 ml-7">Order updates, promotions, new messages</p>
                   </div>
                   <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                      <input type="checkbox" checked={notifications.sms} onChange={(e) => setNotifications({ ...notifications, sms: e.target.checked })} className="w-5 h-5 rounded" />
+                    <Label className="flex items-center gap-2 text-white cursor-pointer">
+                      <input type="checkbox" checked={notifications.sms} onChange={(e) => setNotifications({ ...notifications, sms: e.target.checked })} className="w-5 h-5 rounded bg-zinc-800 border-zinc-600 text-green-500 focus:ring-green-500" />
                       SMS notifications
                     </Label>
-                    <p className="text-sm text-muted-foreground ml-7">Urgent order updates only</p>
+                    <p className="text-sm text-zinc-500 ml-7">Urgent order updates only</p>
                   </div>
                   <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                      <input type="checkbox" checked={notifications.push} onChange={(e) => setNotifications({ ...notifications, push: e.target.checked })} className="w-5 h-5 rounded" />
+                    <Label className="flex items-center gap-2 text-white cursor-pointer">
+                      <input type="checkbox" checked={notifications.push} onChange={(e) => setNotifications({ ...notifications, push: e.target.checked })} className="w-5 h-5 rounded bg-zinc-800 border-zinc-600 text-green-500 focus:ring-green-500" />
                       Push notifications
                     </Label>
-                    <p className="text-sm text-muted-foreground ml-7">App notifications for real-time updates</p>
+                    <p className="text-sm text-zinc-500 ml-7">App notifications for real-time updates</p>
                   </div>
                 </div>
-                <Button className="w-full">Save Notification Settings</Button>
+                <Button className="w-full bg-white text-black hover:bg-gray-100">Save Notification Settings</Button>
               </CardContent>
             </Card>
           </TabsContent>

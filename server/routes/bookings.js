@@ -30,7 +30,6 @@ router.post('/', supabaseAuth, async (req, res) => {
                 device_type,
                 device_brand,
                 device_model,
-                device_model,
                 issue_description,
                 scheduled_date,
                 estimated_cost,

@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Loader2, Send, User, Phone } from 'lucide-react';
+import { Loader2, Send, User, Phone, MessageCircle, Bot } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 
@@ -87,78 +87,93 @@ export default function Chat() {
         if (!error) setNewMessage('');
     };
 
-    if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin h-8 w-8" /></div>;
+    if (loading) return (
+        <div className="flex justify-center items-center min-h-screen bg-black">
+            <div className="text-center">
+                <Loader2 className="animate-spin h-12 w-12 text-white mx-auto mb-4" />
+                <p className="text-zinc-400">Loading chat...</p>
+            </div>
+        </div>
+    );
 
     return (
-        <div className="container max-w-4xl mx-auto py-8 px-4 h-[calc(100vh-120px)] flex flex-col">
-            <Card className="flex-1 flex flex-col overflow-hidden">
-                <CardHeader className="border-b bg-muted/30">
-                    <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                <User className="h-5 w-5 text-primary" />
-                            </div>
-                            <div>
-                                <CardTitle className="text-lg">{recipient?.name || 'Chat'}</CardTitle>
-                                <p className="text-xs text-muted-foreground">Booking #{bookingId.slice(0, 8)}</p>
-                            </div>
-                        </div>
-                        {recipient?.phone && (
-                            <Button variant="ghost" size="icon" asChild>
-                                <a href={`tel:${recipient.phone}`}>
-                                    <Phone className="h-4 w-4" />
-                                </a>
-                            </Button>
-                        )}
-                    </div>
-                </CardHeader>
-                
-                <CardContent 
-                    ref={scrollRef}
-                    className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/5"
-                >
-                    {messages.length === 0 ? (
-                        <div className="text-center py-20 text-muted-foreground italic">
-                            No messages yet. Start the conversation!
-                        </div>
-                    ) : (
-                        messages.map((msg, index) => {
-                            const isOwn = msg.sender_id === user?.id;
-                            return (
-                                <div 
-                                    key={index}
-                                    className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
-                                >
-                                    <div className={`max-w-[80%] p-3 rounded-2xl ${
-                                        isOwn 
-                                            ? 'bg-primary text-primary-foreground rounded-tr-none' 
-                                            : 'bg-muted rounded-tl-none'
-                                    }`}>
-                                        <p className="text-sm">{msg.content}</p>
-                                        <p className={`text-[10px] mt-1 opacity-70 ${isOwn ? 'text-right' : 'text-left'}`}>
-                                            {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </p>
-                                    </div>
+        <div className="min-h-screen bg-black text-white">
+            <div className="container max-w-4xl mx-auto py-8 px-4 h-[calc(100vh-120px)] flex flex-col">
+                <Card className="flex-1 flex flex-col overflow-hidden bg-zinc-900 border-zinc-800">
+                    <CardHeader className="border-b border-zinc-800 bg-zinc-900">
+                        <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                <div className="h-12 w-12 rounded-full bg-gradient-to-br from-green-500 to-blue-500 flex items-center justify-center">
+                                    <User className="h-6 w-6 text-white" />
                                 </div>
-                            );
-                        })
-                    )}
-                </CardContent>
+                                <div>
+                                    <CardTitle className="text-lg text-white">{recipient?.name || 'Chat'}</CardTitle>
+                                    <p className="text-xs text-zinc-400">Booking #{bookingId?.slice(0, 8)}</p>
+                                </div>
+                            </div>
+                            {recipient?.phone && (
+                                <Button variant="outline" size="icon" asChild className="border-zinc-700 hover:bg-zinc-800">
+                                    <a href={`tel:${recipient.phone}`}>
+                                        <Phone className="h-4 w-4 text-white" />
+                                    </a>
+                                </Button>
+                            )}
+                        </div>
+                    </CardHeader>
 
-                <CardFooter className="border-t p-4 bg-background">
-                    <form onSubmit={handleSendMessage} className="flex w-full gap-2">
-                        <Input 
-                            placeholder="Type your message..."
-                            value={newMessage}
-                            onChange={(e) => setNewMessage(e.target.value)}
-                            className="flex-1"
-                        />
-                        <Button type="submit" size="icon" disabled={!newMessage.trim()}>
-                            <Send className="h-4 w-4" />
-                        </Button>
-                    </form>
-                </CardFooter>
-            </Card>
+                    <CardContent
+                        ref={scrollRef}
+                        className="flex-1 overflow-y-auto p-4 space-y-4 bg-zinc-950"
+                    >
+                        {messages.length === 0 ? (
+                            <div className="text-center py-20">
+                                <MessageCircle className="h-16 w-16 text-zinc-600 mx-auto mb-4" />
+                                <p className="text-zinc-500 italic">No messages yet. Start the conversation!</p>
+                            </div>
+                        ) : (
+                            messages.map((msg, index) => {
+                                const isOwn = msg.sender_id === user?.id;
+                                return (
+                                    <div
+                                        key={index}
+                                        className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
+                                    >
+                                        <div className={`max-w-[80%] p-3 rounded-2xl ${isOwn
+                                                ? 'bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-tr-none'
+                                                : 'bg-zinc-800 text-zinc-100 rounded-tl-none border border-zinc-700'
+                                            }`}>
+                                            <p className="text-sm">{msg.content}</p>
+                                            <p className={`text-[10px] mt-1 opacity-70 ${isOwn ? 'text-right' : 'text-left'}`}>
+                                                {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </p>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
+                    </CardContent>
+
+                    <CardFooter className="border-t border-zinc-800 p-4 bg-zinc-900">
+                        <form onSubmit={handleSendMessage} className="flex w-full gap-2">
+                            <Input
+                                placeholder="Type your message..."
+                                value={newMessage}
+                                onChange={(e) => setNewMessage(e.target.value)}
+                                className="flex-1 bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-zinc-500"
+                            />
+                            <Button
+                                type="submit"
+                                size="icon"
+                                disabled={!newMessage.trim()}
+                                className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
+                            >
+                                <Send className="h-4 w-4" />
+                            </Button>
+                        </form>
+                    </CardFooter>
+                </Card>
+            </div>
         </div>
     );
 }
+

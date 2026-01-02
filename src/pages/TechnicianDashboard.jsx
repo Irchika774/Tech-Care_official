@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { useToast } from '../hooks/use-toast';
 import { Badge } from '../components/ui/badge';
 import { Progress } from '../components/ui/progress';
 import { Wallet, TrendingUp, CheckCircle, Star, Briefcase, Gavel, Smartphone, Monitor, Tablet, Loader2, User, Sparkles, ArrowRight, Activity, Calendar } from 'lucide-react';
@@ -11,6 +13,7 @@ import { supabase } from '../lib/supabase';
 import CurrencyDisplay from '../components/CurrencyDisplay';
 import { formatDistanceToNow } from 'date-fns';
 import SEO from '../components/SEO';
+import EarningsChart from '../components/EarningsChart';
 
 const TechnicianDashboard = () => {
   const navigate = useNavigate();
@@ -148,6 +151,46 @@ const TechnicianDashboard = () => {
       return formatDistanceToNow(new Date(dateString), { addSuffix: true });
     } catch (e) {
       return dateString;
+    }
+  };
+
+  const { toast } = useToast();
+
+  const handleStatusUpdate = async (jobId, newStatus) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      const response = await fetch(`${API_URL}/api/jobs/${jobId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      if (!response.ok) throw new Error('Failed to update status');
+
+      // Update local state
+      setData(prev => ({
+        ...prev,
+        activeJobs: prev.activeJobs.map(job =>
+          job._id === jobId ? { ...job, status: newStatus } : job
+        )
+      }));
+
+      toast({
+        title: "Status Updated",
+        description: `Job status changed to ${newStatus.replace('_', ' ')}`,
+      });
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast({
+        title: "Update Failed",
+        description: "Could not update job status. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -370,9 +413,24 @@ const TechnicianDashboard = () => {
                         <div className="flex items-center gap-4 mt-1 text-sm text-zinc-400">
                           <span>Customer: {job.customer?.name}</span>
                           <span>Date: {formatDate(job.scheduledDate)}</span>
-                          <Badge variant={getStatusBadgeVariant(job.status)}>
-                            {job.status.replace('_', ' ')}
-                          </Badge>
+                          <div className="z-10 relative" onClick={(e) => e.stopPropagation()}>
+                            <Select
+                              value={job.status}
+                              onValueChange={(value) => handleStatusUpdate(job._id || job.id, value)}
+                            >
+                              <SelectTrigger className="w-[160px] h-7 bg-zinc-900 border-zinc-700 text-xs">
+                                <SelectValue placeholder="Status" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
+                                <SelectItem value="pending">Pending</SelectItem>
+                                <SelectItem value="diagnosing">Diagnosing</SelectItem>
+                                <SelectItem value="waiting_for_parts">Waiting Parts</SelectItem>
+                                <SelectItem value="in_progress">In Progress</SelectItem>
+                                <SelectItem value="completed">Completed</SelectItem>
+                                <SelectItem value="cancelled">Cancelled</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
                       </div>
                       <div className="text-right">
@@ -463,9 +521,12 @@ const TechnicianDashboard = () => {
                 </CardContent>
               </Card>
             </div>
-            <div className="text-center text-zinc-500 py-8">
-              <Activity className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p>Detailed earnings history chart coming soon...</p>
+            <div className="mt-6">
+              <EarningsChart
+                title="Earnings History"
+                loading={loading}
+                currency="LKR"
+              />
             </div>
           </TabsContent>
 

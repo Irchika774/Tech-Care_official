@@ -7,12 +7,12 @@ import { Label } from '../components/ui/label';
 import { Card, CardContent, CardFooter, CardHeader } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { useToast } from '../hooks/use-toast';
-import { 
-    Mail, 
-    Lock, 
-    Eye, 
-    EyeOff, 
-    LogIn, 
+import {
+    Mail,
+    Lock,
+    Eye,
+    EyeOff,
+    LogIn,
     Sparkles,
     Shield,
     Zap,
@@ -71,12 +71,12 @@ const Login = () => {
                                     <Sparkles className="w-4 h-4 mr-2" />
                                     Welcome Back
                                 </Badge>
-                                
+
                                 <h1 className="text-5xl md:text-6xl font-bold mb-6 text-white leading-tight">
                                     Sign in to your<br />
                                     <span className="text-zinc-400">TechCare account</span>
                                 </h1>
-                                
+
                                 <p className="text-xl text-zinc-400 mb-10 leading-relaxed">
                                     Access your dashboard, track repairs, and manage your bookings with ease.
                                 </p>
@@ -166,6 +166,15 @@ const Login = () => {
                                                     </>
                                                 )}
                                             </Button>
+
+                                            <div className="text-center w-full">
+                                                <Link
+                                                    to="/forgot-password"
+                                                    className="text-zinc-400 hover:text-white text-sm transition-colors"
+                                                >
+                                                    Forgot your password?
+                                                </Link>
+                                            </div>
 
                                             <div className="text-center w-full pt-4">
                                                 <p className="text-zinc-400">

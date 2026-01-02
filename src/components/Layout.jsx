@@ -11,7 +11,7 @@ const Layout = ({ children }) => {
         '/technicians', '/support', '/login', '/register', '/customer-dashboard',
         '/technician-dashboard', '/admin', '/bidding', '/account', '/settings',
         '/history', '/favorites', '/compare', '/payment', '/payment-success',
-        '/reviews', '/terms', '/privacy'
+        '/reviews', '/terms', '/privacy', '/diagnostics', '/service-areas'
     ].includes(location.pathname);
 
     if (isHomePage) {

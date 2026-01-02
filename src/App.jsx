@@ -35,6 +35,12 @@ const Services = lazy(() => import('./pages/Services'));
 const Support = lazy(() => import('./pages/Support'));
 const Company = lazy(() => import('./pages/Company'));
 const Technicians = lazy(() => import('./pages/Technicians'));
+const Chat = lazy(() => import('./pages/Chat'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const BookingTracker = lazy(() => import('./pages/BookingTracker'));
+const Diagnostics = lazy(() => import('./pages/Diagnostics'));
+const ServiceAreas = lazy(() => import('./pages/ServiceAreas'));
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -112,6 +118,8 @@ function App() {
                         />
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />
+                        <Route path="/forgot-password" element={<ForgotPassword />} />
+                        <Route path="/reset-password" element={<ResetPassword />} />
 
                         {/* Static Pages */}
                         <Route path="/terms" element={<Terms />} />
@@ -119,6 +127,8 @@ function App() {
                         <Route path="/services" element={<Services />} />
                         <Route path="/support" element={<Support />} />
                         <Route path="/company" element={<Company />} />
+                        <Route path="/diagnostics" element={<Diagnostics />} />
+                        <Route path="/service-areas" element={<ServiceAreas />} />
 
                         {/* Bidding - Protected for Technicians Only */}
                         <Route
@@ -152,6 +162,26 @@ function App() {
                           element={
                             <ProtectedRoute allowedRoles={['user', 'admin']} >
                               <CustomerDashboard />
+                            </ProtectedRoute>
+                          }
+                        />
+
+                        {/* Chat - Protected for authenticated users */}
+                        <Route
+                          path="/chat/:bookingId"
+                          element={
+                            <ProtectedRoute allowedRoles={['user', 'technician', 'admin']} >
+                              <Chat />
+                            </ProtectedRoute>
+                          }
+                        />
+
+                        {/* Booking Tracker - Protected for authenticated users */}
+                        <Route
+                          path="/tracker/:bookingId"
+                          element={
+                            <ProtectedRoute allowedRoles={['user', 'technician', 'admin']} >
+                              <BookingTracker />
                             </ProtectedRoute>
                           }
                         />
