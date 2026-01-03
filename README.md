@@ -376,41 +376,62 @@ flowchart TD
 ### Role-Based Access Control
 
 ```mermaid
-mindmap
-  root((TechCare Roles))
-    Guest
-      View Services
-      Browse Technicians
-      Use AI Diagnostics
-      View Reviews
-      Register/Login
-    Customer
-      All Guest Features
-      Book Repairs
-      Track Bookings
-      Chat with Technicians
-      Write Reviews
-      Earn Loyalty Points
-      Manage Profile
-      View History
-    Technician
-      View Job Requests
-      Accept/Reject Jobs
-      Update Job Status
-      View Earnings
-      Manage Schedule
-      Generate Invoices
-      Receive Reviews
-      Chat with Customers
-    Admin
-      All Features
-      Manage Users
-      Verify Technicians
-      Moderate Reviews
-      View Analytics
-      Configure System
-      Process Refunds
-      Send Notifications
+flowchart TB
+    subgraph Roles["🎭 TechCare User Roles"]
+        direction TB
+        
+        subgraph GuestRole["👤 GUEST"]
+            G1["View Services"]
+            G2["Browse Technicians"]
+            G3["Use AI Diagnostics"]
+            G4["View Reviews"]
+            G5["Register/Login"]
+        end
+        
+        subgraph CustomerRole["🛒 CUSTOMER"]
+            C1["All Guest Features"]
+            C2["Book Repairs"]
+            C3["Track Bookings"]
+            C4["Chat with Technicians"]
+            C5["Write Reviews"]
+            C6["Earn Loyalty Points"]
+            C7["Manage Profile"]
+            C8["View History"]
+        end
+        
+        subgraph TechnicianRole["🔧 TECHNICIAN"]
+            T1["View Job Requests"]
+            T2["Accept/Reject Jobs"]
+            T3["Update Job Status"]
+            T4["View Earnings"]
+            T5["Manage Schedule"]
+            T6["Generate Invoices"]
+            T7["Receive Reviews"]
+            T8["Chat with Customers"]
+        end
+        
+        subgraph AdminRole["👑 ADMIN"]
+            A1["All Features"]
+            A2["Manage Users"]
+            A3["Verify Technicians"]
+            A4["Moderate Reviews"]
+            A5["View Analytics"]
+            A6["Configure System"]
+            A7["Process Refunds"]
+            A8["Send Notifications"]
+        end
+    end
+    
+    style Roles fill:#1e1e2e,stroke:#313244,color:#fff
+    style GuestRole fill:#45475a,stroke:#585b70,color:#fff
+    style CustomerRole fill:#89b4fa,stroke:#74c7ec,color:#1e1e2e
+    style TechnicianRole fill:#a6e3a1,stroke:#94e2d5,color:#1e1e2e
+    style AdminRole fill:#f9e2af,stroke:#fab387,color:#1e1e2e
+    style G1 fill:#585b70,stroke:#6c7086,color:#fff
+    style G2 fill:#585b70,stroke:#6c7086,color:#fff
+    style G3 fill:#585b70,stroke:#6c7086,color:#fff
+    style G4 fill:#585b70,stroke:#6c7086,color:#fff
+    style G5 fill:#585b70,stroke:#6c7086,color:#fff
 ```
 
 ### Permission Matrix
@@ -520,7 +541,7 @@ flowchart LR
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/yourusername/Tech-Care_official.git
+git clone https://github.com/Wenura17125/Tech-Care_official.git
 cd Tech-Care_official
 
 # 2. Verify your environment & install dependencies
@@ -540,7 +561,7 @@ cd Tech-Care_official
 
 ```bash
 # 1. Clone Repository
-git clone https://github.com/yourusername/Tech-Care_official.git
+git clone https://github.com/Wenura17125/Tech-Care_official.git
 cd Tech-Care_official
 
 # 2. Install Frontend Dependencies
@@ -867,19 +888,46 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support
 
 - **Documentation**: [docs/](./docs/)
-- **Issues**: [GitHub Issues](https://github.com/yourusername/Tech-Care_official/issues)
+- **Issues**: [GitHub Issues](https://github.com/Wenura17125/Tech-Care_official/issues)
 - **Email**: support@techcare.com
 
 ---
 
 <div align="center">
 
-**Built by the Wenura**
+## ⭐ Show Your Support!
+
+If you find TechCare helpful or interesting, please consider:
+
+[![Star this repo](https://img.shields.io/badge/⭐_Star_This_Repo-FFD700?style=for-the-badge&logo=github&logoColor=black)](https://github.com/Wenura17125/Tech-Care_official)
+[![Follow on GitHub](https://img.shields.io/badge/👤_Follow_@Wenura17125-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Wenura17125)
+[![Contribute](https://img.shields.io/badge/🤝_Contribute-22C55E?style=for-the-badge&logo=git&logoColor=white)](https://github.com/Wenura17125/Tech-Care_official/pulls)
+
+> 🌟 **Your star motivates me to keep improving this project!**
+>
+> 👥 **Follow for updates on new features and projects!**
+>
+> 🔧 **Contributions are always welcome - let's build together!**
+
+---
+
+### 🚀 Built with ❤️ by [Wenura](https://github.com/Wenura17125)
+
+*A passionate full-stack developer from Sri Lanka, dedicated to building innovative solutions that make a difference.*
+
+[![GitHub](https://img.shields.io/badge/GitHub-@Wenura17125-181717?style=flat-square&logo=github)](https://github.com/Wenura17125)
+[![Portfolio](https://img.shields.io/badge/Portfolio-Visit-22C55E?style=flat-square&logo=google-chrome&logoColor=white)](https://github.com/Wenura17125)
+
+---
 
 **Last Updated**: January 3, 2026 | **Version**: 2.0 | **Status**: ✅ Production Ready
 
 [![Made with React](https://img.shields.io/badge/Made%20with-React-61DAFB?style=flat-square&logo=react)](https://reactjs.org)
 [![Powered by Supabase](https://img.shields.io/badge/Powered%20by-Supabase-3ECF8E?style=flat-square&logo=supabase)](https://supabase.io)
 [![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-000?style=flat-square&logo=vercel)](https://vercel.com)
+
+---
+
+*If you use this project or find it helpful, please give it a ⭐ - it helps others discover it too!*
 
 </div>
