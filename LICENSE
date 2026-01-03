@@ -1,0 +1,62 @@
+MIT License
+
+Copyright (c) 2025-2026 TechCare Team
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+## Additional Terms
+
+### Third-Party Services
+
+This project integrates with third-party services that have their own terms:
+
+- **Supabase**: Subject to Supabase Terms of Service (https://supabase.com/terms)
+- **Stripe**: Subject to Stripe Services Agreement (https://stripe.com/legal)
+- **Google Maps**: Subject to Google Maps Platform Terms (https://cloud.google.com/maps-platform/terms)
+- **Resend**: Subject to Resend Terms of Service (https://resend.com/legal/terms-of-service)
+
+### Trademarks
+
+"TechCare" and the TechCare logo are trademarks of the TechCare Team. Use of these
+trademarks requires prior written permission.
+
+### Data Privacy
+
+Users of this software are responsible for ensuring compliance with applicable
+data protection laws (including GDPR, CCPA, and local regulations) when
+collecting and processing user data.
+
+---
+
+## Project Information
+
+- **Project**: TechCare - Professional Device Repair Platform
+- **Repository**: https://github.com/Wenura17125/Tech-Care_official
+- **Website**: https://techcareofficial.netlify.app
+- **Contact**: support@techcare.com
+
+## Contributors
+
+See the [CONTRIBUTORS](CONTRIBUTORS.md) file for a list of project contributors.
+
+---
+
+For questions regarding the license, please open an issue on GitHub.
