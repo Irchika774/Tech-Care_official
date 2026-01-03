@@ -1,0 +1,58 @@
+# CODEOWNERS - TechCare Project
+# ==============================================================================
+# This file defines the code owners for the TechCare project.
+# 
+# SOLE OWNER: Wenura (@Wenura17125)
+# 
+# All files in this repository are owned by Wenura. The following rules ensure
+# that critical files cannot be modified without the owner's explicit approval.
+# ==============================================================================
+
+# =============================================================================
+# DEFAULT OWNER - All files
+# =============================================================================
+# Wenura is the default owner of all files in this repository
+*                           @Wenura17125
+
+# =============================================================================
+# STRICTLY PROTECTED FILES - OWNER APPROVAL REQUIRED
+# =============================================================================
+# These files are critical to the project identity and licensing.
+# Only Wenura can approve changes to these files.
+
+# Main Documentation
+README.md                   @Wenura17125
+CONTRIBUTORS.md             @Wenura17125
+CODEOWNERS                  @Wenura17125
+
+# License and Legal
+LICENSE                     @Wenura17125
+
+# Project Configuration (identity fields)
+package.json                @Wenura17125
+
+# Documentation Directory
+/docs/                      @Wenura17125
+/docs/*                     @Wenura17125
+/Documentation/             @Wenura17125
+
+# Environment and Configuration (security)
+.env.example                @Wenura17125
+netlify.toml                @Wenura17125
+vercel.json                 @Wenura17125
+
+# =============================================================================
+# IMPORTANT NOTICE
+# =============================================================================
+# 
+# GitHub will REQUIRE approval from @Wenura17125 for any pull request that
+# modifies the above files. This ensures:
+# 
+#   1. README.md cannot be altered without owner approval
+#   2. LICENSE terms cannot be changed
+#   3. CONTRIBUTORS list remains accurate
+#   4. Project identity is protected
+# 
+# Attempts to bypass these protections violate the project's LICENSE agreement.
+# 
+# =============================================================================

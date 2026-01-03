@@ -1,62 +1,149 @@
-MIT License
+                    TECHCARE PROPRIETARY LICENSE
+                        Version 1.0, January 2026
 
-Copyright (c) 2025-2026 TechCare Team
+                    Copyright (c) 2025-2026 Wenura
+                        All Rights Reserved
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+================================================================================
+                            OWNERSHIP DECLARATION
+================================================================================
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+This software, including all source code, documentation, assets, designs, 
+and associated materials (collectively, the "Software"), is the sole and 
+exclusive intellectual property of:
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+    WENURA (GitHub: @Wenura17125)
+    
+The owner ("Wenura") is the sole author, developer, and creator of all code, 
+features, documentation, and technical implementations within this project.
 
----
+CLARIFICATION OF CONTRIBUTIONS:
+- Repository creation and GitHub account setup by other parties does NOT 
+  constitute ownership, authorship, or contribution to the Software itself.
+- All architectural decisions, code implementations, feature development, 
+  documentation, and technical work were performed exclusively by Wenura.
+- No other party has contributed to the intellectual property contained within 
+  this Software.
 
-## Additional Terms
+================================================================================
+                            LICENSE TERMS
+================================================================================
 
-### Third-Party Services
+SECTION 1: GRANT OF LICENSE
 
-This project integrates with third-party services that have their own terms:
+Subject to the terms and conditions of this License, Wenura hereby grants you 
+a limited, non-exclusive, non-transferable, revocable license to:
 
-- **Supabase**: Subject to Supabase Terms of Service (https://supabase.com/terms)
-- **Stripe**: Subject to Stripe Services Agreement (https://stripe.com/legal)
-- **Google Maps**: Subject to Google Maps Platform Terms (https://cloud.google.com/maps-platform/terms)
-- **Resend**: Subject to Resend Terms of Service (https://resend.com/legal/terms-of-service)
+    a) VIEW the source code for educational and reference purposes
+    b) FORK the repository for personal, non-commercial learning
+    c) USE the Software for personal, non-commercial purposes only
+    d) STUDY the code to learn programming concepts and techniques
 
-### Trademarks
+SECTION 2: RESTRICTIONS
 
-"TechCare" and the TechCare logo are trademarks of the TechCare Team. Use of these
-trademarks requires prior written permission.
+You are expressly PROHIBITED from:
 
-### Data Privacy
+    a) COMMERCIAL USE: Using the Software or any derivative works for 
+       commercial purposes without explicit written permission from Wenura
+       
+    b) REDISTRIBUTION: Distributing, sublicensing, or selling copies of the 
+       Software without explicit written permission from Wenura
+       
+    c) MODIFICATION FOR REDISTRIBUTION: Modifying and redistributing the 
+       Software as your own work or under a different name
+       
+    d) CLAIMING OWNERSHIP: Representing yourself as the author, owner, or 
+       creator of the Software or any substantial portion thereof
+       
+    e) REMOVING ATTRIBUTION: Removing, altering, or obscuring any copyright 
+       notices, license terms, or attribution to Wenura
+       
+    f) COMPETING PRODUCTS: Using the Software to create a competing product 
+       or service without explicit written permission
+       
+    g) TRADEMARK INFRINGEMENT: Using "TechCare" name, logos, or branding 
+       without explicit written permission
 
-Users of this software are responsible for ensuring compliance with applicable
-data protection laws (including GDPR, CCPA, and local regulations) when
-collecting and processing user data.
+SECTION 3: PROTECTED FILES
 
----
+The following files are STRICTLY PROTECTED and may NOT be modified by any 
+party other than Wenura:
 
-## Project Information
+    - README.md (Main project documentation)
+    - LICENSE (This license file)
+    - CONTRIBUTORS.md (Contributors list)
+    - package.json (Project configuration - name, author, license fields)
+    - All files in /docs/ directory
 
-- **Project**: TechCare - Professional Device Repair Platform
-- **Repository**: https://github.com/Wenura17125/Tech-Care_official
-- **Website**: https://techcareofficial.netlify.app
-- **Contact**: support@techcare.com
+Any pull requests or contributions attempting to modify these files will be 
+automatically rejected unless submitted by Wenura.
 
-## Contributors
+SECTION 4: CONTRIBUTION TERMS
 
-See the [CONTRIBUTORS](CONTRIBUTORS.md) file for a list of project contributors.
+If you submit any contributions (code, documentation, bug fixes, etc.) to 
+this project:
 
----
+    a) You agree that all contributions become the exclusive property of Wenura
+    b) You waive all moral rights and claims to the contributed work
+    c) You grant Wenura an irrevocable, perpetual, worldwide license to use, 
+       modify, and distribute your contributions
+    d) You confirm that your contributions are original and do not infringe 
+       on any third-party rights
+    e) You understand that contributions do not grant you ownership or 
+       authorship claims to the project
 
-For questions regarding the license, please open an issue on GitHub.
+SECTION 5: INTELLECTUAL PROPERTY
+
+    a) All trademarks, service marks, and trade names associated with TechCare 
+       are the exclusive property of Wenura
+       
+    b) The Software's architecture, design patterns, and implementation 
+       strategies are proprietary to Wenura
+       
+    c) Any innovations, algorithms, or unique solutions within the Software 
+       are the intellectual property of Wenura
+
+SECTION 6: WARRANTY DISCLAIMER
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL 
+WENURA BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN 
+ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN 
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+SECTION 7: TERMINATION
+
+    a) This License is effective until terminated
+    b) Wenura may terminate this License at any time for any reason
+    c) Upon termination, you must cease all use and destroy all copies of 
+       the Software in your possession
+    d) Violations of this License result in automatic termination
+
+SECTION 8: ENFORCEMENT
+
+    a) Wenura reserves the right to enforce this License through legal means
+    b) Violations may result in DMCA takedown notices, legal action, or other 
+       remedies available under applicable law
+    c) This License shall be governed by and construed in accordance with 
+       applicable copyright and intellectual property laws
+
+================================================================================
+                            CONTACT INFORMATION
+================================================================================
+
+For permissions, licensing inquiries, or commercial use requests:
+
+    Owner:      Wenura
+    GitHub:     https://github.com/Wenura17125
+    Repository: https://github.com/Wenura17125/Tech-Care_official
+    
+================================================================================
+
+                    Copyright (c) 2025-2026 Wenura
+                        All Rights Reserved.
+
+This project represents significant time, effort, and expertise invested by 
+Wenura. Please respect the terms of this license.
+
+================================================================================

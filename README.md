@@ -6,7 +6,7 @@
 
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-success?style=for-the-badge)](https://github.com)
 [![Version](https://img.shields.io/badge/Version-2.0-blue?style=for-the-badge)](https://github.com)
-[![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
+[![License](https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge)](LICENSE)
 [![Node](https://img.shields.io/badge/Node-24.x-green?style=for-the-badge&logo=node.js)](https://nodejs.org)
 [![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react)](https://reactjs.org)
 [![Supabase](https://img.shields.io/badge/Supabase-Database-3ECF8E?style=for-the-badge&logo=supabase)](https://supabase.io)
@@ -862,26 +862,76 @@ TechCare includes a curated database of **100+ top-rated repair shops** across S
 
 ## 🤝 Contributing
 
-We welcome contributions! Please follow these steps:
+> ⚠️ **IMPORTANT: Read Before Contributing**
+
+This project is **solely owned by Wenura** ([@Wenura17125](https://github.com/Wenura17125)). All code, documentation, and features were developed exclusively by Wenura.
+
+### 🔒 Protected Files (DO NOT MODIFY)
+
+The following files are **strictly protected** and cannot be modified by contributors:
+
+| File | Status | Reason |
+|------|--------|--------|
+| `README.md` | 🔒 **LOCKED** | Project identity and documentation |
+| `LICENSE` | 🔒 **LOCKED** | Legal terms and ownership |
+| `CONTRIBUTORS.md` | 🔒 **LOCKED** | Verified contributor list |
+| `CODEOWNERS` | 🔒 **LOCKED** | Access control configuration |
+| `/docs/*` | 🔒 **LOCKED** | Official documentation |
+| `package.json` (name, author, license) | 🔒 **LOCKED** | Project identity fields |
+
+**Any pull requests modifying these files will be automatically rejected.**
+
+### ✅ Allowed Contributions
+
+You may contribute to:
+- Bug fixes in source code (`/src/`, `/server/`)
+- New features (with prior discussion)
+- Performance improvements
+- Test coverage
+
+### 📋 Contribution Terms
+
+By submitting a contribution, you agree that:
+
+1. ✅ All contributions become the **exclusive property of Wenura**
+2. ✅ You waive all ownership claims to your contributions
+3. ✅ Your contributions are original and don't infringe third-party rights
+4. ✅ Contributions do NOT grant you project ownership
+5. ❌ You may NOT modify protected files
+6. ❌ You may NOT claim authorship of the project
+
+### 🔄 How to Contribute
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Development Guidelines
-
-- Follow existing code style and conventions
-- Write meaningful commit messages
-- Update documentation for new features
-- Add tests for new functionality
+2. Create a feature branch (`git checkout -b feature/your-feature`)
+3. Make changes (to allowed files only)
+4. Commit changes (`git commit -m 'Add feature'`)
+5. Push to branch (`git push origin feature/your-feature`)
+6. Open a Pull Request for review by @Wenura17125
 
 ---
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+> ⚠️ **This is NOT an open-source project under MIT/GPL/Apache license.**
+
+This project is licensed under the **TechCare Proprietary License**.
+
+### Key Points:
+
+| Permission | Status |
+|------------|--------|
+| ✅ View source code | Allowed |
+| ✅ Fork for learning | Allowed |
+| ✅ Personal use | Allowed |
+| ❌ Commercial use | **Prohibited** without permission |
+| ❌ Redistribution | **Prohibited** without permission |
+| ❌ Claiming ownership | **Prohibited** |
+| ❌ Modifying protected files | **Prohibited** |
+
+See the [LICENSE](LICENSE) file for full terms and conditions.
+
+**Copyright (c) 2025-2026 Wenura. All Rights Reserved.**
 
 ---
 
