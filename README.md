@@ -874,7 +874,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 <div align="center">
 
-**Built with ❤️ by the TechCare Team**
+**Built by the Wenura**
 
 **Last Updated**: January 3, 2026 | **Version**: 2.0 | **Status**: ✅ Production Ready
 
