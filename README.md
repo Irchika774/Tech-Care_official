@@ -20,7 +20,7 @@
 
 | Component | URL | Status |
 |-----------|-----|--------|
-| **🖥️ Frontend** | [techcareofficial.netlify.app](https://techcareofficial.netlify.app) | ![Netlify](https://img.shields.io/badge/Netlify-Online-00C7B7?logo=netlify) |
+| **🖥️ Frontend** | [techcareofficial.netlify.app](https://techcare-official-new.netlify.app/) | ![Netlify](https://img.shields.io/badge/Netlify-Online-00C7B7?logo=netlify) |
 | **⚙️ Backend API** | [techcare-flax.vercel.app](https://techcare-flax.vercel.app) | ![Vercel](https://img.shields.io/badge/Vercel-Online-000?logo=vercel) |
 
 ---
