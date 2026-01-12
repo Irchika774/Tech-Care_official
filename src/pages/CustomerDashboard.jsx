@@ -134,55 +134,62 @@ function CustomerDashboard() {
   const fetchData = async () => {
     if (!user) return;
 
-    // Use session from context or fall back to getting it
-    let token = session?.access_token;
-    if (!token) {
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      token = currentSession?.access_token;
-    }
-
-    // Even if no backend token, we can still fetch most things via Supabase client directly
-    // because of RLS policies for authenticated users.
-
+    setLoading(true);
     try {
-      // 1. Fetch Devices (Direct from Supabase)
-      const { data: userDevices, error: deviceError } = await supabase
-        .from('user_devices')
+      // 1. Get Customer Account ID (Linking Auth UID to Service PK)
+      const { data: customerRecord, error: customerError } = await supabase
+        .from('customers')
         .select('*')
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .single();
 
-      if (deviceError) throw deviceError;
-      setDevices(userDevices || []);
-
-      // 2. Fetch Bookings (Direct from Supabase instead of Backend API to avoid 500s)
-      const { data: bookings, error: bookingError } = await supabase
-        .from('bookings')
-        .select(`
-          *,
-          device:user_devices(*),
-          technician:technicians(name, business_name)
-        `)
-        .eq('customer_id', user.id) // Corrected from profile_id to customer_id matching schema
-        .order('created_at', { ascending: false });
-
-      if (bookingError) {
-        // If customer_id fails, try user_id (depending on schema version)
-        console.warn("Booking fetch by customer_id failed, retrying with user_id...");
+      if (customerError && customerError.code !== 'PGRST116') {
+        console.error('Error fetching customer record:', customerError);
       }
 
-      const allBookings = bookings || [];
+      const customerId = customerRecord?.id;
+
+      // 2. Fetch Bookings (Direct from Supabase)
+      let bookings = [];
+      if (customerId) {
+        const { data, error: bookingError } = await supabase
+          .from('bookings')
+          .select(`
+            *,
+            technician:technicians(id, name, email, phone, rating)
+          `)
+          .eq('customer_id', customerId)
+          .order('created_at', { ascending: false });
+
+        if (bookingError) throw bookingError;
+
+        // Format bookings to match UI expectations (flattened device/issue info)
+        bookings = (data || []).map(b => ({
+          ...b,
+          device: {
+            brand: b.device_brand,
+            model: b.device_model,
+            type: b.device_type
+          },
+          issue: {
+            description: b.issue_description,
+            type: b.issue_type
+          }
+        }));
+      }
 
       // 3. Calculate Stats Locally
-      const active = allBookings.filter(b => ['pending', 'confirmed', 'in_progress'].includes(b.status));
-      const completed = allBookings.filter(b => b.status === 'completed');
-      const totalSpent = completed.reduce((sum, b) => sum + (Number(b.estimated_cost) || 0), 0);
+      const active = bookings.filter(b => ['pending', 'confirmed', 'scheduled', 'in_progress'].includes(b.status));
+      const completed = bookings.filter(b => b.status === 'completed');
+      const totalSpent = completed.reduce((sum, b) => sum + (Number(b.price || b.estimated_cost) || 0), 0);
 
-      // 4. Update State
+      // 4. Update Main State
       setData({
         customer: {
-          name: user.user_metadata?.name || user.email,
-          email: user.email,
-          profileImage: user.user_metadata?.avatar_url
+          name: customerRecord?.name || user.user_metadata?.name || user.email,
+          email: customerRecord?.email || user.email,
+          profileImage: customerRecord?.profile_image || user.user_metadata?.avatar_url,
+          phone: customerRecord?.phone
         },
         stats: {
           activeBookings: active.length,
@@ -190,21 +197,33 @@ function CustomerDashboard() {
           totalSpent: totalSpent
         },
         activeBookings: active,
-        recentBookings: allBookings.slice(0, 5) // Last 5 bookings
+        recentBookings: bookings.slice(0, 5) // Last 5 bookings
       });
 
-      // 5. Fetch Favorites (Optional - fail silently)
-      const { data: favoritesData } = await supabase
-        .from('favorite_technicians')
-        .select('*, technician:technicians(*)')
-        .eq('user_id', user.id);
-      setFavorites(favoritesData || []);
+      // 5. Fetch Favorites (table is named 'favorites')
+      if (customerId) {
+        const { data: favoritesData } = await supabase
+          .from('favorites')
+          .select('*, technician:technicians(*)')
+          .eq('customer_id', customerId);
+
+        setFavorites((favoritesData || []).map(f => ({
+          _id: f.technician?.id,
+          ...f.technician,
+          rating: f.technician?.rating || 0,
+          reviewCount: f.technician?.review_count || 0,
+          profileImage: f.technician?.profile_image
+        })));
+      }
 
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
-      // Don't block UI on error, just show empty state/error toast
-      setError(null); // Clear critical error to show what we have
-      toast({ variant: "destructive", title: "Partial Sync Error", description: "Some info might be missing." });
+      setError(null); // Prevents blocking the whole UI
+      toast({
+        variant: "destructive",
+        title: "Partial Sync Error",
+        description: "Some information could not be loaded directly."
+      });
     } finally {
       setLoading(false);
     }
@@ -453,9 +472,6 @@ function CustomerDashboard() {
                 </TabsTrigger>
                 <TabsTrigger value="favorites" className="rounded-lg h-full px-6 data-[state=active]:bg-white data-[state=active]:text-black">
                   <Heart className="w-4 h-4 mr-2" /> Favorites
-                </TabsTrigger>
-                <TabsTrigger value="devices" className="rounded-lg h-full px-6 data-[state=active]:bg-white data-[state=active]:text-black">
-                  <Smartphone className="w-4 h-4 mr-2" /> My Devices
                 </TabsTrigger>
 
                 <TabsTrigger value="settings" className="rounded-lg h-full px-6 data-[state=active]:bg-white data-[state=active]:text-black">
@@ -732,24 +748,24 @@ function CustomerDashboard() {
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {favorites.map((fav) => (
-                          <div key={fav.id} className="p-4 bg-zinc-800/50 rounded-xl border border-zinc-700 flex items-center justify-between group">
+                          <div key={fav.id || fav._id} className="p-4 bg-zinc-800/50 rounded-xl border border-zinc-700 flex items-center justify-between group">
                             <div className="flex items-center gap-4">
                               <Avatar className="h-12 w-12 border border-zinc-700">
-                                <AvatarImage src={fav.technician?.profile_image} />
-                                <AvatarFallback>{fav.technician?.name?.charAt(0)}</AvatarFallback>
+                                <AvatarImage src={fav.profile_image} />
+                                <AvatarFallback>{fav.name?.charAt(0)}</AvatarFallback>
                               </Avatar>
                               <div>
-                                <h5 className="font-bold text-white">{fav.technician?.name}</h5>
+                                <h5 className="font-bold text-white">{fav.name}</h5>
                                 <div className="flex items-center gap-1 text-xs text-yellow-500">
                                   <Star className="w-3 h-3 fill-current" />
-                                  <span>{fav.technician?.rating || '5.0'}</span>
+                                  <span>{fav.rating || '5.0'}</span>
                                 </div>
                               </div>
                             </div>
                             <Button
                               size="sm"
                               className="bg-white text-black hover:bg-gray-200 rounded-full opacity-0 group-hover:opacity-100 transition-all"
-                              onClick={() => navigate('/schedule', { state: { technician: fav.technician } })}
+                              onClick={() => navigate('/schedule', { state: { technician: fav } })}
                             >
                               Book
                             </Button>
