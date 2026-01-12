@@ -5,6 +5,7 @@
 ### _Connecting Customers with Expert Technicians_
 
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-success?style=for-the-badge)](https://github.com)
+[![Last Updated](https://img.shields.io/badge/Last%20Updated-Jan%202026-blue?style=for-the-badge)](https://github.com/Wenura17125/Tech-Care_official/commits/main)
 [![Version](https://img.shields.io/badge/Version-2.0-blue?style=for-the-badge)](https://github.com)
 [![License](https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge)](LICENSE)
 [![Node](https://img.shields.io/badge/Node-24.x-green?style=for-the-badge&logo=node.js)](https://nodejs.org)
