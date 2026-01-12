@@ -123,11 +123,14 @@ app.use((err, req, res, next) => {
     });
 });
 
-app.listen(PORT, () => {
-    console.log(`🚀 TechCare Server running on port ${PORT}`);
-    console.log(`📍 API: http://localhost:${PORT}`);
-    console.log(`🏥 Health: http://localhost:${PORT}/api/health`);
-});
+// Only start the server if we're not in a Vercel environment (where it exports the app)
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+    app.listen(PORT, () => {
+        console.log(`🚀 TechCare Server running on port ${PORT}`);
+        console.log(`📍 API: http://localhost:${PORT}`);
+        console.log(`🏥 Health: http://localhost:${PORT}/api/health`);
+    });
+}
 
 export default app;
 
