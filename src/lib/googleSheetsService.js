@@ -96,6 +96,7 @@ export const fetchRepairShops = async (forceRefresh = false) => {
             headers: {
                 'Accept': 'text/csv',
             },
+            signal: AbortSignal.timeout(10000) // 10s timeout
         });
 
         if (!response.ok) {
