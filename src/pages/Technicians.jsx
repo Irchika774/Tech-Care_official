@@ -44,51 +44,67 @@ const Technicians = () => {
   const [districts, setDistricts] = useState(['all']);
   const shopsPerPage = 12;
 
-    const sriLankaDistricts = [
-      'Ampara', 'Anuradhapura', 'Badulla', 'Batticaloa', 'Colombo', 'Galle', 'Gampaha',
-      'Hambantota', 'Jaffna', 'Kalutara', 'Kandy', 'Kegalle', 'Kilinochchi', 'Kurunegala',
-      'Mannar', 'Matale', 'Matara', 'Monaragala', 'Mullaitivu', 'Nuwara Eliya',
-      'Polonnaruwa', 'Puttalam', 'Ratnapura', 'Trincomalee', 'Vavuniya'
-    ];
-  
-    const serviceTypes = [
-      { value: 'all', label: 'All Services' },
-      { value: 'mobile', label: 'Mobile Repair' },
-      { value: 'pc', label: 'PC/Laptop Repair' },
-      { value: 'tablet', label: 'Tablet Repair' },
-      { value: 'diagnostics', label: 'Diagnostics' },
-      { value: 'screen', label: 'Screen Replacement' },
-      { value: 'battery', label: 'Battery Replacement' },
-      { value: 'water', label: 'Water Damage' },
-      { value: 'software', label: 'Software/OS' },
-      { value: 'data', label: 'Data Recovery' }
-    ];
+  const sriLankaDistricts = [
+    'Ampara', 'Anuradhapura', 'Badulla', 'Batticaloa', 'Colombo', 'Galle', 'Gampaha',
+    'Hambantota', 'Jaffna', 'Kalutara', 'Kandy', 'Kegalle', 'Kilinochchi', 'Kurunegala',
+    'Mannar', 'Matale', 'Matara', 'Monaragala', 'Mullaitivu', 'Nuwara Eliya',
+    'Polonnaruwa', 'Puttalam', 'Ratnapura', 'Trincomalee', 'Vavuniya'
+  ];
 
-    const loadShops = async () => {
-      setLoading(true);
-      try {
-        // Fetch from both Google Sheets (mock/legacy) and Supabase
-        const { data: supabaseTechs, error } = await supabase
+  const serviceTypes = [
+    { value: 'all', label: 'All Services' },
+    { value: 'mobile', label: 'Mobile Repair' },
+    { value: 'pc', label: 'PC/Laptop Repair' },
+    { value: 'tablet', label: 'Tablet Repair' },
+    { value: 'diagnostics', label: 'Diagnostics' },
+    { value: 'screen', label: 'Screen Replacement' },
+    { value: 'battery', label: 'Battery Replacement' },
+    { value: 'water', label: 'Water Damage' },
+    { value: 'software', label: 'Software/OS' },
+    { value: 'data', label: 'Data Recovery' }
+  ];
+
+  const loadShops = async () => {
+    setLoading(true);
+    try {
+      // Fetch from both Google Sheets (mock/legacy) and Supabase in parallel
+      const [supabaseResult, sheetsResult] = await Promise.allSettled([
+        supabase
           .from('technicians')
           .select('*')
-          .eq('status', 'active');
-        
-        const sheetsData = await fetchRepairShops();
-        
-        // Merge data, prioritizing Supabase technicians
-        const combinedData = [...(supabaseTechs || []), ...(sheetsData || [])];
-        
-        // De-duplicate by name or ID if necessary
-        const uniqueShops = combinedData.filter((v, i, a) => a.findIndex(t => (t.id === v.id || t.name === v.name)) === i);
-        
-        setShops(uniqueShops);
-        setDistricts(['all', ...sriLankaDistricts]);
-      } catch (error) {
-        console.error('Error fetching repair shops:', error);
-      } finally {
-        setLoading(false);
+          .eq('status', 'active')
+          .abortSignal(AbortSignal.timeout(10000)), // 10s timeout for DB
+        fetchRepairShops()
+      ]);
+
+      const supabaseTechs = supabaseResult.status === 'fulfilled' ? supabaseResult.value.data : [];
+      if (supabaseResult.status === 'rejected') {
+        console.warn('Supabase fetch failed:', supabaseResult.reason);
       }
-    };
+
+      const sheetsData = sheetsResult.status === 'fulfilled' ? sheetsResult.value : [];
+      if (sheetsResult.status === 'rejected') {
+        console.warn('Sheets fetch failed:', sheetsResult.reason);
+      }
+
+      // Merge data, prioritizing Supabase technicians
+      const combinedData = [...(supabaseTechs || []), ...(sheetsData || [])];
+
+      // De-duplicate by name or ID
+      const uniqueShops = combinedData.filter((v, i, a) =>
+        a.findIndex(t => (t.id === v.id || t.name === v.name)) === i
+      );
+
+      setShops(uniqueShops);
+      setDistricts(['all', ...sriLankaDistricts]);
+    } catch (error) {
+      console.error('Error fetching repair shops:', error);
+      // Even if everything purely fails, we might want to show empty state rather than infinite load
+      setShops([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleRefresh = async () => {
     setRefreshing(true);

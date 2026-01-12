@@ -86,7 +86,7 @@ export const AuthProvider = ({ children }) => {
                     console.warn('[AUTH] Initialization timed out, forcing loading to false to show UI');
                     setLoading(false);
                 }
-            }, 3000);
+            }, 10000);
 
             try {
                 console.log('[DEBUG] initializeAuth started');
