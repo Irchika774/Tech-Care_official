@@ -1,6 +1,6 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from './AuthContext';
+import { AuthContext } from './AuthContext';
 
 const NotificationContext = createContext(null);
 
@@ -25,24 +25,33 @@ export const useNotifications = () => {
 };
 
 export const NotificationProvider = ({ children }) => {
-    const auth = useAuth();
+    const auth = useContext(AuthContext);
     const user = auth?.user;
     const profile = auth?.profile;
 
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [loading, setLoading] = useState(false);
+    const lastFetchRef = useRef(0);
 
     // Get the user ID for notifications
     const getUserId = useCallback(() => {
         if (!user && !profile) return null;
         return profile?.id || user?.id;
-    }, [user, profile]);
+    }, [user?.id, profile?.id]);
 
     // Fetch notifications from API
-    const fetchNotifications = useCallback(async () => {
+    const fetchNotifications = useCallback(async (force = false) => {
         const userId = getUserId();
         if (!userId) return;
+
+        // Rate limit: Prevent multiple fetches within 5 seconds unless forced
+        const now = Date.now();
+        if (!force && now - lastFetchRef.current < 5000) {
+            console.log('[DEBUG] fetchNotifications skipped (rate limited)');
+            return;
+        }
+        lastFetchRef.current = now;
 
         setLoading(true);
         try {

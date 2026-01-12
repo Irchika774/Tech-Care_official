@@ -4,12 +4,12 @@ import SEO from '../components/SEO';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
-import { 
-    Smartphone, 
-    Laptop, 
-    Tablet, 
-    Gamepad2, 
-    Home, 
+import {
+    Smartphone,
+    Laptop,
+    Tablet,
+    Gamepad2,
+    Home,
     Keyboard,
     Zap,
     Users,
@@ -140,20 +140,20 @@ const Services = () => {
                     <div className="absolute top-20 left-10 w-72 h-72 bg-white/5 rounded-full blur-3xl" />
                     <div className="absolute bottom-20 right-10 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
                 </div>
-                
+
                 <div className="relative container mx-auto px-4">
                     <div className="text-center max-w-4xl mx-auto">
                         <Badge className="mb-6 bg-white/10 text-white border-white/30 backdrop-blur-sm px-4 py-2">
                             <Sparkles className="w-4 h-4 mr-2" />
                             Professional Tech Repair
                         </Badge>
-                        
+
                         <h1 className="text-5xl md:text-7xl font-bold mb-6 text-white">
                             Our Services
                         </h1>
-                        
+
                         <p className="text-xl md:text-2xl text-zinc-400 mb-8 leading-relaxed">
-                            Professional repair services for all your tech devices. 
+                            Professional repair services for all your tech devices.
                             Expert technicians, quality parts, guaranteed results.
                         </p>
                     </div>
@@ -191,7 +191,7 @@ const Services = () => {
                                         ))}
                                     </ul>
                                     <Button asChild className="w-full bg-white text-black hover:bg-gray-100 font-semibold py-6 rounded-full">
-                                        <Link to={service.link}>
+                                        <Link to={service.link} state={{ service: service.title }}>
                                             Book Now
                                             <ArrowRight className="ml-2 w-5 h-5" />
                                         </Link>
@@ -266,7 +266,7 @@ const Services = () => {
                                     </li>
                                 </ul>
                                 <Button asChild variant="outline" className="w-full border-white text-white hover:bg-white hover:text-black py-6 rounded-full transition-all duration-300">
-                                    <Link to="/schedule">Get Started</Link>
+                                    <Link to="/schedule" state={{ service: 'General Diagnostic' }}>Get Started</Link>
                                 </Button>
                             </CardContent>
                         </Card>
@@ -292,7 +292,7 @@ const Services = () => {
                                     </li>
                                 </ul>
                                 <Button asChild className="w-full bg-white text-black hover:bg-gray-100 font-semibold py-6 rounded-full">
-                                    <Link to="/schedule">Book Now</Link>
+                                    <Link to="/schedule" state={{ service: 'Standard Repair' }}>Book Now</Link>
                                 </Button>
                             </CardContent>
                         </Card>
@@ -313,7 +313,7 @@ const Services = () => {
                                     </li>
                                 </ul>
                                 <Button asChild variant="outline" className="w-full border-white text-white hover:bg-white hover:text-black py-6 rounded-full transition-all duration-300">
-                                    <Link to="/schedule">Book Now</Link>
+                                    <Link to="/schedule" state={{ service: 'Advanced Repair' }}>Book Now</Link>
                                 </Button>
                             </CardContent>
                         </Card>
@@ -341,7 +341,7 @@ const Services = () => {
                                 Get connected with expert technicians in your area. Fast, reliable, and affordable.
                             </p>
                             <Button asChild size="lg" className="bg-white text-black hover:bg-gray-100 px-10 py-6 text-lg font-semibold rounded-full">
-                                <Link to="/schedule">
+                                <Link to="/schedule" state={{ service: 'General Inquiry' }}>
                                     Schedule a Repair
                                     <ArrowRight className="ml-2 w-5 h-5" />
                                 </Link>

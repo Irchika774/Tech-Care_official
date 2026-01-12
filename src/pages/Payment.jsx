@@ -4,6 +4,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { bookingsAPI } from '../lib/api';
 import CurrencyDisplay from '../components/CurrencyDisplay';
 import SEO from '../components/SEO';
 
@@ -147,10 +148,16 @@ const PaymentSuccessModal = ({ payment, booking, onClose }) => {
                     </div>
                 </div>
                 <button
-                    onClick={() => navigate('/customer-dashboard')}
-                    className="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+                    onClick={() => navigate('/schedule', { 
+                        state: { 
+                            paymentConfirmed: true, 
+                            booking: booking,
+                            service: booking.serviceType
+                        } 
+                    })}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
                 >
-                    Go to Dashboard
+                    Pick Schedule <ArrowRight className="w-4 h-4" />
                 </button>
             </div>
         </div>
@@ -175,19 +182,14 @@ const Payment = () => {
 
     useEffect(() => {
         const initializePayment = async () => {
-            // ... (mock booking setup) ...
-            const mockBooking = {
-                _id: 'BK001',
-                serviceType: 'Mobile Repair',
-                device: { brand: 'iPhone', model: '13 Pro' },
-                technician: { name: 'John Smith', rating: 4.8 },
-                amount: 15000,
-                serviceFee: 1500,
-                total: 16500,
-                customerId: user?.id || null
-            };
+            const booking = location.state?.booking;
 
-            const booking = location.state?.booking || mockBooking;
+            if (!booking) {
+                console.error('No booking data found in state');
+                navigate('/customer-dashboard', { replace: true });
+                return;
+            }
+
             setBookingDetails(booking);
 
             try {
@@ -234,7 +236,7 @@ const Payment = () => {
         };
 
         initializePayment();
-    }, [location, user]);
+    }, [location, user, navigate]);
 
     useEffect(() => {
         if (activeTab === 'history' && user?.id) {
@@ -272,6 +274,20 @@ const Payment = () => {
 
     const handlePaymentSuccess = (paymentIntent) => {
         setPaymentSuccess(paymentIntent);
+    };
+
+    const handleCancelPayment = async () => {
+        if (!bookingDetails?.id && !bookingDetails?._id) return;
+
+        if (window.confirm("Are you sure you want to cancel this payment? The booking will be cancelled.")) {
+            try {
+                await bookingsAPI.cancel(bookingDetails.id || bookingDetails._id);
+                navigate('/services');
+            } catch (err) {
+                console.error("Failed to cancel booking", err);
+                navigate('/services'); // Fail safe redirect
+            }
+        }
     };
 
     const getStatusColor = (status) => {
@@ -471,10 +487,16 @@ const Payment = () => {
                             )}
 
                             <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                                <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                                <p className="text-xs text-gray-500 dark:text-gray-400 text-center mb-4">
                                     By completing this payment, you agree to our Terms of Service and Privacy Policy.
                                     Your card details are securely processed by Stripe.
                                 </p>
+                                <button
+                                    onClick={handleCancelPayment}
+                                    className="w-full text-red-500 hover:text-red-600 text-sm font-medium"
+                                >
+                                    Cancel Payment & Booking
+                                </button>
                             </div>
                         </div>
                     </div>

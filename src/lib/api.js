@@ -82,12 +82,14 @@ export const bidsAPI = {
 };
 
 // Appointments API
-export const appointmentsAPI = {
-    getAll: () => apiClient.get('/api/appointments'),
-    getById: (id) => apiClient.get(`/api/appointments/${id}`),
-    create: (data) => apiClient.post('/api/appointments', data),
-    update: (id, data) => apiClient.put(`/api/appointments/${id}`, data),
-    delete: (id) => apiClient.delete(`/api/appointments/${id}`),
+// Bookings API (Customer Focused)
+export const bookingsAPI = {
+    getAll: (params) => apiClient.get('/api/customers/bookings', { params }), // supports status, limit, skip
+    getById: (id) => apiClient.get(`/api/bookings/${id}`),
+    create: (data) => apiClient.post('/api/bookings', data),
+    cancel: (id) => apiClient.patch(`/api/customers/bookings/${id}`, { action: 'cancel' }),
+    reschedule: (id, date) => apiClient.patch(`/api/customers/bookings/${id}`, { action: 'reschedule', scheduledDate: date }),
+    update: (id, data) => apiClient.patch(`/api/customers/bookings/${id}`, data),
 };
 
 // Reviews API

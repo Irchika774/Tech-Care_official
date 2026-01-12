@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -7,12 +8,12 @@ import { Label } from '../components/ui/label';
 import { Card, CardContent, CardFooter, CardHeader } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { useToast } from '../hooks/use-toast';
-import { 
-    Mail, 
-    Lock, 
-    Eye, 
-    EyeOff, 
-    UserPlus, 
+import {
+    Mail,
+    Lock,
+    Eye,
+    EyeOff,
+    UserPlus,
     Sparkles,
     User,
     Shield,
@@ -32,9 +33,16 @@ const Register = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [role, setRole] = useState('user');
-    const { register } = useAuth();
+    const { register, user } = useAuth();
+    const navigate = useNavigate();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        if (user) {
+            navigate(user.role === 'technician' ? '/technician-dashboard' : '/customer-dashboard');
+        }
+    }, [user, navigate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -118,12 +126,12 @@ const Register = () => {
                                     <Sparkles className="w-4 h-4 mr-2" />
                                     Join TechCare
                                 </Badge>
-                                
+
                                 <h1 className="text-5xl md:text-6xl font-bold mb-6 text-white leading-tight">
                                     Create your<br />
                                     <span className="text-zinc-400">free account</span>
                                 </h1>
-                                
+
                                 <p className="text-xl text-zinc-400 mb-10 leading-relaxed">
                                     Join thousands of satisfied customers and expert technicians on our platform.
                                 </p>
@@ -181,11 +189,10 @@ const Register = () => {
                                                             key={type.value}
                                                             type="button"
                                                             onClick={() => setRole(type.value)}
-                                                            className={`p-4 rounded-xl border-2 text-left transition-all duration-300 ${
-                                                                role === type.value
-                                                                    ? 'border-white bg-white/10'
-                                                                    : 'border-zinc-700 bg-zinc-800/50 hover:border-zinc-600'
-                                                            }`}
+                                                            className={`p-4 rounded-xl border-2 text-left transition-all duration-300 ${role === type.value
+                                                                ? 'border-white bg-white/10'
+                                                                : 'border-zinc-700 bg-zinc-800/50 hover:border-zinc-600'
+                                                                }`}
                                                         >
                                                             <type.icon className={`w-6 h-6 mb-2 ${role === type.value ? 'text-white' : 'text-zinc-400'}`} />
                                                             <div className={`font-semibold ${role === type.value ? 'text-white' : 'text-zinc-300'}`}>

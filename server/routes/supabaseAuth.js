@@ -122,6 +122,19 @@ router.put('/profile', supabaseAuth, async (req, res) => {
 
         if (error) throw error;
 
+        // Sync with role-specific tables
+        if (req.user.role === 'technician') {
+            await supabaseAdmin
+                .from('technicians')
+                .update({ ...updates, updated_at: new Date().toISOString() })
+                .eq('user_id', req.user.id);
+        } else if (['user', 'customer'].includes(req.user.role)) {
+            await supabaseAdmin
+                .from('customers')
+                .update({ ...updates, updated_at: new Date().toISOString() })
+                .eq('user_id', req.user.id);
+        }
+
         res.json(data);
     } catch (error) {
         console.error('Update profile error:', error);

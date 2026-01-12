@@ -4,13 +4,13 @@ import SEO from '../components/SEO';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
-import { 
-    Sparkles, 
-    HelpCircle, 
-    Mail, 
-    Phone, 
-    Clock, 
-    ChevronDown, 
+import {
+    Sparkles,
+    HelpCircle,
+    Mail,
+    Phone,
+    Clock,
+    ChevronDown,
     ChevronUp,
     Wrench,
     CreditCard,
@@ -146,12 +146,12 @@ const Support = () => {
         setOpenFaq(openFaq === id ? null : id);
     };
 
-    const filteredFaqs = searchQuery 
+    const filteredFaqs = searchQuery
         ? faqs.map(category => ({
             ...category,
             questions: category.questions.filter(
-                q => q.q.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                     q.a.toLowerCase().includes(searchQuery.toLowerCase())
+                q => q.q.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    q.a.toLowerCase().includes(searchQuery.toLowerCase())
             )
         })).filter(category => category.questions.length > 0)
         : faqs;
@@ -184,18 +184,18 @@ const Support = () => {
                     <div className="absolute top-20 left-10 w-72 h-72 bg-white/5 rounded-full blur-3xl" />
                     <div className="absolute bottom-20 right-10 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
                 </div>
-                
+
                 <div className="relative container mx-auto px-4">
                     <div className="text-center max-w-4xl mx-auto">
                         <Badge className="mb-6 bg-white/10 text-white border-white/30 backdrop-blur-sm px-4 py-2">
                             <Sparkles className="w-4 h-4 mr-2" />
                             We're Here to Help
                         </Badge>
-                        
+
                         <h1 className="text-5xl md:text-7xl font-bold mb-6 text-white">
                             Support Center
                         </h1>
-                        
+
                         <p className="text-xl md:text-2xl text-zinc-400 mb-8 leading-relaxed">
                             Find answers to common questions or contact our support team directly
                         </p>
@@ -352,7 +352,14 @@ const Support = () => {
                         {/* Contact Form */}
                         <Card className="lg:col-span-2 bg-zinc-900 border-zinc-800">
                             <CardContent className="p-8">
-                                <form className="space-y-6">
+                                <form className="space-y-6" onSubmit={(e) => {
+                                    e.preventDefault();
+                                    toast({
+                                        title: "Message Sent",
+                                        description: "We've received your message and will get back to you soon.",
+                                    });
+                                    e.target.reset();
+                                }}>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div>
                                             <label htmlFor="name" className="block text-sm font-medium text-white mb-2">

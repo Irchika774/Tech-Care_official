@@ -81,7 +81,14 @@ router.get('/:id', supabaseAuth, async (req, res) => {
             .eq('booking_id', req.params.id)
             .order('amount', { ascending: true });
 
-        res.json({ booking, bids: bids || [] });
+        let bidsToReturn = bids || [];
+
+        // Privacy: Technicians should only see their own bids, not competitors'
+        if (req.user.role === 'technician') {
+            bidsToReturn = bidsToReturn.filter(b => b.technician_id === req.user.technicianId);
+        }
+
+        res.json({ booking, bids: bidsToReturn });
     } catch (error) {
         console.error('Booking fetch error:', error);
         res.status(500).json({ error: 'Failed to fetch booking' });

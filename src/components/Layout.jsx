@@ -12,9 +12,12 @@ const Layout = ({ children }) => {
         '/technicians', '/support', '/login', '/register', '/customer-dashboard',
         '/technician-dashboard', '/admin', '/bidding', '/account', '/settings',
         '/history', '/favorites', '/compare', '/payment', '/payment-success',
-        '/reviews', '/terms', '/privacy', '/diagnostics', '/service-areas'
+        '/reviews', '/terms', '/privacy', '/diagnostics', '/service-areas',
+        '/chat', '/tracker', '/forgot-password', '/reset-password'
     ];
-    const isDarkPage = darkRoutes.includes(normalizedPath);
+    const isDarkPage = darkRoutes.some(route => 
+        normalizedPath === route || normalizedPath.startsWith(route + '/')
+    );
 
     if (isHomePage) {
         return (

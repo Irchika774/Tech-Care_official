@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import SEO from '../components/SEO';
 import { fetchRepairShops, getDistrictStatistics } from '../lib/googleSheetsService';
+import { supabase } from '../lib/supabase';
 
 const Technicians = () => {
   const navigate = useNavigate();
@@ -43,32 +44,51 @@ const Technicians = () => {
   const [districts, setDistricts] = useState(['all']);
   const shopsPerPage = 12;
 
-  const serviceTypes = [
-    { value: 'all', label: 'All Services' },
-    { value: 'mobile', label: 'Mobile Repair' },
-    { value: 'computer', label: 'Computer/Laptop' },
-    { value: 'phone', label: 'Phone Services' }
-  ];
+    const sriLankaDistricts = [
+      'Ampara', 'Anuradhapura', 'Badulla', 'Batticaloa', 'Colombo', 'Galle', 'Gampaha',
+      'Hambantota', 'Jaffna', 'Kalutara', 'Kandy', 'Kegalle', 'Kilinochchi', 'Kurunegala',
+      'Mannar', 'Matale', 'Matara', 'Monaragala', 'Mullaitivu', 'Nuwara Eliya',
+      'Polonnaruwa', 'Puttalam', 'Ratnapura', 'Trincomalee', 'Vavuniya'
+    ];
+  
+    const serviceTypes = [
+      { value: 'all', label: 'All Services' },
+      { value: 'mobile', label: 'Mobile Repair' },
+      { value: 'pc', label: 'PC/Laptop Repair' },
+      { value: 'tablet', label: 'Tablet Repair' },
+      { value: 'diagnostics', label: 'Diagnostics' },
+      { value: 'screen', label: 'Screen Replacement' },
+      { value: 'battery', label: 'Battery Replacement' },
+      { value: 'water', label: 'Water Damage' },
+      { value: 'software', label: 'Software/OS' },
+      { value: 'data', label: 'Data Recovery' }
+    ];
 
-  useEffect(() => {
-    loadShops();
-  }, []);
-
-  const loadShops = async () => {
-    setLoading(true);
-    try {
-      const data = await fetchRepairShops();
-      setShops(data || []);
-
-      // Extract unique districts from the data
-      const uniqueDistricts = [...new Set(data.map(shop => shop.district).filter(Boolean))];
-      setDistricts(['all', ...uniqueDistricts.sort()]);
-    } catch (error) {
-      console.error('Error fetching repair shops:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const loadShops = async () => {
+      setLoading(true);
+      try {
+        // Fetch from both Google Sheets (mock/legacy) and Supabase
+        const { data: supabaseTechs, error } = await supabase
+          .from('technicians')
+          .select('*')
+          .eq('status', 'active');
+        
+        const sheetsData = await fetchRepairShops();
+        
+        // Merge data, prioritizing Supabase technicians
+        const combinedData = [...(supabaseTechs || []), ...(sheetsData || [])];
+        
+        // De-duplicate by name or ID if necessary
+        const uniqueShops = combinedData.filter((v, i, a) => a.findIndex(t => (t.id === v.id || t.name === v.name)) === i);
+        
+        setShops(uniqueShops);
+        setDistricts(['all', ...sriLankaDistricts]);
+      } catch (error) {
+        console.error('Error fetching repair shops:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -91,9 +111,12 @@ const Technicians = () => {
         shop.services?.some(s => s.toLowerCase().includes(searchTerm.toLowerCase()));
       const matchesDistrict = selectedDistrict === 'all' || shop.district?.toLowerCase() === selectedDistrict.toLowerCase();
       const matchesType = selectedType === 'all' ||
-        (selectedType === 'mobile' && shop.services?.some(s => s.toLowerCase().includes('mobile'))) ||
-        (selectedType === 'computer' && shop.services?.some(s => s.toLowerCase().includes('laptop') || s.toLowerCase().includes('pc') || s.toLowerCase().includes('computer'))) ||
-        (selectedType === 'phone' && shop.services?.some(s => s.toLowerCase().includes('phone')));
+        shop.services?.some(s => {
+          const sLower = s.toLowerCase();
+          if (selectedType === 'mobile') return sLower.includes('mobile') || sLower.includes('phone');
+          if (selectedType === 'computer') return sLower.includes('laptop') || sLower.includes('pc') || sLower.includes('computer');
+          return sLower.includes(selectedType);
+        });
       const matchesRating = selectedRating === 'all' || (shop.rating >= parseFloat(selectedRating));
       const matchesVerified = !verifiedOnly || shop.verified;
 
@@ -367,83 +390,94 @@ const Technicians = () => {
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {paginatedShops.map((shop) => (
-                  <Card key={shop.id} className="border-zinc-800 hover:border-zinc-600 transition-all group">
-                    <CardContent className="p-4">
+                  <Card key={shop.id} className="border-zinc-800 hover:border-zinc-600 transition-all group flex flex-col h-full bg-zinc-900/40">
+                    <CardContent className="p-5 flex-1 flex flex-col">
                       {/* Header */}
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <div className="p-1.5 rounded bg-gradient-to-br from-green-600 to-blue-600">
-                              {getServiceIcon(shop.services)}
-                            </div>
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1 min-w-0 pr-2">
+                          <div className="flex items-center gap-2 mb-2">
                             {shop.verified && (
-                              <Badge variant="success" className="text-xs px-1.5 py-0">
-                                <CheckCircle className="h-3 w-3 mr-0.5" />
-                                Verified
+                              <Badge className="bg-green-500/10 text-green-400 hover:bg-green-500/20 border-green-500/20 text-[10px] px-1.5 py-0.5 h-5">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Verified Shop
+                              </Badge>
+                            )}
+                            {shop.rating >= 4.5 && (
+                              <Badge variant="outline" className="border-yellow-500/30 text-yellow-400 text-[10px] px-1.5 py-0.5 h-5">
+                                Top Rated
                               </Badge>
                             )}
                           </div>
-                          <h3 className="font-semibold text-sm leading-tight line-clamp-2 group-hover:text-green-400 transition-colors">
+                          <h3 className="font-bold text-lg leading-tight group-hover:text-green-400 transition-colors mb-1">
                             {shop.name}
                           </h3>
+                          <div className="flex items-center gap-1.5 text-xs text-zinc-400">
+                            <MapPin className="h-3.5 w-3.5 flex-shrink-0 text-zinc-500" />
+                            <span className="truncate">{shop.district}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1 bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded text-sm">
-                          <Star className="h-3 w-3 fill-current" />
-                          <span className="font-bold">{shop.rating}</span>
+                        <div className="flex flex-col items-end gap-1">
+                          <div className="flex items-center gap-1 bg-yellow-500/10 text-yellow-400 px-2.5 py-1 rounded-md border border-yellow-500/20">
+                            <Star className="h-4 w-4 fill-current" />
+                            <span className="font-bold text-sm">{shop.rating}</span>
+                          </div>
+                          <span className="text-[10px] text-zinc-500">{shop.reviews} reviews</span>
                         </div>
                       </div>
 
-                      {/* Location */}
-                      <div className="flex items-start gap-2 text-xs text-zinc-400 mb-2">
-                        <MapPin className="h-3 w-3 text-zinc-500 flex-shrink-0 mt-0.5" />
-                        <span className="line-clamp-2">{shop.address}</span>
+                      {/* Description (Mock for now if missing) */}
+                      <div className="mb-4 flex-1">
+                        <p className="text-sm text-zinc-400 line-clamp-2">
+                          {shop.description || `Professional ${shop.services?.[0] || 'repair'} services in ${shop.district}. Expert technicians for all your device needs.`}
+                        </p>
                       </div>
 
-                      {/* District & Stats */}
-                      <div className="flex items-center gap-2 mb-3 flex-wrap">
-                        <Badge variant="secondary" className="text-xs">
-                          {shop.district}
-                        </Badge>
-                        <span className="text-xs text-zinc-500">{shop.reviews} reviews</span>
-                        {shop.completedJobs > 0 && (
-                          <span className="text-xs text-zinc-500 flex items-center gap-1">
-                            <Briefcase className="h-3 w-3" />
-                            {shop.completedJobs} jobs
+                      {/* Services Tags */}
+                      <div className="flex flex-wrap gap-1.5 mb-4">
+                        {shop.services?.slice(0, 4).map((service, i) => (
+                          <span key={i} className="text-[10px] px-2 py-1 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-300">
+                            {service}
+                          </span>
+                        ))}
+                        {shop.services?.length > 4 && (
+                          <span className="text-[10px] px-2 py-1 bg-zinc-800/50 text-zinc-500 rounded-md">
+                            +{shop.services.length - 4} more
                           </span>
                         )}
                       </div>
 
-                      {/* Services */}
-                      <div className="flex flex-wrap gap-1 mb-3">
-                        {shop.services?.slice(0, 3).map((service, i) => (
-                          <span key={i} className="text-[10px] px-1.5 py-0.5 bg-zinc-800 rounded text-zinc-400">
-                            {service}
-                          </span>
-                        ))}
+                      {/* Info Grid */}
+                      <div className="grid grid-cols-2 gap-2 mb-4 text-xs text-zinc-400 bg-zinc-900/50 p-3 rounded-lg border border-zinc-800/50">
+                        {shop.hours && (
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="h-3.5 w-3.5 text-zinc-500" />
+                            <span className="truncate">{shop.hours}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-1.5">
+                          <Briefcase className="h-3.5 w-3.5 text-zinc-500" />
+                          <span>{shop.completedJobs || 0} jobs done</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 col-span-2">
+                          <MapPin className="h-3.5 w-3.5 text-zinc-500" />
+                          <span className="truncate">{shop.address}</span>
+                        </div>
                       </div>
 
-                      {/* Hours */}
-                      {shop.hours && (
-                        <div className="flex items-center gap-1 text-xs text-zinc-500 mb-3">
-                          <Clock className="h-3 w-3" />
-                          <span>{shop.hours}</span>
-                        </div>
-                      )}
-
                       {/* Actions */}
-                      <div className="flex gap-2">
+                      <div className="grid grid-cols-2 gap-2 mt-auto">
                         {shop.phone && (
                           <a
                             href={`tel:${formatPhone(shop.phone)}`}
-                            className="flex-1 flex items-center justify-center gap-1 bg-zinc-800 hover:bg-zinc-700 text-white py-2 rounded text-xs transition-colors"
+                            className="flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white py-2.5 rounded-lg text-xs font-medium transition-colors border border-zinc-700"
                           >
-                            <Phone className="h-3 w-3" />
+                            <Phone className="h-3.5 w-3.5" />
                             Call
                           </a>
                         )}
                         <Button
                           onClick={() => navigate('/schedule', { state: { shop } })}
-                          className="flex-1 bg-white text-black hover:bg-gray-100 text-xs h-8"
+                          className={`flex items-center justify-center gap-2 text-xs font-medium h-auto py-2.5 ${!shop.phone ? 'col-span-2' : ''} bg-white text-black hover:bg-gray-200`}
                         >
                           Book Now
                         </Button>

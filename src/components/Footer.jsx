@@ -23,81 +23,135 @@ const Footer = () => {
             </p>
           </div>
 
-          {/* Services */}
-          <div>
-            <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-white mb-6">SERVICES</h3>
-            <ul className="space-y-4">
-              <li>
-                <Link className="text-sm text-gray-400 hover:text-white transition-colors" to="/mobile-repair">
-                  Mobile Repair
-                </Link>
-              </li>
-              <li>
-                <Link className="text-sm text-gray-400 hover:text-white transition-colors" to="/pc-repair">
-                  PC Repair
-                </Link>
-              </li>
-              <li>
-                <Link className="text-sm text-gray-400 hover:text-white transition-colors" to="/services">
-                  All Services
-                </Link>
-              </li>
-              <li>
-                <Link className="text-sm text-gray-400 hover:text-white transition-colors" to="/schedule">
-                  Schedule Repair
-                </Link>
-              </li>
-            </ul>
-          </div>
+            {/* Services */}
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-white mb-6">SERVICES</h3>
+              <ul className="space-y-4">
+                <li>
+                  <a 
+                    className="text-sm text-gray-400 hover:text-white transition-colors cursor-pointer"
+                    onClick={() => {
+                      if (window.location.pathname === '/') {
+                        document.getElementById('mobile-repair')?.scrollIntoView({ behavior: 'smooth' });
+                      } else {
+                        window.location.href = '/#mobile-repair';
+                      }
+                    }}
+                  >
+                    Mobile Repair
+                  </a>
+                </li>
+                <li>
+                  <a 
+                    className="text-sm text-gray-400 hover:text-white transition-colors cursor-pointer"
+                    onClick={() => {
+                      if (window.location.pathname === '/') {
+                        document.getElementById('pc-repair')?.scrollIntoView({ behavior: 'smooth' });
+                      } else {
+                        window.location.href = '/#pc-repair';
+                      }
+                    }}
+                  >
+                    PC Repair
+                  </a>
+                </li>
+                <li>
+                  <Link className="text-sm text-gray-400 hover:text-white transition-colors" to="/services">
+                    All Services
+                  </Link>
+                </li>
+                <li>
+                  <Link className="text-sm text-gray-400 hover:text-white transition-colors" to="/schedule">
+                    Schedule Repair
+                  </Link>
+                </li>
+              </ul>
+            </div>
 
-          {/* Support */}
-          <div>
-            <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-white mb-6">SUPPORT</h3>
-            <ul className="space-y-4">
-              <li>
-                <Link className="text-sm text-gray-400 hover:text-white transition-colors" to="/support">
-                  Help Center
-                </Link>
-              </li>
-              <li>
-                <Link className="text-sm text-gray-400 hover:text-white transition-colors" to="/support">
-                  Contact Us
-                </Link>
-              </li>
-              <li>
-                <Link className="text-sm text-gray-400 hover:text-white transition-colors" to="/terms">
-                  Terms of Service
-                </Link>
-              </li>
-              <li>
-                <Link className="text-sm text-gray-400 hover:text-white transition-colors" to="/privacy">
-                  Privacy Policy
-                </Link>
-              </li>
-            </ul>
-          </div>
+            {/* Support */}
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-white mb-6">SUPPORT</h3>
+              <ul className="space-y-4">
+                <li>
+                  <Link className="text-sm text-gray-400 hover:text-white transition-colors" to="/support">
+                    Help Center
+                  </Link>
+                </li>
+                <li>
+                  <Link className="text-sm text-gray-400 hover:text-white transition-colors" to="/support">
+                    Contact Us
+                  </Link>
+                </li>
+                <li>
+                  <a 
+                    className="text-sm text-gray-400 hover:text-white transition-colors cursor-pointer"
+                    onClick={() => {
+                      if (window.location.pathname === '/') {
+                        document.getElementById('terms')?.scrollIntoView({ behavior: 'smooth' });
+                      } else {
+                        window.location.href = '/#terms';
+                      }
+                    }}
+                  >
+                    Terms of Service
+                  </a>
+                </li>
+                <li>
+                  <a 
+                    className="text-sm text-gray-400 hover:text-white transition-colors cursor-pointer"
+                    onClick={() => {
+                      if (window.location.pathname === '/') {
+                        document.getElementById('privacy')?.scrollIntoView({ behavior: 'smooth' });
+                      } else {
+                        window.location.href = '/#privacy';
+                      }
+                    }}
+                  >
+                    Privacy Policy
+                  </a>
+                </li>
+              </ul>
+            </div>
 
-          {/* Company */}
-          <div>
-            <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-white mb-6">COMPANY</h3>
-            <ul className="space-y-4">
-              <li>
-                <Link className="text-sm text-gray-400 hover:text-white transition-colors" to="/company">
-                  About Us
-                </Link>
-              </li>
-              <li>
-                <Link className="text-sm text-gray-400 hover:text-white transition-colors" to="/company#team">
-                  Our Team
-                </Link>
-              </li>
-              <li>
-                <Link className="text-sm text-gray-400 hover:text-white transition-colors" to="/register">
-                  Become a Technician
-                </Link>
-              </li>
-            </ul>
-          </div>
+            {/* Company */}
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-white mb-6">COMPANY</h3>
+              <ul className="space-y-4">
+                <li>
+                  <a 
+                    className="text-sm text-gray-400 hover:text-white transition-colors cursor-pointer" 
+                    onClick={() => {
+                      if (window.location.pathname === '/') {
+                        document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' });
+                      } else {
+                        window.location.href = '/#about';
+                      }
+                    }}
+                  >
+                    About Us
+                  </a>
+                </li>
+                <li>
+                  <a 
+                    className="text-sm text-gray-400 hover:text-white transition-colors cursor-pointer"
+                    onClick={() => {
+                      if (window.location.pathname === '/') {
+                        document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
+                      } else {
+                        window.location.href = '/#features';
+                      }
+                    }}
+                  >
+                    Our Team
+                  </a>
+                </li>
+                <li>
+                  <Link className="text-sm text-gray-400 hover:text-white transition-colors" to="/register">
+                    Become a Technician
+                  </Link>
+                </li>
+              </ul>
+            </div>
         </div>
 
         {/* Bottom Footer */}

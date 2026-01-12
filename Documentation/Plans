@@ -1,0 +1,50 @@
+# User Dashboard Enhancement Plan - TechCare
+
+## 1. Research & Analysis
+The current User Dashboard provides basic overview, history, and device management. However, for a "Pro" experience, it needs deeper operational integration and better performance.
+
+### Key Findings:
+- **Performance**: Data fetching is parallelized but can be optimized with better caching and skeleton loaders (implemented).
+- **Navigation**: Users currently have to navigate away for key actions like booking or deep support.
+- **Engagement**: Missing real-time updates and proactive maintenance alerts.
+
+## 2. Feature Roadmap
+
+### A. Operations & Management
+1.  **Integrated Booking Engine (Schedule Section)**:
+    - Move from a separate route to an in-dashboard tab.
+    - Support for selecting registered devices for faster booking.
+    - Real-time availability check for technicians.
+2.  **Advanced Device Vault**:
+    - Service history per device.
+    - Warranty tracking.
+    - Automated maintenance alerts (e.g., "Time for a battery health check").
+3.  **Repair Lifecycle Management**:
+    - Granular status updates (Pickup -> Diagnostics -> Repair -> Testing -> Ready).
+    - Digital invoice management with download support.
+    - Direct technician chat integration (already partially there, needs better UI).
+
+### B. User Experience (UX)
+1.  **Unified Activity Feed**: A chronological list of all interactions (bookings, payments, messages).
+2.  **Rewards & Loyalty**: Integration with the TechCare loyalty program (LKR rewards for completed repairs).
+3.  **One-Click Support**: Instant access to help with context-aware ticketing.
+
+## 3. Implementation Plan
+
+### Phase 1: Core Performance & Integration (Done/In-Progress)
+- [x] Database Indexing for faster queries.
+- [x] Backend query optimization (Promise.allSettled).
+- [x] Integrated "Book Now" flow in Dashboard.
+
+### Phase 2: Functional Enhancements
+- [ ] Implement the "Schedule" tab in Dashboard.
+- [ ] Link "Book Now" buttons to the Schedule tab.
+- [ ] Enhance Device Vault with "Quick Repair" pre-filling.
+
+### Phase 3: Operations & Engagement
+- [ ] Add "Activity Feed" component.
+- [ ] Implement "Maintenance Alerts" based on device age.
+- [ ] Add "Download Invoice" functionality in History tab.
+
+---
+*Created on: 2026-01-12*

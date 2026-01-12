@@ -73,8 +73,7 @@ function generateRouteHtmlPlugin() {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
-    react(),
-    generateRouteHtmlPlugin()
+    react()
   ],
   resolve: {
     alias: {
@@ -85,6 +84,13 @@ export default defineConfig({
     watch: {
       usePolling: true,
     },
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
   },
   build: {
     rollupOptions: {

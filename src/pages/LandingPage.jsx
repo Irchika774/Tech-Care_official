@@ -123,16 +123,19 @@ const LandingPage = () => {
                         </p>
                         <div className="hero-buttons">
                             <button
-                                onClick={() => navigate('/mobile-repair')}
+                                onClick={() => {
+                                    const el = document.getElementById('features');
+                                    el?.scrollIntoView({ behavior: 'smooth' });
+                                }}
                                 className="hero-button primary"
                             >
-                                Book Mobile Repair
+                                Learn More
                             </button>
                             <button
-                                onClick={() => navigate('/pc-repair')}
+                                onClick={() => navigate('/register')}
                                 className="hero-button secondary"
                             >
-                                Book PC Repair
+                                Join Us
                             </button>
                         </div>
                     </div>
@@ -148,7 +151,11 @@ const LandingPage = () => {
 
                     <div className="features-grid" id="features">
                         {features.map((feature, index) => (
-                            <div key={index} className="feature-card">
+                            <div 
+                              key={index} 
+                              className="feature-card"
+                              id={feature.title.toLowerCase().replace(/ & /g, '-').replace(/ /g, '-')}
+                            >
                                 <div className="feature-icon">{feature.icon}</div>
                                 <h3 className="feature-title">{feature.title}</h3>
                                 <p className="feature-description">{feature.description}</p>
@@ -156,6 +163,10 @@ const LandingPage = () => {
                         ))}
                     </div>
                 </section>
+
+                {/* Mobile & PC Repair Sections (Hidden or part of features) */}
+                <div id="mobile-repair" className="sr-only">Mobile Repair Section</div>
+                <div id="pc-repair" className="sr-only">PC Repair Section</div>
 
                 {/* Stats Section */}
                 <section className="stats-section" id="stats">
@@ -168,6 +179,10 @@ const LandingPage = () => {
                         ))}
                     </div>
                 </section>
+
+                {/* Terms & Privacy Placeholders for Scroll */}
+                <div id="terms" className="sr-only">Terms of Service</div>
+                <div id="privacy" className="sr-only">Privacy Policy</div>
 
                 {/* Partners Section */}
                 <section className="partners-section">
@@ -225,9 +240,15 @@ const LandingPage = () => {
                         <div className="footer-section">
                             <h3>Company</h3>
                             <ul className="footer-links">
-                                <li><a onClick={() => navigate('/about')}>About Us</a></li>
-                                <li><a onClick={() => navigate('/contact')}>Contact</a></li>
-                                <li><a onClick={() => navigate('/careers')}>Careers</a></li>
+                                <li><a onClick={() => {
+                                    const el = document.getElementById('about');
+                                    el?.scrollIntoView({ behavior: 'smooth' });
+                                }}>About Us</a></li>
+                                <li><a onClick={() => {
+                                    const el = document.getElementById('contact');
+                                    el?.scrollIntoView({ behavior: 'smooth' });
+                                }}>Contact</a></li>
+                                <li><a onClick={() => navigate('/register')}>Become a Technician</a></li>
                                 <li><a onClick={() => navigate('/blog')}>Blog</a></li>
                             </ul>
                         </div>
@@ -236,7 +257,10 @@ const LandingPage = () => {
                             <ul className="footer-links">
                                 <li><a onClick={() => navigate('/privacy')}>Privacy Policy</a></li>
                                 <li><a onClick={() => navigate('/terms')}>Terms of Service</a></li>
-                                <li><a onClick={() => navigate('/refund')}>Refund Policy</a></li>
+                                <li><a onClick={() => {
+                                    const el = document.getElementById('features');
+                                    el?.scrollIntoView({ behavior: 'smooth' });
+                                }}>Our Team</a></li>
                                 <li><a onClick={() => navigate('/support')}>Support</a></li>
                             </ul>
                         </div>

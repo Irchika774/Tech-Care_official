@@ -31,7 +31,7 @@ import { formatDistanceToNow, format } from 'date-fns';
 const BookingTracker = () => {
     const { bookingId } = useParams();
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user, session } = useAuth(); // Get session
     const [booking, setBooking] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -54,8 +54,12 @@ const BookingTracker = () => {
         const fetchBooking = async () => {
             try {
                 setLoading(true);
-                const { data: { session } } = await supabase.auth.getSession();
-                const token = session?.access_token;
+                // Use session from context
+                let token = session?.access_token;
+                if (!token) {
+                    const { data: { session: currentSession } } = await supabase.auth.getSession();
+                    token = currentSession?.access_token;
+                }
 
                 if (!token) {
                     throw new Error('Authentication required');
@@ -149,11 +153,11 @@ const BookingTracker = () => {
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                     <Button
                         variant="ghost"
-                        onClick={() => navigate(-1)}
+                        onClick={() => navigate(user?.role === 'technician' ? '/technician-dashboard' : '/customer-dashboard')}
                         className="text-zinc-400 hover:text-white mb-4"
                     >
                         <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back
+                        Back to Dashboard
                     </Button>
                     <div className="flex items-center justify-between">
                         <div>
@@ -170,9 +174,9 @@ const BookingTracker = () => {
                         </div>
                         <Badge
                             className={`text-sm px-4 py-2 ${booking.status === 'completed' ? 'bg-green-500/20 text-green-400 border-green-500/30' :
-                                    booking.status === 'in_progress' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
-                                        booking.status === 'confirmed' ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' :
-                                            'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+                                booking.status === 'in_progress' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
+                                    booking.status === 'confirmed' ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' :
+                                        'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
                                 }`}
                         >
                             {booking.status?.replace('_', ' ').toUpperCase()}
@@ -201,7 +205,7 @@ const BookingTracker = () => {
                                     <div
                                         key={step.key}
                                         className={`text-center p-4 rounded-xl transition-all ${isCurrent ? 'bg-white/10 border border-white/20' :
-                                                isActive ? 'bg-zinc-800/50' : 'opacity-50'
+                                            isActive ? 'bg-zinc-800/50' : 'opacity-50'
                                             }`}
                                     >
                                         <div className={`mx-auto w-12 h-12 rounded-full flex items-center justify-center mb-3 ${isActive ? 'bg-white text-black' : 'bg-zinc-700 text-zinc-400'

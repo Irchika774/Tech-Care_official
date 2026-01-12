@@ -14,55 +14,72 @@ const adminCheck = (req, res, next) => {
 
 router.get('/dashboard', supabaseAuth, adminCheck, async (req, res) => {
     try {
-        const { count: totalUsers } = await supabaseAdmin
-            .from('profiles')
-            .select('*', { count: 'exact', head: true });
+        const [
+            totalUsersRes,
+            totalTechniciansRes,
+            totalBookingsRes,
+            pendingBookingsRes,
+            completedBookingsRes,
+            recentBookingsRes,
+            recentUsersRes
+        ] = await Promise.all([
+            supabaseAdmin
+                .from('profiles')
+                .select('*', { count: 'exact', head: true }),
+            supabaseAdmin
+                .from('technicians')
+                .select('*', { count: 'exact', head: true }),
+            supabaseAdmin
+                .from('bookings')
+                .select('*', { count: 'exact', head: true }),
+            supabaseAdmin
+                .from('bookings')
+                .select('*', { count: 'exact', head: true })
+                .eq('status', 'pending'),
+            supabaseAdmin
+                .from('bookings')
+                .select('*', { count: 'exact', head: true })
+                .eq('status', 'completed'),
+            supabaseAdmin
+                .from('bookings')
+                .select(`
+                    *,
+                    customer:profiles!bookings_customer_id_fkey(id, name, email),
+                    technician:technicians!bookings_technician_id_fkey(id, name, email)
+                `)
+                .order('created_at', { ascending: false })
+                .limit(10),
+            supabaseAdmin
+                .from('profiles')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(10)
+        ]);
         
-        const { count: totalTechnicians } = await supabaseAdmin
-            .from('technicians')
-            .select('*', { count: 'exact', head: true });
-        
-        const { count: totalBookings } = await supabaseAdmin
-            .from('bookings')
-            .select('*', { count: 'exact', head: true });
-        
-        const { count: pendingBookings } = await supabaseAdmin
-            .from('bookings')
-            .select('*', { count: 'exact', head: true })
-            .eq('status', 'pending');
-        
-        const { count: completedBookings } = await supabaseAdmin
-            .from('bookings')
-            .select('*', { count: 'exact', head: true })
-            .eq('status', 'completed');
-        
-        const { data: recentBookings } = await supabaseAdmin
-            .from('bookings')
-            .select(`
-                *,
-                customer:profiles!bookings_customer_id_fkey(id, name, email),
-                technician:technicians!bookings_technician_id_fkey(id, name, email)
-            `)
-            .order('created_at', { ascending: false })
-            .limit(10);
-        
-        const { data: recentUsers } = await supabaseAdmin
-            .from('profiles')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(10);
-        
+        const formatBooking = (b) => ({
+            ...b,
+            device: {
+                brand: b.device_brand,
+                model: b.device_model,
+                type: b.device_type
+            },
+            issue: {
+                description: b.issue_description,
+                type: b.issue_type
+            }
+        });
+
         res.json({
             stats: {
-                totalUsers: totalUsers || 0,
-                totalTechnicians: totalTechnicians || 0,
-                totalBookings: totalBookings || 0,
-                pendingBookings: pendingBookings || 0,
-                completedBookings: completedBookings || 0,
+                totalUsers: totalUsersRes.count || 0,
+                totalTechnicians: totalTechniciansRes.count || 0,
+                totalBookings: totalBookingsRes.count || 0,
+                pendingBookings: pendingBookingsRes.count || 0,
+                completedBookings: completedBookingsRes.count || 0,
                 revenue: 0
             },
-            recentBookings: recentBookings || [],
-            recentUsers: recentUsers || []
+            recentBookings: (recentBookingsRes.data || []).map(formatBooking),
+            recentUsers: recentUsersRes.data || []
         });
     } catch (error) {
         console.error('Admin dashboard error:', error);

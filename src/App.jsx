@@ -9,6 +9,8 @@ import { Toaster } from './components/ui/toaster';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
+import RoleBasedRedirect from './components/RoleBasedRedirect';
+import BookingGuard from './components/BookingGuard';
 
 // Lazy load all pages for code splitting and better performance
 const Home = lazy(() => import('./pages/Home'));
@@ -23,7 +25,6 @@ const Profile = lazy(() => import('./pages/Profile'));
 const History = lazy(() => import('./pages/History'));
 const Favorites = lazy(() => import('./pages/Favorites'));
 const Settings = lazy(() => import('./pages/Settings'));
-const Bidding = lazy(() => import('./pages/Bidding'));
 const TechnicianDashboard = lazy(() => import('./pages/TechnicianDashboard'));
 const CustomerDashboard = lazy(() => import('./pages/CustomerDashboard'));
 const Compare = lazy(() => import('./pages/Compare'));
@@ -70,8 +71,16 @@ function App() {
                         <Route path="/pc-repair" element={<PCRepair />} />
                         <Route path="/mobile-repair" element={<MobileRepair />} />
                         <Route path="/reviews" element={<Reviews />} />
-                        <Route path="/schedule" element={<Schedule />} />
-                        <Route path="/payment" element={<Payment />} />
+                        <Route path="/schedule" element={
+                          <BookingGuard requiredContext="service">
+                            <Schedule />
+                          </BookingGuard>
+                        } />
+                        <Route path="/payment" element={
+                          <BookingGuard requiredContext="payment">
+                            <Payment />
+                          </BookingGuard>
+                        } />
                         <Route path="/payment-success" element={<PaymentSuccess />} />
                         <Route path="/technicians" element={<Technicians />} />
 
@@ -80,14 +89,14 @@ function App() {
                           path="/account"
                           element={
                             <ProtectedRoute allowedRoles={['user', 'technician', 'admin']} >
-                              <Profile />
+                              <RoleBasedRedirect />
                             </ProtectedRoute>
                           }
                         />
                         <Route
                           path="/history"
                           element={
-                            <ProtectedRoute allowedRoles={['user', 'admin']} >
+                            <ProtectedRoute allowedRoles={['user']} >
                               <History />
                             </ProtectedRoute>
                           }
@@ -95,7 +104,7 @@ function App() {
                         <Route
                           path="/favorites"
                           element={
-                            <ProtectedRoute allowedRoles={['user', 'admin']} >
+                            <ProtectedRoute allowedRoles={['user']} >
                               <Favorites />
                             </ProtectedRoute>
                           }
@@ -111,7 +120,7 @@ function App() {
                         <Route
                           path="/compare"
                           element={
-                            <ProtectedRoute allowedRoles={['user', 'admin']} >
+                            <ProtectedRoute allowedRoles={['user']} >
                               <Compare />
                             </ProtectedRoute>
                           }
@@ -130,15 +139,7 @@ function App() {
                         <Route path="/diagnostics" element={<Diagnostics />} />
                         <Route path="/service-areas" element={<ServiceAreas />} />
 
-                        {/* Bidding - Protected for Technicians Only */}
-                        <Route
-                          path="/bidding"
-                          element={
-                            <ProtectedRoute allowedRoles={['technician']} >
-                              <Bidding />
-                            </ProtectedRoute>
-                          }
-                        />
+
 
                         {/* Dashboards - Role-Based Access */}
                         <Route
@@ -160,13 +161,21 @@ function App() {
                         <Route
                           path="/customer-dashboard"
                           element={
-                            <ProtectedRoute allowedRoles={['user', 'admin']} >
+                            <ProtectedRoute allowedRoles={['user']} >
                               <CustomerDashboard />
                             </ProtectedRoute>
                           }
                         />
 
-                        {/* Chat - Protected for authenticated users */}
+                        {/* Chat - Protected for all authenticated users */}
+                        <Route
+                          path="/chat"
+                          element={
+                            <ProtectedRoute allowedRoles={['user', 'technician', 'admin']} >
+                              <Chat />
+                            </ProtectedRoute>
+                          }
+                        />
                         <Route
                           path="/chat/:bookingId"
                           element={

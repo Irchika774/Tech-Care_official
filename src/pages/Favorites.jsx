@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { techniciansAPI } from '../lib/api';
 import {
   Heart,
   Star,
-  Calendar,
   MapPin,
   ArrowRight,
   Trash2,
@@ -11,74 +11,90 @@ import {
   DollarSign,
   Briefcase
 } from 'lucide-react';
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 
 const Favorites = () => {
   const navigate = useNavigate();
-  const [favorites, setFavorites] = useState([
-    {
-      id: 1,
-      name: 'Mobile Wizards',
-      rating: 4.9,
-      reviews: 1200,
-      services: ['Screen Repair', 'Battery Fix'],
-      specialization: 'Mobile Devices',
-      availability: 'Available Today',
-      price: '$50 - $250',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDpjnPGaHMNfySM0XdsWGFM8Ac4KNQNKiXUS3Y6B3gNfw3PTX9qpxQaSzsRnBaJdznzm0o9gDi_XN7i1hittn0ZBLKollEJYw2JPng1XBJ82gMs0KL8Rle5bHZlwSFnPrdglNHk5jgeBhx0cKwnyTKpYvPXXyX0Auy7nVCgKaZy8xC54es7beBmU6OvPQOkM0MefRI2PFhKld5d-Q-AA8J08pqF23RYVLyxrvWaCzD6B1RxfL3i9302086lobuhNvXmueMbSDoHo7sX'
-    },
-    {
-      id: 2,
-      name: 'Circuit Masters',
-      rating: 4.9,
-      reviews: 302,
-      services: ['Hardware Upgrade', 'Custom Builds'],
-      specialization: 'PC Repair',
-      availability: 'Available Tomorrow',
-      price: '$150 - $600',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCXpNjbqO5jhUjfaqeN5rLe2orMY3j_JhfW5INZbGo0El9V3PpnvlpsL8sXtclCh62nsaUMlEjHlDl3Dg6ozBbIZQrEMup71NOXwPKtCZ5Vgo4pRmYfunB8AHzhSm8V8UO8KXG7bAF-R9XILyHu6S0l9kj4tk-qKeLsv7TlllipiwzfE2i0yE1gq5bcLPn7dqA7QcnliSf7_mjZ0rfGOTXhQ1KA-aCDjlru_FuDFgcNkZhGsbbN2uLDkYLM9fdwKkRuUwQ1JNe60XB2'
-    },
-    {
-      id: 3,
-      name: 'Tech Solutions Hub',
-      rating: 4.7,
-      reviews: 180,
-      services: ['Data Recovery', 'OS Troubleshooting'],
-      specialization: 'All Devices',
-      availability: 'Available Today',
-      price: '$75 - $450',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAHwkqgjTQre8sA1y8dPpf2pvMYzQGvh3evZycbFw3wZAr-bM70Q49nri6jK6bsaiXRbu6Bp50aRBq8XqRRgQjbCY4mO4tx6Z29EDNCef-K6XSqaV-55F11KuOYgLZ5qBgzIWQxurblCisXHdvAvvVN-5iWK3JnFJkJA-MTz0vC8_lZlgWWcaQThaK6E-n1XBjZze9wcMmIHpa6AC01dJEfvFwMBvT5QL7IXy5Ulc_6-g-R4ZMroMza2rjn4WU3Rn5HkE3ng8xEQmhR'
-    },
-    {
-      id: 4,
-      name: 'Pocket Techs',
-      rating: 4.7,
-      reviews: 700,
-      services: ['Camera Repair', 'Speaker Fix'],
-      specialization: 'Mobile Devices',
-      availability: 'Booked Until Next Week',
-      price: '$60 - $200',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDovMWLM9pCPQ8Ifx2gK6QbFZyjK_8Xszb1KqMH4HoOBNwvibbfjCTHdAJUECnONA5em1tE-3E8gID1-C3bqmvyamYQcczH4g9KvCUQgZHEMY8Fybh67oeuNWDwALrDXujzJyfnliU5GnwThYDmw6U8ZDmhIudwsyYdKnKCb9CKgm93QdTn2l2VplZLQrtlQIGJFsOco4OvJYA_7W4VR-oMNDvJS-O59cvPVpJp0-Rv0dzDuooML-EEQM9WhEj5icklAfaB88WKQDeZ'
-    },
-    {
-      id: 5,
-      name: 'ProFix Electronics',
-      rating: 4.8,
-      reviews: 211,
-      services: ['Hardware Upgrade', 'Virus Removal'],
-      specialization: 'PC Repair',
-      availability: 'Available Today',
-      price: '$100 - $500',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBewh8ByxY98AJoMiI4EhZzRjw6eEpXOS_SVO2lGWXEKuYPMLgQ8quGqk9cQjc0g8P5egpfU3LlqafdphqeqYEH10BpQXvn_hPSh5EnTeCyLAJ20mabwfoUY5E834D331O75QW_Kis_Y561pNc3R-IySc73gNF4GT8jS80KqbsgHIOHBqHEV_RH6fYrqMUhS-2IShIeiel5TKen7AeM5PBwwrG2n_eaOwCYYuOwsn9A15Xh1N5kpx8WyGaCDfGSvgYqPKQD97ev0CVX'
+  const { user } = useAuth();
+  const [favorites, setFavorites] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+  useEffect(() => {
+    loadFavorites();
+  }, [user]);
+
+  const loadFavorites = async () => {
+    setLoading(true);
+    try {
+      // 1. Try to fetch from API if user is logged in
+      if (user) {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        if (token) {
+          const response = await fetch(`${API_URL}/api/customers/favorites`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (response.ok) {
+            const data = await response.json();
+            if (data.favorites && data.favorites.length > 0) {
+              setFavorites(data.favorites.map(tech => ({
+                id: tech.id || tech._id,
+                name: tech.name,
+                rating: tech.rating || 4.5,
+                reviews: tech.reviewCount || 0,
+                services: tech.services || [],
+                specialization: tech.specialization?.[0] || 'General',
+                availability: 'Available',
+                price: tech.priceRange ? `$${tech.priceRange.min} - $${tech.priceRange.max}` : 'Contact for Price',
+                image: tech.profileImage || tech.image || 'https://images.unsplash.com/photo-1597733336794-12d05021d510?auto=format&fit=crop&q=80&w=300'
+              })));
+              setLoading(false);
+              return;
+            }
+          }
+        }
+      }
+
+      // 2. Fallback to localStorage
+      const storedIds = JSON.parse(localStorage.getItem('pc-repair-favorites') || '[]');
+      if (storedIds.length > 0) {
+        const response = await techniciansAPI.getAll();
+        const allTechs = response.data || [];
+        const favTechs = allTechs.filter(t => storedIds.includes(t.id || t._id));
+
+        const mappedFavorites = favTechs.map(tech => ({
+          id: tech.id || tech._id,
+          name: tech.name,
+          rating: tech.rating || 4.5,
+          reviews: tech.reviewCount || 0,
+          services: tech.services || [],
+          specialization: tech.specialization?.[0] || 'General',
+          availability: 'Available',
+          price: tech.priceRange ? `$${tech.priceRange.min} - $${tech.priceRange.max}` : 'Contact for Price',
+          image: tech.profileImage || tech.image || 'https://images.unsplash.com/photo-1597733336794-12d05021d510?auto=format&fit=crop&q=80&w=300'
+        }));
+        setFavorites(mappedFavorites);
+      } else {
+        setFavorites([]);
+      }
+    } catch (err) {
+      console.error("Failed to load favorites", err);
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
 
   const removeFavorite = (id) => {
+    const storedIds = JSON.parse(localStorage.getItem('pc-repair-favorites') || '[]');
+    const newIds = storedIds.filter(fid => fid !== id);
+    localStorage.setItem('pc-repair-favorites', JSON.stringify(newIds));
     setFavorites(favorites.filter(fav => fav.id !== id));
   };
 

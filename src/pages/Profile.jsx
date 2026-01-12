@@ -60,7 +60,7 @@ const Profile = () => {
       const { data: { session } } = await supabase.auth.getSession();
       const headers = { Authorization: `Bearer ${session?.access_token}` };
 
-      const userRole = user.role === 'user' ? 'customers' : user.role === 'technician' ? 'technicians' : 'admin';
+      const userRole = (user.role === 'user' || user.role === 'customer') ? 'customers' : user.role === 'technician' ? 'technicians' : 'admin';
 
       if (userRole === 'admin') {
         // Admin gets data from admin dashboard
@@ -111,12 +111,16 @@ const Profile = () => {
         'Content-Type': 'application/json'
       };
 
-      const userRole = user.role === 'user' ? 'customers' : 'technicians';
-      const response = await fetch(`${API_URL}/api/${userRole}/profile`, {
-        method: 'PATCH',
-        headers,
-        body: JSON.stringify(profileForm)
-      });
+        const userRole = user.role === 'user' || user.role === 'customer' ? 'customers' : user.role === 'technician' ? 'technicians' : 'admin';
+        
+        let endpoint = `${API_URL}/api/${userRole}/profile`;
+        if (user.role === 'admin') endpoint = `${API_URL}/api/admin/profile`;
+
+        const response = await fetch(endpoint, {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify(profileForm)
+        });
 
       if (response.ok) {
         await fetchProfileData(); // Refresh data

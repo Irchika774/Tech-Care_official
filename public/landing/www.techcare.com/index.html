@@ -57,6 +57,16 @@
     .lenis.lenis-stopped {
       overflow: hidden;
     }
+
+    /* Fix Register button hover state */
+    .w-variant-c45e1d07-dd8e-a4c4-0fe9-acc2585d1733:hover .button_text {
+      color: #ffffff !important;
+      opacity: 1 !important;
+    }
+
+    .w-variant-c45e1d07-dd8e-a4c4-0fe9-acc2585d1733:hover {
+      color: #ffffff !important;
+    }
   </style>
 </head>
 
@@ -621,16 +631,17 @@
                 </div>
               </div>
               <nav role="navigation" class="navbar_menu is-page-height-tablet w-nav-menu">
-                <div class="navbar_menu-links">
-                  <a href="/#anchor-about" class="navbar_link w-nav-link">about</a><a href="/#section-partners"
-                    class="navbar_link hide w-nav-link">Partners</a><a href="/#anchor-join-us"
-                    class="navbar_link w-nav-link">Join us</a><a href="/#section-news"
-                    class="navbar_link hide w-nav-link">news</a>
-                </div>
+                  <div class="navbar_menu-links">
+                    <a href="#section-about" class="navbar_link w-nav-link">about</a><a href="/#section-partners"
+                      class="navbar_link hide w-nav-link">Partners</a><a href="#section-join-us"
+                      class="navbar_link w-nav-link">Join us</a><a href="/#section-news"
+                      class="navbar_link hide w-nav-link">news</a>
+                  </div>
+
               </nav>
             </div>
             <div class="navbar_menu-buttons hide-tablet">
-              <a data-wf--element---button--variant="base" href="/technicians"
+              <a data-wf--element---button--variant="base" href="/technicians" target="_top"
                 class="button_icon-wrapper w-inline-block">
                 <div class="button is-no-background">
                   <div class="button_text">Browse Experts</div>
@@ -646,6 +657,18 @@
                   </div>
                 </div>
                 <div class="button_background"></div>
+              </a>
+              <a data-wf--element---button--variant="base" href="/login" target="_top"
+                class="button_icon-wrapper w-inline-block">
+                <div class="button is-no-background">
+                  <div class="button_text">Login</div>
+                </div>
+              </a>
+              <a data-wf--element---button--variant="secondary" href="/register" target="_top"
+                class="button_icon-wrapper w-inline-block">
+                <div class="button is-no-background">
+                  <div class="button_text">Register</div>
+                </div>
               </a>
             </div>
           </div>
@@ -814,7 +837,7 @@
                 <!-- Service Selection Buttons -->
                 <div animate="opacity" class="button_wrapper"
                   style="display: flex; gap: 1.5rem; justify-content: center; margin-bottom: 2rem; flex-wrap: wrap;">
-                  <a data-wf--element---button--variant="primary" href="/mobile-repair"
+                  <a data-wf--element---button--variant="primary" href="/mobile-repair" target="_top"
                     class="button_icon-wrapper w-inline-block" style="min-width: 200px;">
                     <div class="button is-no-background">
                       <div class="button_text">MOBILE REPAIR</div>
@@ -831,7 +854,7 @@
                     </div>
                     <div class="button_background"></div>
                   </a>
-                  <a data-wf--element---button--variant="primary" href="/pc-repair"
+                  <a data-wf--element---button--variant="primary" href="/pc-repair" target="_top"
                     class="button_icon-wrapper w-inline-block" style="min-width: 200px;">
                     <div class="button is-no-background">
                       <div class="button_text">PC REPAIR</div>
@@ -850,7 +873,7 @@
                   </a>
                 </div>
                 <div animate="opacity" class="button_wrapper">
-                  <a data-wf--element---button--variant="base" href="/support"
+                  <a data-wf--element---button--variant="base" href="/support" target="_top"
                     class="button_icon-wrapper w-inline-block">
                     <div class="button is-no-background">
                       <div class="button_text">CONTACT US</div>
@@ -1506,7 +1529,7 @@
                       </h2>
                       <div class="margin-top margin-xlarge">
                         <div animate="opacity" class="button_wrapper">
-                          <a data-wf--element---button--variant="secondary" href="/register"
+                          <a data-wf--element---button--variant="secondary" href="/register" target="_top"
                             class="button_icon-wrapper w-variant-c45e1d07-dd8e-a4c4-0fe9-acc2585d1733 w-inline-block">
                             <div class="button is-no-background">
                               <div class="button_text w-variant-c45e1d07-dd8e-a4c4-0fe9-acc2585d1733">
@@ -2053,18 +2076,18 @@
                   style="color: #fff; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 25px; position: relative; z-index: 10;">
                   SERVICES</h4>
                 <ul style="list-style: none; padding: 0; margin: 0; position: relative; z-index: 10;">
-                  <li style="margin-bottom: 15px;"><a href="/services"
+                  <li style="margin-bottom: 15px;"><a href="/mobile-repair" target="_top"
                       style="color: #a1a1aa; text-decoration: none; font-size: 0.9rem; transition: color 0.3s; position: relative; z-index: 10;"
                       onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#a1a1aa'">Mobile Repair</a>
                   </li>
-                  <li style="margin-bottom: 15px;"><a href="/services"
+                  <li style="margin-bottom: 15px;"><a href="/pc-repair" target="_top"
                       style="color: #a1a1aa; text-decoration: none; font-size: 0.9rem; transition: color 0.3s; position: relative; z-index: 10;"
                       onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#a1a1aa'">PC Repair</a></li>
-                  <li style="margin-bottom: 15px;"><a href="/services"
+                  <li style="margin-bottom: 15px;"><a href="/services" target="_top"
                       style="color: #a1a1aa; text-decoration: none; font-size: 0.9rem; transition: color 0.3s; position: relative; z-index: 10;"
                       onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#a1a1aa'">All Services</a>
                   </li>
-                  <li style="margin-bottom: 15px;"><a href="/register"
+                  <li style="margin-bottom: 15px;"><a href="/schedule" target="_top"
                       style="color: #a1a1aa; text-decoration: none; font-size: 0.9rem; transition: color 0.3s; position: relative; z-index: 10;"
                       onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#a1a1aa'">Schedule Repair</a>
                   </li>
@@ -2077,17 +2100,17 @@
                   style="color: #fff; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 25px; position: relative; z-index: 10;">
                   SUPPORT</h4>
                 <ul style="list-style: none; padding: 0; margin: 0; position: relative; z-index: 10;">
-                  <li style="margin-bottom: 15px;"><a href="/support"
+                  <li style="margin-bottom: 15px;"><a href="/support" target="_top"
                       style="color: #a1a1aa; text-decoration: none; font-size: 0.9rem; transition: color 0.3s; position: relative; z-index: 10;"
                       onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#a1a1aa'">Help Center</a></li>
-                  <li style="margin-bottom: 15px;"><a href="/support"
+                  <li style="margin-bottom: 15px;"><a href="/support" target="_top"
                       style="color: #a1a1aa; text-decoration: none; font-size: 0.9rem; transition: color 0.3s; position: relative; z-index: 10;"
                       onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#a1a1aa'">Contact Us</a></li>
-                  <li style="margin-bottom: 15px;"><a href="/support"
+                  <li style="margin-bottom: 15px;"><a href="/terms" target="_top"
                       style="color: #a1a1aa; text-decoration: none; font-size: 0.9rem; transition: color 0.3s; position: relative; z-index: 10;"
                       onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#a1a1aa'">Terms of Service</a>
                   </li>
-                  <li style="margin-bottom: 15px;"><a href="/support"
+                  <li style="margin-bottom: 15px;"><a href="/privacy" target="_top"
                       style="color: #a1a1aa; text-decoration: none; font-size: 0.9rem; transition: color 0.3s; position: relative; z-index: 10;"
                       onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#a1a1aa'">Privacy Policy</a>
                   </li>
@@ -2100,13 +2123,14 @@
                   style="color: #fff; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 25px; position: relative; z-index: 10;">
                   COMPANY</h4>
                 <ul style="list-style: none; padding: 0; margin: 0; position: relative; z-index: 10;">
-                  <li style="margin-bottom: 15px;"><a href="/support"
-                      style="color: #a1a1aa; text-decoration: none; font-size: 0.9rem; transition: color 0.3s; position: relative; z-index: 10;"
-                      onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#a1a1aa'">About Us</a></li>
-                  <li style="margin-bottom: 15px;"><a href="/support"
-                      style="color: #a1a1aa; text-decoration: none; font-size: 0.9rem; transition: color 0.3s; position: relative; z-index: 10;"
-                      onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#a1a1aa'">Our Team</a></li>
-                  <li style="margin-bottom: 15px;"><a href="/register"
+                    <li style="margin-bottom: 15px;"><a href="#section-about"
+                        style="color: #a1a1aa; text-decoration: none; font-size: 0.9rem; transition: color 0.3s; position: relative; z-index: 10;"
+                        onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#a1a1aa'">About Us</a></li>
+                    <li style="margin-bottom: 15px;"><a href="#section-about"
+                        style="color: #a1a1aa; text-decoration: none; font-size: 0.9rem; transition: color 0.3s; position: relative; z-index: 10;"
+                        onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#a1a1aa'">Our Team</a></li>
+
+                  <li style="margin-bottom: 15px;"><a href="/register" target="_top"
                       style="color: #a1a1aa; text-decoration: none; font-size: 0.9rem; transition: color 0.3s; position: relative; z-index: 10;"
                       onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#a1a1aa'">Become a
                       Technician</a></li>
@@ -2985,19 +3009,37 @@
     gsap.registerPlugin(ScrollTrigger, SplitText);
   </script>
   <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1/dist/lenis.min.js"></script>
-  <script>
-    const lenis = new Lenis({
-      duration: 1.2,
-      smooth: true,
-      autoResize: true,
-    });
-    function raf(time) {
-      lenis.raf(time);
+    <script>
+      const lenis = new Lenis({
+        duration: 1.2,
+        smooth: true,
+        autoResize: true,
+      });
+      function raf(time) {
+        lenis.raf(time);
+        requestAnimationFrame(raf);
+      }
       requestAnimationFrame(raf);
-    }
-    requestAnimationFrame(raf);
-    lenis.on("scroll", ScrollTrigger.update);
-  </script>
-</body>
+      lenis.on("scroll", ScrollTrigger.update);
+
+      // Handle internal hashes for smooth scroll within iframe
+      document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+          anchor.addEventListener('click', function (e) {
+            const href = this.getAttribute('href');
+            if (!href || href === '#' || href.startsWith('/#')) return;
+            
+            e.preventDefault();
+            const targetId = href.substring(1);
+            const targetElement = document.getElementById(targetId);
+            
+            if (targetElement) {
+              lenis.scrollTo(targetElement);
+            }
+          });
+        });
+      });
+    </script>
+  </body>
 
 </html>

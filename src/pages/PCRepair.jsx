@@ -84,7 +84,8 @@ const PCRepair = () => {
         () => {
           toast({ title: "Location Access Denied", description: "Showing all technicians.", variant: "default" });
           fetchAllTechnicians();
-        }
+        },
+        { timeout: 10000 }
       );
     } else {
       fetchAllTechnicians();
@@ -122,7 +123,7 @@ const PCRepair = () => {
     if (issue !== 'all') filtered = filtered.filter(t => t.specialization?.includes(issue));
     const minRating = parseFloat(minimumRating);
     if (minRating > 0) filtered = filtered.filter(t => (t.rating || 0) >= minRating);
-    
+
     setFilteredTechnicians(filtered);
   }, [searchTerm, brand, issue, minimumRating, technicians]);
 
@@ -140,7 +141,7 @@ const PCRepair = () => {
   return (
     <div className="bg-black text-white selection:bg-white selection:text-black font-sans overflow-x-hidden">
       <SEO title="PC & Laptop Repair - TechCare" description="Expert PC repair services." />
-      
+
       {/* Background Elements */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-white/5 blur-[120px] rounded-full" />
@@ -154,11 +155,11 @@ const PCRepair = () => {
             <div className="w-2 h-2 bg-white" />
             <span className="text-xs font-bold uppercase tracking-[0.3em]">PC & LAPTOP REPAIR</span>
           </div>
-          
+
           <h1 className="text-[clamp(3rem,10vw,8rem)] font-bold leading-[0.9] tracking-tighter mb-12 uppercase italic">
             Expert PC<br />Repair Services
           </h1>
-          
+
           <p className="text-xl md:text-2xl text-gray-400 max-w-2xl mb-16 font-light leading-relaxed">
             Find trusted technicians for your computer, laptop, and hardware needs.
           </p>
@@ -171,14 +172,14 @@ const PCRepair = () => {
               </div>
             ) : (
               <div className="flex gap-8">
-                <button 
+                <button
                   onClick={getUserLocation}
                   className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest hover:text-gray-400 transition-colors"
                 >
                   <MapPin className="h-4 w-4" />
                   {userLocation ? "Location Detected" : "Detect Location"}
                 </button>
-                <button 
+                <button
                   onClick={() => setShowManualLocation(!showManualLocation)}
                   className="text-xs font-bold uppercase tracking-widest hover:text-gray-400 transition-colors"
                 >
@@ -186,7 +187,7 @@ const PCRepair = () => {
                 </button>
               </div>
             )}
-            
+
             <div className="flex items-center gap-2 border-l border-white/20 pl-8">
               <DollarSign className="h-4 w-4 text-gray-400" />
               <span className="text-xs font-bold uppercase tracking-widest text-gray-400">
@@ -196,13 +197,13 @@ const PCRepair = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-6">
-            <button 
+            <button
               className="bg-white text-black px-12 py-6 text-sm font-bold uppercase tracking-widest hover:bg-gray-200 transition-all flex items-center justify-center gap-3 group"
               onClick={() => document.getElementById('search-section').scrollIntoView({ behavior: 'smooth' })}
             >
               Find Technicians <ArrowUpRight className="h-4 w-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
             </button>
-            <button 
+            <button
               className="border border-white/30 text-white px-12 py-6 text-sm font-bold uppercase tracking-widest hover:bg-white/10 transition-all"
               onClick={() => navigate('/register')}
             >
@@ -215,7 +216,7 @@ const PCRepair = () => {
         <section id="search-section" className="mb-32">
           <div className="flex items-center justify-between mb-12 border-b border-white/10 pb-6">
             <h2 className="text-3xl font-bold uppercase tracking-tighter italic">Refine Your Search</h2>
-            <button 
+            <button
               onClick={() => setSearchTerm('')}
               className="text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-white transition-colors"
             >
@@ -226,7 +227,7 @@ const PCRepair = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="lg:col-span-4 relative group">
               <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 group-focus-within:text-white transition-colors" />
-              <input 
+              <input
                 type="text"
                 placeholder="SEARCH TECHNICIANS, SERVICES, OR LOCATIONS..."
                 className="w-full bg-black border border-white/10 px-16 py-8 text-sm font-bold uppercase tracking-widest focus:outline-none focus:border-white transition-all placeholder:text-gray-700"
@@ -271,7 +272,7 @@ const PCRepair = () => {
               </SelectContent>
             </Select>
 
-            <button 
+            <button
               className="bg-white/5 border border-white/10 hover:bg-white/10 transition-all flex items-center justify-center gap-2 h-16 text-xs font-bold uppercase tracking-widest"
               onClick={() => setShowMap(!showMap)}
             >
@@ -289,10 +290,10 @@ const PCRepair = () => {
 
           {showMap && (
             <div className="mt-12 h-[600px] border border-white/10 animate-in fade-in duration-500">
-              <GoogleMap 
-                technicians={filteredTechnicians} 
-                center={userLocation} 
-                onTechnicianClick={(t) => { setSelectedTechnician(t); setShowDetailModal(true); }} 
+              <GoogleMap
+                technicians={filteredTechnicians}
+                center={userLocation}
+                onTechnicianClick={(t) => { setSelectedTechnician(t); setShowDetailModal(true); }}
               />
             </div>
           )}
@@ -314,9 +315,9 @@ const PCRepair = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-white/10 border border-white/10">
               {filteredTechnicians.slice(0, visibleCount).map((tech) => (
-                <TechnicianCard 
-                  key={tech._id || tech.id} 
-                  technician={tech} 
+                <TechnicianCard
+                  key={tech._id || tech.id}
+                  technician={tech}
                   convertPrice={convertPrice}
                   isFavorite={favorites.includes(tech._id || tech.id)}
                   onToggleFavorite={() => toggleFavorite(tech._id || tech.id)}
@@ -329,7 +330,7 @@ const PCRepair = () => {
 
           {visibleCount < filteredTechnicians.length && (
             <div className="mt-20 text-center">
-              <button 
+              <button
                 onClick={() => setVisibleCount(v => v + 6)}
                 className="bg-white text-black px-16 py-6 text-xs font-bold uppercase tracking-widest hover:bg-gray-200 transition-all"
               >
@@ -345,9 +346,9 @@ const PCRepair = () => {
           {selectedTechnician && (
             <div className="flex flex-col md:flex-row h-full">
               <div className="w-full md:w-1/2 h-[400px] md:h-auto overflow-hidden">
-                <img 
-                  src={selectedTechnician.profileImage || selectedTechnician.image} 
-                  className="w-full h-full object-cover" 
+                <img
+                  src={selectedTechnician.profileImage || selectedTechnician.image}
+                  className="w-full h-full object-cover"
                   alt={selectedTechnician.name}
                 />
               </div>
@@ -356,7 +357,7 @@ const PCRepair = () => {
                   <div className="w-1.5 h-1.5 bg-white" />
                   <span className="text-[10px] font-bold uppercase tracking-[0.3em]">TECHNICIAN PROFILE</span>
                 </div>
-                
+
                 <h2 className="text-4xl font-bold uppercase tracking-tighter mb-4 italic">{selectedTechnician.name}</h2>
                 <div className="flex items-center gap-4 mb-10">
                   <div className="flex items-center gap-1">
@@ -387,7 +388,7 @@ const PCRepair = () => {
                   </section>
                 </div>
 
-                <button 
+                <button
                   className="w-full bg-white text-black py-6 text-xs font-bold uppercase tracking-widest hover:bg-gray-200 transition-all mb-4"
                   onClick={() => navigate('/schedule', { state: { technician: selectedTechnician, service: 'PC Repair' } })}
                 >
@@ -405,12 +406,12 @@ const PCRepair = () => {
 const TechnicianCard = ({ technician, convertPrice, isFavorite, onToggleFavorite, onViewDetails, onSchedule }) => (
   <div className="bg-black p-8 group relative overflow-hidden flex flex-col transition-all hover:bg-white/[0.03]">
     <div className="aspect-[4/5] overflow-hidden mb-8 relative">
-      <img 
-        src={technician.profileImage || technician.image || 'https://images.unsplash.com/photo-1587829741301-dc798b83defb?w=400&h=300&fit=crop'} 
+      <img
+        src={technician.profileImage || technician.image || 'https://images.unsplash.com/photo-1587829741301-dc798b83defb?w=400&h=300&fit=crop'}
         className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700"
         alt={technician.name}
       />
-      <button 
+      <button
         onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }}
         className="absolute top-6 right-6 p-3 bg-black/80 text-white backdrop-blur-md hover:bg-white hover:text-black transition-all"
       >
@@ -442,13 +443,13 @@ const TechnicianCard = ({ technician, convertPrice, isFavorite, onToggleFavorite
       </p>
 
       <div className="grid grid-cols-2 gap-px bg-white/10">
-        <button 
+        <button
           onClick={onViewDetails}
           className="bg-black py-4 text-[10px] font-bold uppercase tracking-widest hover:bg-white hover:text-black transition-all"
         >
           Details
         </button>
-        <button 
+        <button
           onClick={onSchedule}
           className="bg-white text-black py-4 text-[10px] font-bold uppercase tracking-widest hover:bg-gray-200 transition-all"
         >

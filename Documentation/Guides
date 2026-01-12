@@ -1,0 +1,347 @@
+# 🎬 Video Background Setup Guide
+
+## Overview
+This guide explains how to add and configure video backgrounds for the TechCare homepage hero section.
+
+---
+
+## Current Implementation
+
+The homepage (`src/pages/Home.jsx`) uses the `VideoHeroBackground` component located at `src/components/VideoHeroBackground.jsx`.
+
+### Current Configuration
+
+```jsx
+<VideoHeroBackground
+    videoUrl="/videos/hero-background.mp4"
+    posterUrl="https://images.unsplash.com/photo-1581092160607-ee67c4ab602f?w=1920&q=80"
+    opacity={0.5}
+>
+    {/* Hero content */}
+</VideoHeroBackground>
+```
+
+---
+
+## Adding Your Own Video
+
+### Method 1: Local Video File (Recommended)
+
+1. **Create videos directory**:
+   ```bash
+   mkdir public\videos
+   ```
+
+2. **Add your video file**:
+   - Place your video file in `public/videos/`
+   - Recommended name: `hero-background.mp4`
+   - File path: `public/videos/hero-background.mp4`
+
+3. **Video specifications** (recommended):
+   - **Format**: MP4 (H.264 codec)
+   - **Resolution**: 1920x1080 (Full HD) or 3840x2160 (4K)
+   - **Duration**: 10-30 seconds (looped)
+   - **File size**: Under 5MB for optimal loading
+   - **Frame rate**: 30fps or 60fps
+   - **Aspect ratio**: 16:9
+
+4. **Optimize your video**:
+   ```bash
+   # Using FFmpeg to compress and optimize
+   ffmpeg -i input.mp4 -vcodec h264 -acodec aac -vf scale=1920:1080 -b:v 1500k -b:a 128k public/videos/hero-background.mp4
+   ```
+
+### Method 2: External URL
+
+Update the `videoUrl` prop in `src/pages/Home.jsx`:
+
+```jsx
+<VideoHeroBackground
+    videoUrl="https://your-cdn.com/video.mp4"
+    posterUrl="https://your-cdn.com/poster.jpg"
+    opacity={0.5}
+>
+```
+
+---
+
+## Suggested Professional Video Sources
+
+### Free Stock Video Sites:
+
+1. **Pexels Videos** (Recommended)
+   - URL: https://www.pexels.com/videos/
+   - Search terms: "technology", "circuit board", "data center", "programming"
+   - Example video: https://www.pexels.com/video/close-up-view-of-system-hacking-5240547/
+
+2. **Pixabay Videos**
+   - URL: https://pixabay.com/videos/
+   - Search: "tech repair", "electronics", "motherboard"
+
+3. **Videvo**
+   - URL: https://www.videvo.net/
+   - Category: Technology
+
+4. **Coverr**
+   - URL: https://coverr.co/
+   - Category: Tech/Abstract
+
+### Specific Video Recommendations:
+
+#### Option 1: Technology/Circuit Board (Professional Look)
+```
+Direct Download (Pexels):
+https://www.pexels.com/video/close-up-view-of-system-hacking-5240547/
+
+Description: Close-up of circuit boards and technology - Perfect for tech repair business
+```
+
+#### Option 2: Smartphone Repair (Industry-Specific)
+```
+Search Pexels for: "smartphone repair" or "phone disassembly"
+Look for videos showing:
+- Technician working on devices
+- Tools and repair equipment
+- Clean workshop environment
+```
+
+#### Option 3: Abstract Tech (Modern/Corporate)
+```
+Pexels search: "digital technology" or "data visualization"
+URL example: https://www.pexels.com/video/digital-projection-of-abstract-geometrical-lines-3129957/
+```
+
+---
+
+## Fallback Poster Image
+
+The `posterUrl` is displayed while the video loads or on mobile devices that don't support autoplay.
+
+### Recommended Poster Images (Unsplash):
+
+1. **Tech Workspace**:
+   ```
+   https://images.unsplash.com/photo-1581092160607-ee67c4ab602f?w=1920&q=80
+   ```
+
+2. **Circuit Board**:
+   ```
+   https://images.unsplash.com/photo-1518770660439-4636190af475?w=1920&q=80
+   ```
+
+3. **Smartphone Repair**:
+   ```
+   https://images.unsplash.com/photo-1556656793-08538906a9f8?w=1920&q=80
+   ```
+
+4. **Modern Tech**:
+   ```
+   https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=1920&q=80
+   ```
+
+---
+
+## Component Configuration Options
+
+### VideoHeroBackground Props:
+
+```jsx
+<VideoHeroBackground
+    videoUrl="/videos/hero-background.mp4"    // Video file path or URL
+    posterUrl="https://example.com/image.jpg" // Fallback image
+    opacity={0.5}                             // Video overlay opacity (0-1)
+>
+    {children}                                 // Hero content
+</VideoHeroBackground>
+```
+
+### Adjusting Opacity
+
+- **0.3** - Very subtle, text highly visible
+- **0.5** - Balanced (current setting)
+- **0.7** - Strong overlay, video more visible
+
+Update in `src/pages/Home.jsx`:
+```jsx
+opacity={0.5}  // Change this value
+```
+
+---
+
+## Mobile Optimization
+
+The component automatically:
+- Pauses video on mobile devices (saves data)
+- Shows poster image instead
+- Disables autoplay on slow connections
+
+---
+
+## Performance Tips
+
+### 1. Optimize Video Size
+- Keep under 5MB for fast loading
+- Use modern codecs (H.264, H.265)
+- Consider WebM format for better compression
+
+### 2. Lazy Loading
+The video loads with `preload="auto"` - change to `preload="metadata"` for slower connections:
+
+Edit `src/components/VideoHeroBackground.jsx`:
+```jsx
+<video
+    ...
+    preload="metadata"  // Instead of "auto"
+/>
+```
+
+### 3. Content Delivery Network (CDN)
+For production, host videos on a CDN:
+- Cloudflare R2
+- AWS S3 + CloudFront
+- Bunny CDN
+- Vercel Blob Storage
+
+---
+
+## Quick Start Commands
+
+### Get a video from Pexels:
+```bash
+# 1. Visit https://www.pexels.com/videos/
+# 2. Search for "technology circuit"
+# 3. Download "Free Download" > "HD" or "Full HD"
+# 4. Move to project:
+mv ~/Downloads/video.mp4 public/videos/hero-background.mp4
+```
+
+### Optimize with FFmpeg:
+```bash
+# Install FFmpeg first: https://ffmpeg.org/download.html
+
+# Compress and optimize
+ffmpeg -i public/videos/hero-background.mp4 \
+  -vcodec libx264 \
+  -crf 28 \
+  -preset slow \
+  -vf scale=1920:1080 \
+  -an \
+  public/videos/hero-optimized.mp4
+
+# Then rename
+mv public/videos/hero-optimized.mp4 public/videos/hero-background.mp4
+```
+
+---
+
+## Testing
+
+1. **Start development server**:
+   ```bash
+   npm run dev
+   ```
+
+2. **Open browser**: http://localhost:5173
+
+3. **Check**:
+   - Video plays automatically
+   - Loops smoothly
+   - Poster shows during loading
+   - Mobile shows poster (not video)
+
+---
+
+## Troubleshooting
+
+### Video Not Playing?
+
+1. **Check file path**:
+   - File must be in `public/videos/`
+   - Path in code: `/videos/hero-background.mp4`
+
+2. **Check video format**:
+   - Use MP4 (H.264)
+   - Avoid codecs like HEVC on web
+
+3. **Check browser console**:
+   - Press F12 > Console tab
+   - Look for error messages
+
+### Video Too Large?
+
+1. **Compress with online tool**:
+   - https://www.freeconvert.com/video-compressor
+   - Target: 2-5MB file size
+
+2. **Reduce resolution**:
+   - Use 1280x720 instead of 1920x1080
+
+3. **Reduce duration**:
+   - Shorter loop (10-15 seconds)
+
+---
+
+## Production Checklist
+
+- [ ] Video file optimized (< 5MB)
+- [ ] MP4 format with H.264 codec
+- [ ] Poster image added (fallback)
+- [ ] Tested on desktop
+- [ ] Tested on mobile
+- [ ] Tested on slow connection
+- [ ] Video hosted on CDN (recommended)
+- [ ] Proper copyright/licensing
+- [ ] Accessible alternative provided
+
+---
+
+## Copyright & Licensing
+
+### Using Stock Videos:
+
+✅ **Pexels** - Free for commercial use, no attribution required
+✅ **Pixabay** - Free for commercial use, no attribution required
+✅ **Videvo** - Check license (some require attribution)
+❌ **Avoid copyrighted content**
+
+### Attribution Template (if required):
+
+Add to footer or about page:
+```html
+Video by [Creator Name] from [Platform]
+```
+
+---
+
+## Example Implementation
+
+### Complete Example (src/pages/Home.jsx):
+
+```jsx
+<VideoHeroBackground
+    videoUrl="/videos/hero-background.mp4"
+    posterUrl="https://images.unsplash.com/photo-1581092160607-ee67c4ab602f?w=1920&q=80"
+    opacity={0.5}
+>
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
+        <motion.div className="max-w-3xl">
+            {/* Your hero content here */}
+        </motion.div>
+    </div>
+</VideoHeroBackground>
+```
+
+---
+
+## Support
+
+For issues or questions:
+- Check browser console (F12)
+- Verify file paths
+- Test in different browsers
+- Check network tab for loading issues
+
+---
+
+*Last Updated: November 29, 2025*  
+*TechCare v2.0 - Professional Video Background Setup*

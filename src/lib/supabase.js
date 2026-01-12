@@ -83,37 +83,68 @@ export const getCurrentUser = async () => {
     return user;
 };
 
-export const getProfile = async (userId) => {
-    const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
+// Helper to wrap Supabase calls with a timeout
+const withTimeout = (promise, timeoutMs = 30000) => {
+    return Promise.race([
+        promise,
+        new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Database request timed out')), timeoutMs)
+        )
+    ]);
+};
 
-    if (error) throw error;
-    return data;
+export const getProfile = async (userId) => {
+    try {
+        const { data, error } = await withTimeout(
+            supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', userId)
+                .single()
+        );
+
+        if (error && error.code !== 'PGRST116') throw error;
+        return data;
+    } catch (err) {
+        console.error('getProfile error:', err.message);
+        return null;
+    }
 };
 
 export const getCustomerProfile = async (userId) => {
-    const { data, error } = await supabase
-        .from('customers')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
+    try {
+        const { data, error } = await withTimeout(
+            supabase
+                .from('customers')
+                .select('*')
+                .eq('user_id', userId)
+                .single()
+        );
 
-    if (error && error.code !== 'PGRST116') throw error;
-    return data;
+        if (error && error.code !== 'PGRST116') throw error;
+        return data;
+    } catch (err) {
+        console.error('getCustomerProfile error:', err.message);
+        return null;
+    }
 };
 
 export const getTechnicianProfile = async (userId) => {
-    const { data, error } = await supabase
-        .from('technicians')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
+    try {
+        const { data, error } = await withTimeout(
+            supabase
+                .from('technicians')
+                .select('*')
+                .eq('user_id', userId)
+                .single()
+        );
 
-    if (error && error.code !== 'PGRST116') throw error;
-    return data;
+        if (error && error.code !== 'PGRST116') throw error;
+        return data;
+    } catch (err) {
+        console.error('getTechnicianProfile error:', err.message);
+        return null;
+    }
 };
 
 export const updateProfile = async (userId, updates) => {

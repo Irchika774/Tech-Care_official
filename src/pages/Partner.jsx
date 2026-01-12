@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import SEO from '../components/SEO';
 
 const Partner = () => {
@@ -22,9 +23,11 @@ const Partner = () => {
                     <p className="text-xl md:text-2xl opacity-90 max-w-3xl mx-auto mb-8">
                         Join the TechCare network and start receiving high-quality repair leads in your area today.
                     </p>
-                    <button className="bg-white text-secondary hover:bg-gray-100 font-bold py-4 px-10 rounded-full text-xl transition-all shadow-xl">
-                        Apply to Partner
-                    </button>
+                    <Link to="/register">
+                        <button className="bg-white text-secondary hover:bg-gray-100 font-bold py-4 px-10 rounded-full text-xl transition-all shadow-xl">
+                            Apply to Partner
+                        </button>
+                    </Link>
                 </div>
             </section>
 
@@ -120,39 +123,27 @@ const Partner = () => {
                 </section>
 
                 {/* Application Form */}
-                <section className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 md:p-12 max-w-4xl mx-auto">
-                    <h2 className="text-3xl font-bold text-center mb-8">Start Your Application</h2>
-                    <form className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-sm font-bold mb-2">Business Name</label>
-                            <input type="text" className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700" placeholder="e.g. QuickFix Repairs" />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-bold mb-2">Contact Name</label>
-                            <input type="text" className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700" placeholder="Your name" />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-bold mb-2">Email Address</label>
-                            <input type="email" className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700" placeholder="your@email.com" />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-bold mb-2">Phone Number</label>
-                            <input type="tel" className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700" placeholder="+94 XX XXX XXXX" />
-                        </div>
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-bold mb-2">Service Area (City/District)</label>
-                            <input type="text" className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700" placeholder="Where do you operate?" />
-                        </div>
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-bold mb-2">Tell us about your experience</label>
-                            <textarea className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700" rows="4" placeholder="Briefly describe your services and background..."></textarea>
-                        </div>
-                        <div className="md:col-span-2">
-                            <button className="w-full bg-secondary hover:bg-secondary-dark text-white font-bold py-4 rounded-lg text-lg transition-all shadow-lg">
-                                Submit Application
+                {/* CTA Section */}
+                <section className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 md:p-12 max-w-4xl mx-auto text-center">
+                    <h2 className="text-3xl font-bold mb-4">Ready to Grow Your Business?</h2>
+                    <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
+                        Join thousands of verified technicians on TechCare. Creating an account takes less than 2 minutes.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                        <Link to="/register">
+                            <button className="w-full sm:w-auto bg-secondary hover:bg-secondary-dark text-white font-bold py-4 px-10 rounded-full text-lg transition-all shadow-lg transform hover:scale-105">
+                                Create Technician Account
                             </button>
-                        </div>
-                    </form>
+                        </Link>
+                        <Link to="/how-it-works">
+                            <button className="w-full sm:w-auto bg-transparent border-2 border-gray-300 dark:border-gray-600 hover:border-secondary text-gray-700 dark:text-gray-200 font-bold py-4 px-10 rounded-full text-lg transition-all">
+                                Learn More
+                            </button>
+                        </Link>
+                    </div>
+                    <p className="mt-6 text-sm text-gray-500">
+                        Already have an account? <Link to="/login" className="text-secondary hover:underline font-bold">Log in here</Link>
+                    </p>
                 </section>
             </main>
         </div>

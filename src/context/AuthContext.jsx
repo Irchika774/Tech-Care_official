@@ -1,50 +1,98 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase, signIn, signUp, signOut, getProfile, getCustomerProfile, getTechnicianProfile } from '../lib/supabase';
+import { supabase, signIn, signOut, getProfile, getCustomerProfile, getTechnicianProfile } from '../lib/supabase';
+import apiClient from '../lib/api';
 
-const AuthContext = createContext();
+export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [session, setSession] = useState(null);
     const navigate = useNavigate();
 
-    const loadUserProfile = async (authUser) => {
-        try {
-            const profileData = await getProfile(authUser.id);
-            setProfile(profileData);
+    const isMounted = useRef(true);
 
-            let extendedProfile = null;
-            if (profileData.role === 'technician') {
-                extendedProfile = await getTechnicianProfile(authUser.id);
-            } else if (profileData.role === 'user' || profileData.role === 'customer') {
-                extendedProfile = await getCustomerProfile(authUser.id);
+    const loadUserProfile = async (authUser) => {
+        if (!authUser) return;
+        
+        // Prevent redundant loads if we already have the profile and it's for this user
+        if (profile?.id === authUser.id && user?.extendedProfile) {
+            console.log('[DEBUG] loadUserProfile skipped: Profile already fresh');
+            return;
+        }
+
+        try {
+            console.log('[DEBUG] loadUserProfile started for:', authUser.id);
+            
+            // Fetch profile and extended profile in parallel for performance
+            // Use a shorter timeout for profile loading to avoid blocking UI
+            const profilePromise = getProfile(authUser.id);
+            const role = authUser.user_metadata?.role || 'user';
+            
+            let extendedProfilePromise = Promise.resolve(null);
+            if (role === 'technician') {
+                extendedProfilePromise = getTechnicianProfile(authUser.id);
+            } else if (role === 'user' || role === 'customer') {
+                extendedProfilePromise = getCustomerProfile(authUser.id);
             }
 
-            setUser({
-                ...authUser,
-                ...profileData,
-                extendedProfile,
-                _id: authUser.id
-            });
+            const [profileData, extendedProfile] = await Promise.all([
+                profilePromise,
+                extendedProfilePromise
+            ]);
+
+            // If profile is null (race condition or new user), try to construct from metadata
+            const finalProfile = profileData || {
+                id: authUser.id,
+                role: role,
+                name: authUser.user_metadata?.name || authUser.email
+            };
+
+            if (isMounted.current) {
+                setProfile(finalProfile);
+
+                setUser({
+                    ...authUser,
+                    ...finalProfile,
+                    extendedProfile,
+                    _id: authUser.id
+                });
+            }
+            console.log('[DEBUG] loadUserProfile finished successfully');
         } catch (error) {
             console.error('Error loading profile:', error);
-            setUser({
-                ...authUser,
-                _id: authUser.id,
-                role: authUser.user_metadata?.role || 'user',
-                name: authUser.user_metadata?.name || authUser.email
-            });
+            // Fallback to basic info from metadata
+            if (isMounted.current) {
+                const fallbackRole = authUser.user_metadata?.role || 'user';
+                setUser({
+                    ...authUser,
+                    _id: authUser.id,
+                    role: fallbackRole,
+                    name: authUser.user_metadata?.name || authUser.email
+                });
+            }
         }
     };
 
     useEffect(() => {
-        let isMounted = true;
+        isMounted.current = true;
 
         const initializeAuth = async () => {
+            // Reduced timeout to 3s to prevent long waits on slow connections, but show UI sooner
+            const timeoutId = setTimeout(() => {
+                if (isMounted && loading) {
+                    console.warn('[AUTH] Initialization timed out, forcing loading to false to show UI');
+                    setLoading(false);
+                }
+            }, 3000);
+
             try {
-                const { data: { session }, error } = await supabase.auth.getSession();
+                console.log('[DEBUG] initializeAuth started');
+
+                // Get session immediately from local storage if possible
+                const { data: { session: currentSession }, error } = await supabase.auth.getSession();
 
                 if (error) {
                     console.error('Session error:', error);
@@ -52,58 +100,64 @@ export const AuthProvider = ({ children }) => {
                     return;
                 }
 
-                if (session?.user && isMounted) {
-                    await loadUserProfile(session.user);
+                if (currentSession && isMounted) {
+                    console.log('[DEBUG] Session found, user:', currentSession.user.id);
+                    setSession(currentSession);
+
+                    // Set basic user info immediately for faster UI
+                    const authUser = currentSession.user;
+                    setUser({
+                        ...authUser,
+                        _id: authUser.id,
+                        role: authUser.user_metadata?.role || 'user',
+                        name: authUser.user_metadata?.name || authUser.email
+                    });
+
+                    // Load full profile in background without blocking
+                    loadUserProfile(authUser);
+                } else {
+                    console.log('[DEBUG] No session found in getSession');
                 }
             } catch (error) {
-                console.error('Auth initialization error:', error);
+                console.error('Auth initialization error:', error.message);
             } finally {
-                if (isMounted) setLoading(false);
+                clearTimeout(timeoutId);
+                if (isMounted) {
+                    console.log('[DEBUG] initializeAuth finished');
+                    setLoading(false);
+                }
             }
         };
 
-        // Set a timeout fallback to ensure loading never gets stuck
-        const timeout = setTimeout(() => {
-            if (isMounted) {
-                console.warn('Auth initialization timeout - forcing loading state to false');
-                setLoading(false);
-            }
-        }, 5000);
-
         initializeAuth();
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
             console.log('Auth event:', event);
+            if (isMounted) setSession(currentSession);
 
-            if (event === 'SIGNED_IN' && session?.user) {
+            if (event === 'SIGNED_IN' && currentSession?.user) {
                 // Set user immediately for faster UI update
-                setUser({
-                    ...session.user,
-                    _id: session.user.id,
-                    role: session.user.user_metadata?.role || 'user',
-                    name: session.user.user_metadata?.name || session.user.email
+                setUser(prev => prev || {
+                    ...currentSession.user,
+                    _id: currentSession.user.id,
+                    role: currentSession.user.user_metadata?.role || 'user',
+                    name: currentSession.user.user_metadata?.name || currentSession.user.email
                 });
-                // Then load full profile
-                loadUserProfile(session.user);
+                await loadUserProfile(currentSession.user);
             } else if (event === 'SIGNED_OUT') {
                 setUser(null);
                 setProfile(null);
-            } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-                // Update user on token refresh
-                if (!user) {
-                    await loadUserProfile(session.user);
-                }
-            } else if (event === 'USER_UPDATED' && session?.user) {
-                // Handle email confirmation or profile updates
-                await loadUserProfile(session.user);
+                setSession(null);
+            } else if ((event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED' || event === 'INITIAL_SESSION') && currentSession?.user) {
+                await loadUserProfile(currentSession.user);
             }
         });
 
         return () => {
-            isMounted = false;
-            clearTimeout(timeout);
+            isMounted.current = false;
             subscription.unsubscribe();
         };
+
     }, []);
 
     const login = async (email, password) => {
@@ -144,25 +198,44 @@ export const AuthProvider = ({ children }) => {
 
     const register = async (name, email, password, role = 'user') => {
         try {
-            await signUp(email, password, name, role);
-            navigate('/login');
+            // Use Backend API for secure registration (enforces roles, atomic updates)
+            await apiClient.post('/api/auth/register', { name, email, password, role });
+
+            // Note: Backend currently enforces 'user' role for public registration
+            // to prevent Unauthorized Admin/Technician creation.
+
             return { success: true, message: 'Registration successful! Please login with your credentials.' };
         } catch (error) {
+            console.error('Registration error:', error);
             return {
                 success: false,
-                error: error.message || 'Registration failed. Please try again.'
+                error: error.response?.data?.error || error.message || 'Registration failed. Please try again.'
             };
         }
     };
 
     const logout = async () => {
         try {
+            console.log('[DEBUG] Logging out...');
             await signOut();
             setUser(null);
             setProfile(null);
-            navigate('/');
+            setSession(null);
+            // Clear any local storage if needed
+            localStorage.removeItem('supabase.auth.token');
+            console.log('[DEBUG] Logout successful, redirecting...');
+            // Force reload to clear all state and redirect to home
+            window.location.assign('/');
         } catch (error) {
             console.error('Logout error:', error);
+            window.location.assign('/');
+        }
+    };
+
+    const refreshUser = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+            await loadUserProfile(session.user);
         }
     };
 
@@ -187,6 +260,7 @@ export const AuthProvider = ({ children }) => {
             register,
             logout,
             loading,
+            session,
             hasRole,
             isAdmin,
             isTechnician,
