@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase, signIn, signOut, getProfile, getCustomerProfile, getTechnicianProfile } from '../lib/supabase';
+import { supabase, signIn, signUp, signOut, getProfile, getCustomerProfile, getTechnicianProfile } from '../lib/supabase';
 
 
 export const AuthContext = createContext();
