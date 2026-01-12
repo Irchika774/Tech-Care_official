@@ -55,26 +55,18 @@ export const NotificationProvider = ({ children }) => {
 
         setLoading(true);
         try {
-            const { data: sessionData } = await supabase.auth.getSession();
-            const token = sessionData?.session?.access_token;
+            // Direct Supabase query
+            const { data, error } = await supabase
+                .from('notifications')
+                .select('*')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false })
+                .limit(50);
 
-            if (!token) {
-                setLoading(false);
-                return;
-            }
+            if (error) throw error;
 
-            const response = await fetch(`/api/notifications?userId=${userId}&limit=50`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setNotifications(data.notifications || []);
-                setUnreadCount(data.unreadCount || 0);
-            }
+            setNotifications(data || []);
+            setUnreadCount(data ? data.filter(n => !n.read).length : 0);
         } catch (error) {
             console.error('Error fetching notifications:', error);
         } finally {
@@ -123,6 +115,14 @@ export const NotificationProvider = ({ children }) => {
                         setNotifications(prev =>
                             prev.map(n => n.id === payload.new.id ? payload.new : n)
                         );
+                        // Re-calc unread count
+                        setUnreadCount(prev => {
+                            // This is an approximation, ideally we fetch count for absolute accuracy
+                            // but for UI responsiveness this is fine
+                            if (payload.old.read === false && payload.new.read === true) return Math.max(0, prev - 1);
+                            if (payload.old.read === true && payload.new.read === false) return prev + 1;
+                            return prev;
+                        });
                     }
                 )
                 .on(
@@ -200,16 +200,12 @@ export const NotificationProvider = ({ children }) => {
     // Mark notification as read
     const markAsRead = async (notificationId) => {
         try {
-            const { data: sessionData } = await supabase.auth.getSession();
-            const token = sessionData?.session?.access_token;
+            const { error } = await supabase
+                .from('notifications')
+                .update({ read: true })
+                .eq('id', notificationId);
 
-            await fetch(`/api/notifications/${notificationId}/read`, {
-                method: 'PATCH',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            if (error) throw error;
 
             setNotifications(prev =>
                 prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
@@ -226,17 +222,12 @@ export const NotificationProvider = ({ children }) => {
         if (!userId) return;
 
         try {
-            const { data: sessionData } = await supabase.auth.getSession();
-            const token = sessionData?.session?.access_token;
+            const { error } = await supabase
+                .from('notifications')
+                .update({ read: true })
+                .eq('user_id', userId);
 
-            await fetch('/api/notifications/read-all', {
-                method: 'PATCH',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ userId })
-            });
+            if (error) throw error;
 
             setNotifications(prev => prev.map(n => ({ ...n, read: true })));
             setUnreadCount(0);
@@ -248,16 +239,12 @@ export const NotificationProvider = ({ children }) => {
     // Delete notification
     const deleteNotification = async (notificationId) => {
         try {
-            const { data: sessionData } = await supabase.auth.getSession();
-            const token = sessionData?.session?.access_token;
+            const { error } = await supabase
+                .from('notifications')
+                .delete()
+                .eq('id', notificationId);
 
-            await fetch(`/api/notifications/${notificationId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            if (error) throw error;
 
             const deleted = notifications.find(n => n.id === notificationId);
             setNotifications(prev => prev.filter(n => n.id !== notificationId));
