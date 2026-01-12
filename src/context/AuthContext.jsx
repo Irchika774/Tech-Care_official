@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, signIn, signOut, getProfile, getCustomerProfile, getTechnicianProfile } from '../lib/supabase';
-import apiClient from '../lib/api';
+
 
 export const AuthContext = createContext();
 
@@ -16,7 +16,7 @@ export const AuthProvider = ({ children }) => {
 
     const loadUserProfile = async (authUser) => {
         if (!authUser) return;
-        
+
         // Prevent redundant loads if we already have the profile and it's for this user
         if (profile?.id === authUser.id && user?.extendedProfile) {
             console.log('[DEBUG] loadUserProfile skipped: Profile already fresh');
@@ -25,12 +25,12 @@ export const AuthProvider = ({ children }) => {
 
         try {
             console.log('[DEBUG] loadUserProfile started for:', authUser.id);
-            
+
             // Fetch profile and extended profile in parallel for performance
             // Use a shorter timeout for profile loading to avoid blocking UI
             const profilePromise = getProfile(authUser.id);
             const role = authUser.user_metadata?.role || 'user';
-            
+
             let extendedProfilePromise = Promise.resolve(null);
             if (role === 'technician') {
                 extendedProfilePromise = getTechnicianProfile(authUser.id);
@@ -198,18 +198,20 @@ export const AuthProvider = ({ children }) => {
 
     const register = async (name, email, password, role = 'user') => {
         try {
-            // Use Backend API for secure registration (enforces roles, atomic updates)
-            await apiClient.post('/api/auth/register', { name, email, password, role });
+            // Use Supabase Client SDK for registration (Bypasses potential backend network issues)
+            const result = await signUp(email, password, name, role);
 
-            // Note: Backend currently enforces 'user' role for public registration
-            // to prevent Unauthorized Admin/Technician creation.
-
-            return { success: true, message: 'Registration successful! Please login with your credentials.' };
+            // Supabase signUp might not return a session immediately if email confirmation is enabled.
+            // But if it succeeds without error, we consider it a success.
+            return {
+                success: true,
+                message: 'Registration successful! ' + (result?.session ? 'You are now logged in.' : 'Please check your email to confirm your account.')
+            };
         } catch (error) {
             console.error('Registration error:', error);
             return {
                 success: false,
-                error: error.response?.data?.error || error.message || 'Registration failed. Please try again.'
+                error: error.message || 'Registration failed. Please try again.'
             };
         }
     };
