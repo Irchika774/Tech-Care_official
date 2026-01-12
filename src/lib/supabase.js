@@ -83,24 +83,26 @@ export const getCurrentUser = async () => {
     return user;
 };
 
-// Helper to wrap Supabase calls with a timeout
-const withTimeout = (promise, timeoutMs = 30000) => {
+// Helper to wrap Supabase calls with a timeout for better UI control
+const withTimeout = (promise, name = 'Request', timeoutMs = 60000) => {
     return Promise.race([
         promise,
-        new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Database request timed out')), timeoutMs)
+        new Promise((_, reject) =>
+            setTimeout(() => reject(new Error(`${name} timed out after ${timeoutMs}ms`)), timeoutMs)
         )
     ]);
 };
 
 export const getProfile = async (userId) => {
     try {
+        console.log(`[DB] Fetching profile for ${userId}...`);
         const { data, error } = await withTimeout(
             supabase
                 .from('profiles')
                 .select('*')
                 .eq('id', userId)
-                .single()
+                .single(),
+            'getProfile'
         );
 
         if (error && error.code !== 'PGRST116') throw error;
@@ -113,12 +115,14 @@ export const getProfile = async (userId) => {
 
 export const getCustomerProfile = async (userId) => {
     try {
+        console.log(`[DB] Fetching customer profile for ${userId}...`);
         const { data, error } = await withTimeout(
             supabase
                 .from('customers')
                 .select('*')
                 .eq('user_id', userId)
-                .single()
+                .single(),
+            'getCustomerProfile'
         );
 
         if (error && error.code !== 'PGRST116') throw error;
@@ -131,12 +135,14 @@ export const getCustomerProfile = async (userId) => {
 
 export const getTechnicianProfile = async (userId) => {
     try {
+        console.log(`[DB] Fetching technician profile for ${userId}...`);
         const { data, error } = await withTimeout(
             supabase
                 .from('technicians')
                 .select('*')
                 .eq('user_id', userId)
-                .single()
+                .single(),
+            'getTechnicianProfile'
         );
 
         if (error && error.code !== 'PGRST116') throw error;

@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Loader2, Send, User, Phone, MessageCircle, Bot, ChevronRight } from 'lucide-react';
+import { Loader2, Send, User, Phone, MessageCircle, Bot, ChevronRight, ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 
@@ -24,23 +24,36 @@ export default function Chat() {
         if (!user) return;
 
         const fetchChats = async () => {
-            if (bookingId) return; // Don't fetch list if we're in a specific chat
+            if (bookingId) return;
 
             setLoadingChats(true);
             try {
-                // Fetch all bookings for this user to show conversation list
+                // Get role-specific ID
+                let profileId = null;
                 const isTech = user.role === 'technician';
+
+                if (isTech) {
+                    const { data } = await supabase.from('technicians').select('id').eq('user_id', user.id).single();
+                    profileId = data?.id;
+                } else {
+                    const { data } = await supabase.from('customers').select('id').eq('user_id', user.id).single();
+                    profileId = data?.id;
+                }
+
+                if (!profileId) return;
+
                 const { data, error } = await supabase
                     .from('bookings')
                     .select(`
-                        *,
+                        id, status, device_brand, device_model, updated_at,
                         customer:customers(id, name, user_id),
                         technician:technicians(id, name, user_id)
                     `)
-                    .or(isTech ? `technician_id.eq.${user.id}` : `customer_id.eq.${user.id}`)
+                    .or(`technician_id.eq.${profileId},customer_id.eq.${profileId}`)
                     .order('updated_at', { ascending: false });
 
-                if (!error) setChats(data || []);
+                if (error) throw error;
+                setChats(data || []);
             } catch (err) {
                 console.error('Error fetching chats:', err);
             } finally {
@@ -49,37 +62,45 @@ export default function Chat() {
         };
 
         fetchChats();
-    }, [bookingId, user]);
+    }, [bookingId, user?.id, user?.role]);
 
     useEffect(() => {
         if (!bookingId || !user) return;
 
         const fetchData = async () => {
-            // Fetch booking to get participant info
-            const { data: booking, error: bookingError } = await supabase
-                .from('bookings')
-                .select(`
-                    *,
-                    customer:customers(id, name, user_id),
-                    technician:technicians(id, name, user_id, phone)
-                `)
-                .eq('id', bookingId)
-                .single();
+            try {
+                // Fetch booking to get participant info
+                const { data: booking, error: bookingError } = await supabase
+                    .from('bookings')
+                    .select(`
+                        *,
+                        customer:customers(id, name, user_id),
+                        technician:technicians(id, name, user_id, phone)
+                    `)
+                    .eq('id', bookingId)
+                    .single();
 
-            if (!bookingError) {
-                const isCustomer = user.id === booking.customer.user_id;
-                setRecipient(isCustomer ? booking.technician : booking.customer);
+                if (bookingError) throw bookingError;
+
+                if (booking) {
+                    const isCustomer = user.id === booking.customer?.user_id;
+                    setRecipient(isCustomer ? booking.technician : booking.customer);
+                }
+
+                // Fetch existing messages
+                const { data: msgs, error: msgsError } = await supabase
+                    .from('messages')
+                    .select('*')
+                    .eq('booking_id', bookingId)
+                    .order('created_at', { ascending: true });
+
+                if (msgsError) throw msgsError;
+                setMessages(msgs || []);
+            } catch (err) {
+                console.error('Error loading chat:', err);
+            } finally {
+                setLoading(false);
             }
-
-            // Fetch existing messages
-            const { data: msgs, error: msgsError } = await supabase
-                .from('messages')
-                .select('*')
-                .eq('booking_id', bookingId)
-                .order('created_at', { ascending: true });
-
-            if (!msgsError) setMessages(msgs);
-            setLoading(false);
         };
 
         fetchData();
@@ -91,7 +112,11 @@ export default function Chat() {
                 'postgres_changes',
                 { event: 'INSERT', schema: 'public', table: 'messages', filter: `booking_id=eq.${bookingId}` },
                 (payload) => {
-                    setMessages(prev => [...prev, payload.new]);
+                    setMessages(prev => {
+                        // Prevent duplicates
+                        if (prev.find(m => m.id === payload.new.id)) return prev;
+                        return [...prev, payload.new];
+                    });
                 }
             )
             .subscribe();
@@ -99,7 +124,7 @@ export default function Chat() {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [bookingId, user]);
+    }, [bookingId, user?.id]);
 
     useEffect(() => {
         if (scrollRef.current) {
