@@ -67,24 +67,40 @@ const Technicians = () => {
   const loadShops = async () => {
     setLoading(true);
     try {
-      // Fetch from both Google Sheets (mock/legacy) and Supabase
-      const { data: supabaseTechs, error } = await supabase
-        .from('technicians')
-        .select('*')
-        .eq('status', 'active');
+      // Fetch from both Google Sheets (mock/legacy) and Supabase in parallel
+      const [supabaseResult, sheetsResult] = await Promise.allSettled([
+        supabase
+          .from('technicians')
+          .select('*')
+          .eq('status', 'active')
+          .abortSignal(AbortSignal.timeout(10000)), // 10s timeout for DB
+        fetchRepairShops()
+      ]);
 
-      const sheetsData = await fetchRepairShops();
+      const supabaseTechs = supabaseResult.status === 'fulfilled' ? supabaseResult.value.data : [];
+      if (supabaseResult.status === 'rejected') {
+        console.warn('Supabase fetch failed:', supabaseResult.reason);
+      }
+
+      const sheetsData = sheetsResult.status === 'fulfilled' ? sheetsResult.value : [];
+      if (sheetsResult.status === 'rejected') {
+        console.warn('Sheets fetch failed:', sheetsResult.reason);
+      }
 
       // Merge data, prioritizing Supabase technicians
       const combinedData = [...(supabaseTechs || []), ...(sheetsData || [])];
 
-      // De-duplicate by name or ID if necessary
-      const uniqueShops = combinedData.filter((v, i, a) => a.findIndex(t => (t.id === v.id || t.name === v.name)) === i);
+      // De-duplicate by name or ID
+      const uniqueShops = combinedData.filter((v, i, a) =>
+        a.findIndex(t => (t.id === v.id || t.name === v.name)) === i
+      );
 
       setShops(uniqueShops);
       setDistricts(['all', ...sriLankaDistricts]);
     } catch (error) {
       console.error('Error fetching repair shops:', error);
+      // Even if everything purely fails, we might want to show empty state rather than infinite load
+      setShops([]);
     } finally {
       setLoading(false);
     }
