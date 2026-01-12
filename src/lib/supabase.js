@@ -109,7 +109,12 @@ export const getProfile = async (userId) => {
         if (error && error.code !== 'PGRST116') throw error;
         return data;
     } catch (err) {
-        console.error('getProfile error:', err.message);
+        // Only log critical errors, not timeouts
+        if (err.message && !err.message.includes('timed out')) {
+            console.error('getProfile error:', err.message);
+        } else {
+            console.warn(`[Supabase] Profile fetch timed out for user ${userId} - using fallback`);
+        }
         return null;
     }
 };
@@ -149,7 +154,12 @@ export const getTechnicianProfile = async (userId) => {
         if (error && error.code !== 'PGRST116') throw error;
         return data;
     } catch (err) {
-        console.error('getTechnicianProfile error:', err.message);
+        if (err.message && !err.message.includes('timed out')) {
+            console.error('getTechnicianProfile error:', err.message);
+        } else {
+            // Debug log only for timeout
+            // console.warn('Technician profile fetch timed out');
+        }
         return null;
     }
 };
