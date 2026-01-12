@@ -15,7 +15,10 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
  */
 const parseCSV = (csvText) => {
     const lines = csvText.trim().split('\n');
-    if (lines.length === 0) return [];
+    if (lines.length <= 1) {
+        // If empty or only header, return fallback
+        return [];
+    }
 
     // Parse header row
     const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
@@ -106,6 +109,12 @@ export const fetchRepairShops = async (forceRefresh = false) => {
         const csvText = await response.text();
         const rawData = parseCSV(csvText);
         const shops = transformToRepairShop(rawData);
+
+        // If no shops found (parsing error or empty sheet), return fallback
+        if (!shops || shops.length === 0) {
+            console.warn('Parsed data is empty, returning fallback data');
+            return getFallbackData();
+        }
 
         // Update cache
         cachedData = shops;

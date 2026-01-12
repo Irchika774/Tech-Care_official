@@ -95,7 +95,19 @@ const Technicians = () => {
         a.findIndex(t => (t.id === v.id || t.name === v.name)) === i
       );
 
-      setShops(uniqueShops);
+      // If absolutely no data found from either source, try one last force fetch which will trigger fallback
+      if (uniqueShops.length === 0) {
+        console.warn('No shops found from parallel fetch, forcing fallback');
+        const fallbackData = await fetchRepairShops(true);
+        if (fallbackData && fallbackData.length > 0) {
+          setShops(fallbackData);
+        } else {
+          setShops([]);
+        }
+      } else {
+        setShops(uniqueShops);
+      }
+
       setDistricts(['all', ...sriLankaDistricts]);
     } catch (error) {
       console.error('Error fetching repair shops:', error);

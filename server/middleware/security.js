@@ -61,6 +61,15 @@ export const securityHeaders = helmet({
     referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
 });
 
+// Explicit Permissions Policy to suppress warnings and improve security
+export const permissionsPolicy = (req, res, next) => {
+    res.setHeader(
+        'Permissions-Policy',
+        'browsing-topics=(), interest-cohort=(), payment=(), usb=(), serial=(), geolocation=(), microphone=(), camera=(), magnetometer=(), gyroscope=(), fullscreen=(self), payment=()'
+    );
+    next();
+};
+
 // Input validation helper
 export const validateInput = (schema) => {
     return (req, res, next) => {
@@ -106,8 +115,8 @@ export const corsOptions = {
         }
 
         // Check if origin is allowed or if it's a localhost origin in development
-        const isAllowed = allowedOrigins.includes(origin) || 
-                         (process.env.NODE_ENV === 'development' && origin.startsWith('http://localhost:'));
+        const isAllowed = allowedOrigins.includes(origin) ||
+            (process.env.NODE_ENV === 'development' && origin.startsWith('http://localhost:'));
 
         if (isAllowed) {
             callback(null, true);

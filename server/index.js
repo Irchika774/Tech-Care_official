@@ -14,12 +14,9 @@ validateEnv();
 
 import { supabaseAdmin } from './lib/supabase.js';
 import {
-    apiLimiter,
-    authLimiter,
-    securityHeaders,
-    corsOptions,
     requestLogger,
-    securityErrorHandler
+    securityErrorHandler,
+    permissionsPolicy
 } from './middleware/security.js';
 
 // Import Routes
@@ -45,6 +42,7 @@ const PORT = process.env.PORT || 5000;
 // Connect to MongoDB
 // Global Middleware
 app.use(securityHeaders);
+app.use(permissionsPolicy);
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.json({ limit: '10mb' }));
