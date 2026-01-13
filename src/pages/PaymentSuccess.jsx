@@ -48,7 +48,7 @@ const PaymentSuccess = () => {
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
             <SEO title="Payment Complete - TechCare" />
-            
+
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-8 text-center">
                 {paymentStatus === 'verifying' && (
                     <>
@@ -74,7 +74,7 @@ const PaymentSuccess = () => {
                                 <div className="flex justify-between mb-2">
                                     <span className="text-gray-600 dark:text-gray-400">Amount</span>
                                     <span className="font-medium text-gray-900 dark:text-white">
-                                        {paymentDetails.currency?.toUpperCase()} {paymentDetails.amount?.toLocaleString()}
+                                        {paymentDetails.currency?.toUpperCase()} {Math.abs(paymentDetails.amount || 0).toLocaleString()}
                                     </span>
                                 </div>
                                 <div className="flex justify-between">

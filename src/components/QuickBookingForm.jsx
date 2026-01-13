@@ -101,7 +101,7 @@ export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
 
       if (!response.ok) throw new Error('Failed to create booking');
       const bookingData = await response.json();
-      
+
       const enrichedBooking = {
         ...bookingData,
         serviceType: selectedServiceInfo?.label || 'General Repair',
@@ -179,11 +179,11 @@ export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
         <div className="bg-zinc-900/50 p-6 rounded-xl border border-zinc-800 space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-zinc-400">Platform Fee</span>
-            <span className="text-white">LKR {platformFee.toLocaleString()}</span>
+            <span className="text-white">LKR {Math.abs(platformFee).toLocaleString()}</span>
           </div>
           <div className="pt-4 border-t border-zinc-800 flex justify-between">
             <span className="text-white font-bold">Initial Total</span>
-            <span className="text-white font-bold">LKR {totalAmount.toLocaleString()}</span>
+            <span className="text-white font-bold">LKR {Math.abs(totalAmount).toLocaleString()}</span>
           </div>
         </div>
 

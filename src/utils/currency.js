@@ -123,6 +123,9 @@ export function formatCurrency(amount, currency = 'LKR', decimals = 2) {
         amount = parseFloat(amount) || 0;
     }
 
+    // Always use absolute value - no negative amounts displayed
+    amount = Math.abs(amount);
+
     const symbol = CURRENCY_SYMBOLS[currency] || currency;
     const formatted = amount.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
@@ -140,6 +143,9 @@ export const formatCurrencyShort = (amount, showSymbol = true) => {
     if (typeof amount !== 'number') {
         amount = parseFloat(amount) || 0;
     }
+
+    // Always use absolute value - no negative amounts displayed
+    amount = Math.abs(amount);
 
     const formatted = amount.toLocaleString('en-LK');
     return showSymbol ? `LKR ${formatted}` : formatted;

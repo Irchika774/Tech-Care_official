@@ -459,7 +459,7 @@ const AIDiagnostics = ({ onComplete, deviceType: initialDeviceType }) => {
                                     <div className="p-3 rounded-lg bg-zinc-900">
                                         <div className="text-xs text-zinc-500 mb-1">Estimated Cost</div>
                                         <div className="font-bold text-green-400">
-                                            LKR {diagnosis.totalCost.min.toLocaleString()} - {diagnosis.totalCost.max.toLocaleString()}
+                                            LKR {Math.abs(diagnosis.totalCost.min).toLocaleString()} - {Math.abs(diagnosis.totalCost.max).toLocaleString()}
                                         </div>
                                     </div>
                                     <div className="p-3 rounded-lg bg-zinc-900">

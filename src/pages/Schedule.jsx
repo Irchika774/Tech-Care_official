@@ -174,14 +174,14 @@ const Schedule = () => {
         if (!response.ok) throw new Error('Failed to create initial booking');
         const bookingData = await response.json();
 
-        navigate('/payment', { 
-          state: { 
-            booking: { 
-              ...bookingData, 
+        navigate('/payment', {
+          state: {
+            booking: {
+              ...bookingData,
               total: totalAmount,
               serviceType: selectedServiceInfo?.label
-            } 
-          } 
+            }
+          }
         });
       } catch (error) {
         console.error('Pre-payment booking error:', error);
@@ -217,7 +217,7 @@ const Schedule = () => {
         });
 
         if (!response.ok) throw new Error('Failed to update schedule');
-        
+
         toast({
           title: "Schedule Confirmed",
           description: "Your repair has been successfully scheduled!",
@@ -284,39 +284,36 @@ const Schedule = () => {
       </section>
 
       {/* Progress Steps */}
-    <div className="container mx-auto px-4 mb-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between">
-          {[
-            { num: 1, label: 'Repair Details' },
-            { num: 2, label: 'Payment' },
-            { num: 3, label: 'Choose Schedule' }
-          ].map((s, idx) => (
-            <div key={s.num} className="flex items-center flex-1">
-              <div className="flex flex-col items-center">
-                <div className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all ${
-                  (initialData.paymentConfirmed && s.num === 3) || (!initialData.paymentConfirmed && step >= s.num)
-                  ? 'bg-white border-white text-black'
-                  : 'border-zinc-700 text-zinc-500 bg-zinc-900'
-                  }`}>
-                  {(initialData.paymentConfirmed && s.num < 3) ? <CheckCircle2 className="h-6 w-6" /> : s.num}
+      <div className="container mx-auto px-4 mb-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center justify-between">
+            {[
+              { num: 1, label: 'Repair Details' },
+              { num: 2, label: 'Payment' },
+              { num: 3, label: 'Choose Schedule' }
+            ].map((s, idx) => (
+              <div key={s.num} className="flex items-center flex-1">
+                <div className="flex flex-col items-center">
+                  <div className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all ${(initialData.paymentConfirmed && s.num === 3) || (!initialData.paymentConfirmed && step >= s.num)
+                      ? 'bg-white border-white text-black'
+                      : 'border-zinc-700 text-zinc-500 bg-zinc-900'
+                    }`}>
+                    {(initialData.paymentConfirmed && s.num < 3) ? <CheckCircle2 className="h-6 w-6" /> : s.num}
+                  </div>
+                  <span className={`text-sm mt-2 ${(initialData.paymentConfirmed && s.num === 3) || (!initialData.paymentConfirmed && step >= s.num)
+                      ? 'text-white font-semibold' : 'text-zinc-500'}`}>
+                    {s.label}
+                  </span>
                 </div>
-                <span className={`text-sm mt-2 ${
-                  (initialData.paymentConfirmed && s.num === 3) || (!initialData.paymentConfirmed && step >= s.num)
-                   ? 'text-white font-semibold' : 'text-zinc-500'}`}>
-                  {s.label}
-                </span>
+                {idx < 2 && (
+                  <div className={`flex-1 h-1 mx-4 transition-all ${(initialData.paymentConfirmed || step > s.num) ? 'bg-white' : 'bg-zinc-800'
+                    }`} />
+                )}
               </div>
-              {idx < 2 && (
-                <div className={`flex-1 h-1 mx-4 transition-all ${
-                  (initialData.paymentConfirmed || step > s.num) ? 'bg-white' : 'bg-zinc-800'
-                  }`} />
-              )}
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
-    </div>
 
 
       {/* Main Form */}
@@ -461,15 +458,15 @@ const Schedule = () => {
                     <div className="bg-zinc-800/50 p-6 rounded-xl border border-zinc-700">
                       <div className="flex justify-between items-center py-2">
                         <span className="text-zinc-400">Service Fee</span>
-                        <span className="text-white font-medium">LKR {serviceAmount.toLocaleString()}</span>
+                        <span className="text-white font-medium">LKR {Math.abs(serviceAmount).toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between items-center py-2">
                         <span className="text-zinc-400">Platform Fee</span>
-                        <span className="text-white font-medium">LKR {platformFee.toLocaleString()}</span>
+                        <span className="text-white font-medium">LKR {Math.abs(platformFee).toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between items-center py-4 mt-4 border-t border-zinc-600">
                         <span className="text-xl font-bold text-white">Total Amount</span>
-                        <span className="text-2xl font-bold text-white">LKR {totalAmount.toLocaleString()}</span>
+                        <span className="text-2xl font-bold text-white">LKR {Math.abs(totalAmount).toLocaleString()}</span>
                       </div>
                     </div>
 
