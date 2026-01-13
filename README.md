@@ -5,13 +5,15 @@
 ### _Connecting Customers with Expert Technicians_
 
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-success?style=for-the-badge)](https://github.com)
-[![Last Updated](https://img.shields.io/badge/Last%20Updated-Jan%202026-blue?style=for-the-badge)](https://github.com/Wenura17125/Tech-Care_official/commits/main)
-[![Version](https://img.shields.io/badge/Version-2.0-blue?style=for-the-badge)](https://github.com)
+[![Last Updated](https://img.shields.io/badge/Last%20Updated-Jan%2013,%202026-blue?style=for-the-badge)](https://github.com/Wenura17125/Tech-Care_official/commits/main)
+[![Version](https://img.shields.io/badge/Version-2.1-blue?style=for-the-badge)](https://github.com)
 [![License](https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge)](LICENSE)
-[![Node](https://img.shields.io/badge/Node-24.x-green?style=for-the-badge&logo=node.js)](https://nodejs.org)
+[![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=for-the-badge&logo=github-actions)](https://github.com/Wenura17125/Tech-Care_official/actions)
+[![Node](https://img.shields.io/badge/Node-20.x-green?style=for-the-badge&logo=node.js)](https://nodejs.org)
 [![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react)](https://reactjs.org)
 [![Supabase](https://img.shields.io/badge/Supabase-Database-3ECF8E?style=for-the-badge&logo=supabase)](https://supabase.io)
 [![Stripe](https://img.shields.io/badge/Stripe-Payments-635BFF?style=for-the-badge&logo=stripe)](https://stripe.com)
+[![Netlify](https://img.shields.io/badge/Netlify-Auto%20Deploy-00C7B7?style=for-the-badge&logo=netlify)](https://techcare-official-new.netlify.app)
 
 [🚀 Quick Start](#-quick-start) • [📐 Architecture](#-system-architecture) • [✨ Features](#-features) • [🔄 User Flows](#-user-flow-diagrams) • [📚 API Reference](#-api-endpoints) • [🤝 Contributing](#-contributing)
 
@@ -796,6 +798,78 @@ graph TD
 
 ---
 
+## 🔄 CI/CD Pipeline
+
+TechCare uses **GitHub Actions** for continuous integration and automatic deployment to **Netlify**.
+
+### Pipeline Architecture
+
+```mermaid
+flowchart LR
+    subgraph Trigger["🎯 Trigger"]
+        PUSH["Push to main"]
+        PR["Pull Request"]
+    end
+    
+    subgraph Build["🔨 Build Stage"]
+        CHECKOUT["📥 Checkout"]
+        SETUP["📦 Setup Node 20"]
+        INSTALL["📚 npm install"]
+        COMPILE["🔨 npm run build"]
+    end
+    
+    subgraph Deploy["🚀 Deploy Stage"]
+        PREVIEW["🔍 PR Preview"]
+        PROD["🚀 Production"]
+    end
+    
+    subgraph Hosting["☁️ Hosting"]
+        NETLIFY["Netlify CDN"]
+    end
+    
+    PUSH --> CHECKOUT --> SETUP --> INSTALL --> COMPILE --> PROD --> NETLIFY
+    PR --> CHECKOUT
+    COMPILE --> PREVIEW --> NETLIFY
+    
+    style Trigger fill:#22c55e,stroke:#16a34a,color:#fff
+    style Build fill:#3b82f6,stroke:#2563eb,color:#fff
+    style Deploy fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style Hosting fill:#00c7b7,stroke:#009688,color:#fff
+```
+
+### Deployment Workflow
+
+| Event | Action | Environment |
+|-------|--------|-------------|
+| **Push to `main`** | Build → Deploy | 🚀 Production |
+| **Pull Request** | Build → Preview | 🔍 Preview URL |
+| **Manual Trigger** | Build → Deploy | 🚀 Production |
+
+### Quick Deploy Commands
+
+```bash
+# Option 1: Auto-sync script (Windows)
+scripts\auto-sync.bat
+
+# Option 2: Manual git push
+git add . && git commit -m "Your message" && git push origin main
+
+# Option 3: Netlify CLI direct deploy
+npm run build && netlify deploy --prod --dir=dist
+```
+
+### GitHub Secrets Required
+
+| Secret | Purpose |
+|--------|---------|
+| `NETLIFY_AUTH_TOKEN` | Netlify deployment authentication |
+| `NETLIFY_SITE_ID` | Target site identifier |
+| `VITE_SUPABASE_URL` | Supabase project URL |
+| `VITE_SUPABASE_ANON_KEY` | Supabase anonymous key |
+| `VITE_API_URL` | Backend API endpoint |
+
+---
+
 ## 🧪 Testing
 
 ### Run Tests
@@ -971,7 +1045,7 @@ If you find TechCare helpful or interesting, please consider:
 
 ---
 
-**Last Updated**: January 3, 2026 | **Version**: 2.0 | **Status**: ✅ Production Ready
+**Last Updated**: January 13, 2026 | **Version**: 2.1 | **Status**: ✅ Production Ready | **CI/CD**: ✅ Auto-Deploy
 
 [![Made with React](https://img.shields.io/badge/Made%20with-React-61DAFB?style=flat-square&logo=react)](https://reactjs.org)
 [![Powered by Supabase](https://img.shields.io/badge/Powered%20by-Supabase-3ECF8E?style=flat-square&logo=supabase)](https://supabase.io)
