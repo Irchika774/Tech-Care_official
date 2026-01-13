@@ -84,7 +84,7 @@ export const getCurrentUser = async () => {
 };
 
 // Helper to wrap Supabase calls with a timeout for better UI control
-const withTimeout = (promise, name = 'Request', timeoutMs = 10000) => {
+const withTimeout = (promise, name = 'Request', timeoutMs = 2000) => {
     // console.log(`[DEBUG] withTimeout called for ${name} with ${timeoutMs}ms`);
     return Promise.race([
         promise,
@@ -113,7 +113,7 @@ export const getProfile = async (userId) => {
         if (err.message && !err.message.includes('timed out')) {
             console.error('getProfile error:', err.message);
         } else {
-            console.warn(`[Supabase] Profile fetch timed out for user ${userId} - using fallback`);
+            console.log(`[DEBUG] Profile fetch timed out for user ${userId} - using fallback`);
         }
         return null;
     }

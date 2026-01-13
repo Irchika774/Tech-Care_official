@@ -67,15 +67,21 @@ const Technicians = () => {
   const loadShops = async () => {
     setLoading(true);
     try {
+      // Create controller for DB timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
       // Fetch from both Google Sheets (mock/legacy) and Supabase in parallel
       const [supabaseResult, sheetsResult] = await Promise.allSettled([
         supabase
           .from('technicians')
           .select('*')
           .eq('status', 'active')
-          .abortSignal(AbortSignal.timeout(10000)), // 10s timeout for DB
+          .abortSignal(controller.signal),
         fetchRepairShops()
       ]);
+
+      clearTimeout(timeoutId);
 
       const supabaseTechs = supabaseResult.status === 'fulfilled' ? supabaseResult.value.data : [];
       if (supabaseResult.status === 'rejected') {
@@ -98,11 +104,27 @@ const Technicians = () => {
       // If absolutely no data found from either source, try one last force fetch which will trigger fallback
       if (uniqueShops.length === 0) {
         console.warn('No shops found from parallel fetch, forcing fallback');
-        const fallbackData = await fetchRepairShops(true);
+        // Pass true for useFallback to FORCE return of mock data
+        const fallbackData = await fetchRepairShops(false, true);
+
+        console.log('Fallback data received:', fallbackData?.length);
+
         if (fallbackData && fallbackData.length > 0) {
           setShops(fallbackData);
         } else {
-          setShops([]);
+          // Absolute last resort hardcoded data in case import fails
+          setShops([
+            {
+              id: 'fallback-1',
+              name: 'TechCare Colombo Central',
+              address: '123 Galle Road, Colombo 03',
+              rating: 4.8,
+              reviews: 156,
+              district: 'Colombo',
+              services: ['Mobile Repair', 'Laptop Repair'],
+              verified: true
+            }
+          ]);
         }
       } else {
         setShops(uniqueShops);
@@ -111,12 +133,17 @@ const Technicians = () => {
       setDistricts(['all', ...sriLankaDistricts]);
     } catch (error) {
       console.error('Error fetching repair shops:', error);
-      // Even if everything purely fails, we might want to show empty state rather than infinite load
-      setShops([]);
+      // Try fallback one last time on critical error
+      const emergencyData = await fetchRepairShops(false, true);
+      setShops(emergencyData || []);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadShops();
+  }, []);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -127,6 +154,7 @@ const Technicians = () => {
       console.error('Error refreshing:', error);
     } finally {
       setRefreshing(false);
+      setLoading(false); // Ensure main loading state is cleared so data becomes visible
     }
   };
 

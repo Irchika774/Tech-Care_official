@@ -84,7 +84,13 @@ const transformToRepairShop = (rawData) => {
  * @param {boolean} forceRefresh - Force refresh from source
  * @returns {Promise<Array>} Array of repair shop objects
  */
-export const fetchRepairShops = async (forceRefresh = false) => {
+export const fetchRepairShops = async (forceRefresh = false, useFallback = false) => {
+    // If fallback is explicitly requested, return it immediately
+    if (useFallback) {
+        console.log('Using fallback data (explicit request)');
+        return getFallbackData();
+    }
+
     // Check cache first
     if (!forceRefresh && cachedData && lastFetchTime) {
         const timeSinceLastFetch = Date.now() - lastFetchTime;
@@ -94,13 +100,18 @@ export const fetchRepairShops = async (forceRefresh = false) => {
     }
 
     try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
         const response = await fetch(GOOGLE_SHEETS_URL, {
             method: 'GET',
             headers: {
                 'Accept': 'text/csv',
             },
-            signal: AbortSignal.timeout(10000) // 10s timeout
+            signal: controller.signal
         });
+
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
             throw new Error(`Failed to fetch data: ${response.status}`);
@@ -124,8 +135,8 @@ export const fetchRepairShops = async (forceRefresh = false) => {
     } catch (error) {
         console.error('Error fetching Google Sheets data:', error);
 
-        // Return cached data if available, even if stale
-        if (cachedData) {
+        // Return cached data if available, even if stale, unless forceRefresh was strict
+        if (cachedData && !forceRefresh) {
             console.log('Returning cached data due to fetch error');
             return cachedData;
         }
