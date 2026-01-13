@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { useToast } from '../hooks/use-toast';
 import { Badge } from '../components/ui/badge';
 import { Progress } from '../components/ui/progress';
-import { Wallet, TrendingUp, CheckCircle, Star, Briefcase, Gavel, Smartphone, Monitor, Tablet, Loader2, User, Sparkles, ArrowRight, Activity, Calendar, Edit, Plus, Trash2, ShieldCheck, ShieldAlert, Save, BarChart3, Clock as ClockIcon, Settings, MapPin, Banknote, Bell, AlertCircle, DollarSign, Clock, Send, MessageSquare } from 'lucide-react';
+import { Wallet, TrendingUp, CheckCircle, Star, Briefcase, Gavel, Smartphone, Monitor, Tablet, Loader2, User, Sparkles, ArrowRight, Activity, Calendar, Edit, Plus, Trash2, ShieldCheck, ShieldAlert, Save, BarChart3, Clock as ClockIcon, Settings, MapPin, Banknote, Bell, AlertCircle, DollarSign, Clock, Send, MessageSquare, Wrench } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 import { ScrollArea } from '../components/ui/scroll-area';
 import { useAuth } from '../context/AuthContext';

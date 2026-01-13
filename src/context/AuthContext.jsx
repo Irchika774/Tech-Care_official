@@ -13,6 +13,7 @@ export const AuthProvider = ({ children }) => {
     const navigate = useNavigate();
 
     const isMounted = useRef(true);
+    const isFetchingProfile = useRef(false);
 
     const loadUserProfile = async (authUser) => {
         if (!authUser) return;
@@ -23,7 +24,14 @@ export const AuthProvider = ({ children }) => {
             return;
         }
 
+        // Prevent concurrent fetches
+        if (isFetchingProfile.current) {
+            console.log('[DEBUG] loadUserProfile skipped: Already fetching');
+            return;
+        }
+
         try {
+            isFetchingProfile.current = true;
             console.log('[DEBUG] loadUserProfile started for:', authUser.id);
 
             // Fetch profile and extended profile in parallel for performance
@@ -53,6 +61,13 @@ export const AuthProvider = ({ children }) => {
             if (isMounted.current) {
                 setProfile(finalProfile);
 
+                // Cache profile for faster reload
+                localStorage.setItem(`user_profile_${authUser.id}`, JSON.stringify({
+                    profile: finalProfile,
+                    extendedProfile,
+                    timestamp: Date.now()
+                }));
+
                 setUser({
                     ...authUser,
                     ...finalProfile,
@@ -63,6 +78,28 @@ export const AuthProvider = ({ children }) => {
             console.log('[DEBUG] loadUserProfile finished successfully');
         } catch (error) {
             console.error('Error loading profile:', error);
+
+            // Try to load from cache if fetch fails
+            const cached = localStorage.getItem(`user_profile_${authUser.id}`);
+            if (cached) {
+                try {
+                    const { profile: cachedProfile, extendedProfile: cachedExtended } = JSON.parse(cached);
+                    console.log('[DEBUG] Using cached profile');
+                    if (isMounted.current) {
+                        setProfile(cachedProfile);
+                        setUser({
+                            ...authUser,
+                            ...cachedProfile,
+                            extendedProfile: cachedExtended,
+                            _id: authUser.id
+                        });
+                        return; // Successfully recovered from cache
+                    }
+                } catch (e) {
+                    console.warn('Invalid cached profile');
+                }
+            }
+
             // Fallback to basic info from metadata
             if (isMounted.current) {
                 const fallbackRole = authUser.user_metadata?.role || 'user';
@@ -73,6 +110,8 @@ export const AuthProvider = ({ children }) => {
                     name: authUser.user_metadata?.name || authUser.email
                 });
             }
+        } finally {
+            isFetchingProfile.current = false;
         }
     };
 
@@ -104,17 +143,33 @@ export const AuthProvider = ({ children }) => {
                     console.log('[DEBUG] Session found, user:', currentSession.user.id);
                     setSession(currentSession);
 
-                    // Set basic user info immediately for faster UI
-                    const authUser = currentSession.user;
-                    setUser({
-                        ...authUser,
-                        _id: authUser.id,
-                        role: authUser.user_metadata?.role || 'user',
-                        name: authUser.user_metadata?.name || authUser.email
-                    });
+                    // OPTIMIZATION: Try to load profile from cache IMMEDIATELY for instant UI
+                    const cached = localStorage.getItem(`user_profile_${currentSession.user.id}`);
+                    if (cached) {
+                        try {
+                            const { profile: cachedProfile, extendedProfile: cachedExtended } = JSON.parse(cached);
+                            console.log('[DEBUG] Loaded profile from cache (Instant UI)');
+                            setProfile(cachedProfile);
+                            setUser({
+                                ...currentSession.user,
+                                ...cachedProfile,
+                                extendedProfile: cachedExtended,
+                                _id: currentSession.user.id
+                            });
+                        } catch (e) { /* ignore invalid cache */ }
+                    } else {
+                        // Set basic user info if no cache
+                        const authUser = currentSession.user;
+                        setUser({
+                            ...authUser,
+                            _id: authUser.id,
+                            role: authUser.user_metadata?.role || 'user',
+                            name: authUser.user_metadata?.name || authUser.email
+                        });
+                    }
 
-                    // Load full profile in background without blocking
-                    loadUserProfile(authUser);
+                    // Load fresh profile in background
+                    loadUserProfile(currentSession.user);
                 } else {
                     console.log('[DEBUG] No session found in getSession');
                 }
