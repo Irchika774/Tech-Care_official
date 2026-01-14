@@ -48,6 +48,7 @@ const PORT = process.env.PORT || 5000;
 // Global Middleware
 // Global Middleware
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // Explicitly handle OPTIONS requests
 app.use(securityHeaders);
 app.use(permissionsPolicy);
 app.use(express.json({ limit: '10mb' }));
