@@ -525,4 +525,47 @@ router.get('/stats', supabaseAuth, adminCheck, async (req, res) => {
     }
 });
 
+// Get system logs (recent activity)
+router.get('/logs', supabaseAuth, adminCheck, async (req, res) => {
+    try {
+        const [
+            recentUsers,
+            recentBookings,
+            recentPayments
+        ] = await Promise.all([
+            supabaseAdmin.from('profiles').select('id, name, created_at').order('created_at', { ascending: false }).limit(20),
+            supabaseAdmin.from('bookings').select('id, status, created_at').order('created_at', { ascending: false }).limit(20),
+            supabaseAdmin.from('payments').select('id, amount, status, created_at').order('created_at', { ascending: false }).limit(20)
+        ]);
+
+        const logs = [
+            ...(recentUsers.data || []).map(u => ({
+                id: `user-${u.id}`,
+                type: 'USER_SIGNUP',
+                message: `New user registered: ${u.name || 'Anonymous'}`,
+                timestamp: u.created_at,
+                severity: 'info'
+            })),
+            ...(recentBookings.data || []).map(b => ({
+                id: `booking-${b.id}`,
+                type: 'BOOKING_UPDATE',
+                message: `Booking #${b.id.substring(0, 8)} status changed to ${b.status}`,
+                timestamp: b.created_at,
+                severity: b.status === 'cancelled' ? 'warning' : 'info'
+            })),
+            ...(recentPayments.data || []).map(p => ({
+                id: `payment-${p.id}`,
+                type: 'PAYMENT_RECEIVED',
+                message: `Payment received: ${p.status}`,
+                timestamp: p.created_at,
+                severity: p.status === 'succeeded' ? 'success' : 'warning'
+            }))
+        ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+        res.json(logs);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
 export default router;

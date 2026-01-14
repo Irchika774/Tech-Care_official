@@ -64,7 +64,6 @@ export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
         const { data: supabaseTechs, error } = await supabase
           .from('technicians')
           .select('id, name, email, phone, rating, is_verified, profile_image')
-          .eq('status', 'active')
           .order('rating', { ascending: false });
 
         if (!error && supabaseTechs && supabaseTechs.length > 0) {

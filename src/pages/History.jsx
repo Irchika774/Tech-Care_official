@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { bookingsAPI, reviewsAPI } from '../lib/api';
+import EmptyState from '../components/EmptyState';
 import {
   Calendar,
   Clock,
@@ -16,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SkeletonBookingCard } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -219,8 +221,10 @@ const History = () => {
 
         <TabsContent value={filter} className="mt-6 space-y-6">
           {loading ? (
-            <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <div className="space-y-6">
+              <SkeletonBookingCard />
+              <SkeletonBookingCard />
+              <SkeletonBookingCard />
             </div>
           ) : filteredAppointments.length > 0 ? (
             filteredAppointments.map((appointment) => (
@@ -320,18 +324,15 @@ const History = () => {
               </Card>
             ))
           ) : (
-            <Card className="text-center py-16 border-dashed">
+            <Card className="border-dashed border-zinc-800 bg-zinc-900/50">
               <CardContent>
-                <div className="bg-muted w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <HistoryIcon className="h-10 w-10 text-muted-foreground" />
-                </div>
-                <h3 className="text-xl font-semibold mb-2">No appointments found</h3>
-                <p className="text-muted-foreground mb-6">
-                  You don&apos;t have any {filter !== 'all' ? filter : ''} appointments yet.
-                </p>
-                <Button onClick={() => setFilter('all')} variant="outline">
-                  View All History
-                </Button>
+                <EmptyState
+                  icon={HistoryIcon}
+                  title="No Appointments Found"
+                  description={`You don't have any ${filter !== 'all' ? filter : ''} appointments yet. Check back here after booking a service.`}
+                  buttonText={filter !== 'all' ? "View All History" : "Book Your First Repair"}
+                  onAction={() => filter !== 'all' ? setFilter('all') : navigate('/schedule')}
+                />
               </CardContent>
             </Card>
           )}

@@ -301,4 +301,76 @@ router.post('/:id/review', supabaseAuth, async (req, res) => {
     }
 });
 
+router.put('/:id/status', supabaseAuth, async (req, res) => {
+    try {
+        const bookingId = req.params.id;
+        const { status } = req.body;
+
+        // Verify user is a technician or admin
+        if (req.user.role !== 'technician' && req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'Access denied. Only technicians can update status.' });
+        }
+
+        const { data: booking, error: fetchError } = await supabaseAdmin
+            .from('bookings')
+            .select('*')
+            .eq('id', bookingId)
+            .single();
+
+        if (fetchError || !booking) {
+            return res.status(404).json({ error: 'Booking not found' });
+        }
+
+        // If technician, verify they own this booking
+        if (req.user.role === 'technician') {
+            // Get technician profile id
+            const { data: technician } = await supabaseAdmin
+                .from('technicians')
+                .select('id')
+                .eq('user_id', req.user.id)
+                .single();
+
+            if (!technician || booking.technician_id !== technician.id) {
+                return res.status(403).json({ error: 'You are not assigned to this job' });
+            }
+        }
+
+        const { data: updatedBooking, error } = await supabaseAdmin
+            .from('bookings')
+            .update({
+                status: status,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', bookingId)
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        // Notify customer about status update
+        if (updatedBooking.customer_id) {
+            const statusMessages = {
+                'diagnosing': 'Your device is currently being diagnosed.',
+                'waiting_for_parts': 'We are waiting for parts to arrive for your repair.',
+                'in_progress': 'Repair is currently in progress.',
+                'completed': 'Your repair has been completed! Please check your device.',
+                'ready_for_pickup': 'Your device is ready for pickup.'
+            };
+
+            await supabaseAdmin.from('notifications').insert([{
+                user_id: updatedBooking.customer_id,
+                title: 'Repair Status Updated',
+                message: statusMessages[status] || `Your repair status is now: ${status.replace('_', ' ')}`,
+                type: 'status_update',
+                data: { booking_id: bookingId, status: status }
+            }]);
+        }
+
+        res.json({ message: 'Status updated successfully', booking: updatedBooking });
+    } catch (error) {
+        console.error('Status update error:', error);
+        res.status(500).json({ error: 'Failed to update status' });
+    }
+});
+
 export default router;

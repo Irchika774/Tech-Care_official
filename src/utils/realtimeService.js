@@ -276,6 +276,43 @@ class RealtimeService {
     }
 
     /**
+     * Subscribe to messages for a specific booking
+     */
+    subscribeToMessages(bookingId, callback) {
+        const channelKey = `messages-${bookingId}`;
+
+        if (this.channels.has(channelKey)) {
+            const callbacks = this.callbacks.get(channelKey) || [];
+            callbacks.push(callback);
+            this.callbacks.set(channelKey, callbacks);
+            return () => this.removeCallback(channelKey, callback);
+        }
+
+        const channel = supabase
+            .channel(channelKey)
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'messages',
+                    filter: `booking_id=eq.${bookingId}`
+                },
+                (payload) => {
+                    console.log('[Realtime] New message:', payload.new);
+                    const callbacks = this.callbacks.get(channelKey) || [];
+                    callbacks.forEach(cb => cb(payload));
+                }
+            )
+            .subscribe();
+
+        this.channels.set(channelKey, channel);
+        this.callbacks.set(channelKey, [callback]);
+
+        return () => this.removeCallback(channelKey, callback);
+    }
+
+    /**
      * Remove a specific callback from a channel
      */
     removeCallback(channelKey, callback) {

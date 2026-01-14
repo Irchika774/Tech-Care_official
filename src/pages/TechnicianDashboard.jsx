@@ -21,6 +21,7 @@ import { Textarea } from '../components/ui/textarea';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
+import realtimeService from '../utils/realtimeService';
 
 const TechnicianDashboard = () => {
   const navigate = useNavigate();
@@ -424,103 +425,71 @@ const TechnicianDashboard = () => {
 
   useEffect(() => {
     let interval;
-    let channel;
+    let unsubTechnicians;
+    let unsubBookings;
+    let unsubBids;
+    let unsubReviews;
+    let unsubGigs;
+    let unsubNotifications;
 
     if (user?.id) {
       fetchDashboardData();
       fetchAvailableJobs(); // Fetch available jobs on mount
+
       // Poll every 2 minutes as fallback
       interval = setInterval(() => {
         fetchDashboardData();
         fetchAvailableJobs();
       }, 120000);
 
-      // Set up comprehensive realtime subscriptions
-      channel = supabase
-        .channel(`technician-dashboard-${user.id}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'technicians',
-            filter: `user_id=eq.${user.id}`
-          },
-          (payload) => {
-            console.log('[TechnicianDashboard] Technician update:', payload.eventType);
-            fetchDashboardData();
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'bookings'
-          },
-          (payload) => {
-            console.log('[TechnicianDashboard] Booking update:', payload.eventType);
-            fetchDashboardData();
-            fetchAvailableJobs(); // Refresh available jobs when new bookings are created
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'bids'
-          },
-          (payload) => {
-            console.log('[TechnicianDashboard] Bid update:', payload.eventType);
-            fetchDashboardData();
-            fetchAvailableJobs(); // Refresh available jobs when bids change
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'reviews'
-          },
-          (payload) => {
-            console.log('[TechnicianDashboard] Review update:', payload.eventType);
-            fetchDashboardData();
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'gigs'
-          },
-          (payload) => {
-            console.log('[TechnicianDashboard] Gig update:', payload.eventType);
-            fetchDashboardData();
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'notifications'
-          },
-          (payload) => {
-            console.log('[TechnicianDashboard] New notification:', payload.new?.type);
-            fetchDashboardData(); // Refresh to update notification count
-          }
-        )
-        .subscribe((status) => {
-          console.log('[TechnicianDashboard] Subscription status:', status);
-        });
+      // Subscribe to real-time updates using centralized service
+      unsubTechnicians = realtimeService.subscribeToTechnicians((payload) => {
+        // Only update if it pertains to this technician user
+        if (payload.new?.user_id === user.id || payload.old?.user_id === user.id) {
+          console.log('[TechnicianDashboard] Technician update:', payload.eventType);
+          fetchDashboardData();
+        }
+      });
+
+      unsubBookings = realtimeService.subscribeToBookings((payload) => {
+        console.log('[TechnicianDashboard] Booking update:', payload.eventType);
+        fetchDashboardData();
+        fetchAvailableJobs(); // Refresh available jobs when bookings change
+      }, user.id);
+
+      unsubBids = realtimeService.subscribeToBids((payload) => {
+        console.log('[TechnicianDashboard] Bid update:', payload.eventType);
+        fetchDashboardData();
+        fetchAvailableJobs();
+      });
+
+      unsubReviews = realtimeService.subscribeToReviews((payload) => {
+        console.log('[TechnicianDashboard] Review update:', payload.eventType);
+        fetchDashboardData();
+      });
+
+      unsubGigs = realtimeService.subscribeToGigs((payload) => {
+        console.log('[TechnicianDashboard] Gig update:', payload.eventType);
+        if (payload.new?.technician_id === data?.technician?.id) {
+          fetchDashboardData();
+        }
+      });
+
+      // Special notification handling to just refresh dashboard data which includes notif count
+      unsubNotifications = realtimeService.subscribeToNotifications(user.id, (payload) => {
+        console.log('[TechnicianDashboard] New notification:', payload.new?.type);
+        fetchDashboardData();
+      });
     }
 
     return () => {
       if (interval) clearInterval(interval);
-      if (channel) supabase.removeChannel(channel);
+      if (unsubTechnicians) unsubTechnicians();
+      if (unsubBookings) unsubBookings();
+      if (unsubBids) unsubBids();
+      if (unsubReviews) unsubReviews();
+      if (unsubGigs) unsubGigs();
+      if (unsubNotifications) unsubNotifications();
     };
   }, [user?.id]);
 
@@ -529,7 +498,7 @@ const TechnicianDashboard = () => {
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       const token = currentSession?.access_token;
 
-      const response = await fetch(`${API_URL}/api/jobs/${jobId}`, {
+      const response = await fetch(`${API_URL}/api/bookings/${jobId}/status`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

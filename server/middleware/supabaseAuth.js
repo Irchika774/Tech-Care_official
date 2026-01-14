@@ -1,4 +1,4 @@
-import { verifySupabaseToken, getProfileByUserId, getCustomerByUserId, getTechnicianByUserId } from '../lib/supabase.js';
+import { supabaseAdmin, verifySupabaseToken, getProfileByUserId, getCustomerByUserId, getTechnicianByUserId } from '../lib/supabase.js';
 
 export const supabaseAuth = async (req, res, next) => {
     console.log('[DEBUG] supabaseAuth started');
@@ -14,7 +14,7 @@ export const supabaseAuth = async (req, res, next) => {
         console.log('[DEBUG] supabaseAuth: Verifying token...');
         const user = await verifySupabaseToken(token);
         console.log('[DEBUG] supabaseAuth: Token verified for user:', user.id);
-        
+
         // Optimize: Fetch profile first to know the role, then fetch specific data
         let profile = await getProfileByUserId(user.id).catch(() => null);
 
@@ -31,7 +31,7 @@ export const supabaseAuth = async (req, res, next) => {
                 }])
                 .select()
                 .single();
-            
+
             if (profileError) {
                 console.error('Failed to auto-create profile:', profileError);
                 return res.status(401).json({ error: 'User profile not found and could not be created.' });
@@ -76,7 +76,7 @@ export const supabaseAuth = async (req, res, next) => {
         }
 
         console.log('[DEBUG] supabaseAuth: Profile found with role:', profile.role);
-        
+
         req.user = {
             _id: user.id,
             id: user.id,
@@ -106,7 +106,7 @@ export const requireRole = (...roles) => {
         }
 
         if (!roles.includes(req.user.role)) {
-            return res.status(403).json({ 
+            return res.status(403).json({
                 error: 'Access denied. Insufficient permissions.',
                 required: roles,
                 current: req.user.role

@@ -47,8 +47,10 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import SEO from '../components/SEO';
 import CurrencyDisplay from '../components/CurrencyDisplay';
+import EmptyState from '../components/EmptyState';
 import { QuickBookingForm } from '../components/QuickBookingForm';
 import { format, formatDistanceToNow } from 'date-fns';
+import realtimeService from '../utils/realtimeService';
 
 import { useToast } from '../hooks/use-toast';
 
@@ -231,73 +233,45 @@ function CustomerDashboard() {
 
   useEffect(() => {
     let interval;
-    let bookingsChannel;
+    let unsubBookings;
+    let unsubTechnicians;
+    let unsubNotifications;
+    let unsubBids;
 
     if (user?.id) {
       fetchData(); // Fetch immediately when user ID is available
 
-      // Set up Supabase real-time subscription for bookings
-      bookingsChannel = supabase
-        .channel(`customer-bookings-${user.id}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'bookings'
-          },
-          (payload) => {
-            console.log('[CustomerDashboard] Real-time booking update:', payload.eventType);
-            fetchData(); // Refetch data when any booking changes
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'technicians'
-          },
-          (payload) => {
-            console.log('[CustomerDashboard] Real-time technician update:', payload.eventType);
-            fetchData(); // Refetch when technician info changes (for booking details)
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'notifications'
-          },
-          (payload) => {
-            console.log('[CustomerDashboard] New notification received:', payload.new?.type);
-            fetchData(); // Refetch to update notification count
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'bids'
-          },
-          (payload) => {
-            console.log('[CustomerDashboard] Bid update:', payload.eventType);
-            fetchData(); // Refetch when bids change (for booking bids)
-          }
-        )
-        .subscribe((status) => {
-          console.log('[CustomerDashboard] Subscription status:', status);
-        });
+      // Subscribe using centralized service
+      unsubBookings = realtimeService.subscribeToBookings(() => {
+        console.log('[CustomerDashboard] Booking update');
+        fetchData();
+      }, user.id);
 
-      // Fallback polling every 2 minutes (reduced from 1 minute)
+      unsubTechnicians = realtimeService.subscribeToTechnicians(() => {
+        console.log('[CustomerDashboard] Technician update');
+        fetchData();
+      });
+
+      unsubNotifications = realtimeService.subscribeToNotifications(user.id, () => {
+        console.log('[CustomerDashboard] Notification update');
+        fetchData();
+      });
+
+      unsubBids = realtimeService.subscribeToBids(() => {
+        console.log('[CustomerDashboard] Bid update');
+        fetchData();
+      });
+
+      // Fallback polling every 2 minutes
       interval = setInterval(fetchData, 120000);
     }
 
     return () => {
       if (interval) clearInterval(interval);
-      if (bookingsChannel) supabase.removeChannel(bookingsChannel);
+      if (unsubBookings) unsubBookings();
+      if (unsubTechnicians) unsubTechnicians();
+      if (unsubNotifications) unsubNotifications();
+      if (unsubBids) unsubBids();
     };
   }, [user?.id]); // Only re-run if user ID changes (e.g. login/logout)
 
@@ -531,6 +505,9 @@ function CustomerDashboard() {
                 <TabsTrigger value="history" className="rounded-lg h-full px-6 data-[state=active]:bg-white data-[state=active]:text-black">
                   <HistoryIcon className="w-4 h-4 mr-2" /> History
                 </TabsTrigger>
+                <TabsTrigger value="devices" className="rounded-lg h-full px-6 data-[state=active]:bg-white data-[state=active]:text-black">
+                  <Smartphone className="w-4 h-4 mr-2" /> My Devices
+                </TabsTrigger>
                 <TabsTrigger value="favorites" className="rounded-lg h-full px-6 data-[state=active]:bg-white data-[state=active]:text-black">
                   <Heart className="w-4 h-4 mr-2" /> Favorites
                 </TabsTrigger>
@@ -547,7 +524,7 @@ function CustomerDashboard() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   <div className="lg:col-span-2 space-y-8">
                     {/* Active Tracking */}
-                    <Card className="bg-zinc-900 border-zinc-800 shadow-xl overflow-hidden">
+                    <Card className="bg-zinc-900/40 backdrop-blur-md border-zinc-800 shadow-xl overflow-hidden">
                       <CardHeader className="bg-zinc-800/30">
                         <div className="flex justify-between items-center">
                           <CardTitle className="text-xl flex items-center gap-2">
@@ -561,13 +538,13 @@ function CustomerDashboard() {
                       </CardHeader>
                       <CardContent className="p-0">
                         {activeBookings.length === 0 ? (
-                          <div className="p-12 text-center text-zinc-500">
-                            <Package className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                            <p>No active repairs at the moment</p>
-                            <Button variant="link" onClick={() => setActiveTab('schedule')} className="text-blue-500 mt-2">
-                              Start a new repair
-                            </Button>
-                          </div>
+                          <EmptyState
+                            icon={Package}
+                            title="No Active Repairs"
+                            description="You don't have any devices being repaired right now. When you start a repair, you can track its progress here in real-time."
+                            buttonText="Start a New Repair"
+                            onAction={() => setActiveTab('schedule')}
+                          />
                         ) : (
                           <div className="divide-y divide-zinc-800">
                             {activeBookings.map((booking) => (
@@ -619,7 +596,7 @@ function CustomerDashboard() {
                     </Card>
 
                     {/* Device Vault Preview */}
-                    <Card className="bg-zinc-900 border-zinc-800 shadow-xl">
+                    <Card className="bg-zinc-900/40 backdrop-blur-md border-zinc-800 shadow-xl">
                       <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle className="text-xl flex items-center gap-2">
                           <ShieldCheck className="w-5 h-5 text-amber-500" />
@@ -658,7 +635,7 @@ function CustomerDashboard() {
 
                   <div className="space-y-8">
                     {/* Activity Feed */}
-                    <Card className="bg-zinc-900 border-zinc-800 shadow-xl">
+                    <Card className="bg-zinc-900/40 backdrop-blur-md border-zinc-800 shadow-xl">
                       <CardHeader>
                         <CardTitle className="text-xl flex items-center gap-2">
                           <TrendingUp className="w-5 h-5 text-emerald-500" />
@@ -700,7 +677,7 @@ function CustomerDashboard() {
               </TabsContent>
 
               <TabsContent value="schedule">
-                <Card className="bg-zinc-900 border-zinc-800 border-2 shadow-2xl overflow-hidden">
+                <Card className="bg-zinc-900/40 backdrop-blur-md border-zinc-800 border-2 shadow-2xl overflow-hidden">
                   <CardHeader className="border-b border-zinc-800 bg-zinc-800/20">
                     <div className="flex justify-between items-center">
                       <div>
@@ -731,7 +708,7 @@ function CustomerDashboard() {
               </TabsContent>
 
               <TabsContent value="history">
-                <Card className="bg-zinc-900 border-zinc-800">
+                <Card className="bg-zinc-900/40 backdrop-blur-md border-zinc-800">
                   <CardHeader>
                     <CardTitle>Repair History</CardTitle>
                     <CardDescription>All your past service requests and invoices</CardDescription>
@@ -792,7 +769,7 @@ function CustomerDashboard() {
               </TabsContent>
 
               <TabsContent value="favorites">
-                <Card className="bg-zinc-900 border-zinc-800">
+                <Card className="bg-zinc-900/40 backdrop-blur-md border-zinc-800">
                   <CardHeader>
                     <CardTitle>My Favorite Technicians</CardTitle>
                     <CardDescription>Quick access to experts you trust</CardDescription>
@@ -888,7 +865,7 @@ function CustomerDashboard() {
                 </div>
               </TabsContent>
               <TabsContent value="settings">
-                <Card className="bg-zinc-900 border-zinc-800">
+                <Card className="bg-zinc-900/40 backdrop-blur-md border-zinc-800">
                   <CardHeader>
                     <CardTitle className="text-white">Profile Settings</CardTitle>
                     <CardDescription>Update your personal information and contact details</CardDescription>
@@ -968,7 +945,7 @@ function CustomerDashboard() {
               </TabsContent>
 
               <TabsContent value="security">
-                <Card className="bg-zinc-900 border-zinc-800">
+                <Card className="bg-zinc-900/40 backdrop-blur-md border-zinc-800">
                   <CardHeader>
                     <CardTitle className="text-white">Security</CardTitle>
                     <CardDescription>Manage your password and account security</CardDescription>

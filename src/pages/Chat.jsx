@@ -6,6 +6,7 @@ import { Input } from '../components/ui/input';
 import { Loader2, Send, User, Phone, MessageCircle, Bot, ChevronRight, ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import realtimeService from '../utils/realtimeService';
 
 export default function Chat() {
     const { bookingId } = useParams();
@@ -105,24 +106,17 @@ export default function Chat() {
 
         fetchData();
 
-        // Subscribe to new messages
-        const channel = supabase
-            .channel(`booking-chat-${bookingId}`)
-            .on(
-                'postgres_changes',
-                { event: 'INSERT', schema: 'public', table: 'messages', filter: `booking_id=eq.${bookingId}` },
-                (payload) => {
-                    setMessages(prev => {
-                        // Prevent duplicates
-                        if (prev.find(m => m.id === payload.new.id)) return prev;
-                        return [...prev, payload.new];
-                    });
-                }
-            )
-            .subscribe();
+        // Subscribe to new messages using central service
+        const unsub = realtimeService.subscribeToMessages(bookingId, (payload) => {
+            setMessages(prev => {
+                // Prevent duplicates
+                if (prev.find(m => m.id === payload.new.id)) return prev;
+                return [...prev, payload.new];
+            });
+        });
 
         return () => {
-            supabase.removeChannel(channel);
+            if (unsub) unsub();
         };
     }, [bookingId, user?.id]);
 

@@ -28,6 +28,10 @@ import {
 import SEO from '../components/SEO';
 import { fetchRepairShops, getDistrictStatistics } from '../lib/googleSheetsService';
 import { supabase } from '../lib/supabase';
+import realtimeService from '../utils/realtimeService';
+import { SkeletonTechnicianCard } from '../components/ui/skeleton';
+import EmptyState from '../components/EmptyState';
+import { Package } from 'lucide-react';
 
 const Technicians = () => {
   const navigate = useNavigate();
@@ -76,7 +80,6 @@ const Technicians = () => {
         supabase
           .from('technicians')
           .select('*')
-          .eq('status', 'active')
           .abortSignal(controller.signal),
         fetchRepairShops()
       ]);
@@ -144,23 +147,14 @@ const Technicians = () => {
   useEffect(() => {
     loadShops();
 
-    // Subscribe to real-time technician updates
-    const channel = supabase
-      .channel('technicians-list')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'technicians' },
-        (payload) => {
-          console.log('[Technicians] Real-time update:', payload.eventType);
-          loadShops(); // Refresh the list when any technician changes
-        }
-      )
-      .subscribe((status) => {
-        console.log('[Technicians] Subscription status:', status);
-      });
+    // Subscribe to real-time technician updates using centralized service
+    const unsubscribe = realtimeService.subscribeToTechnicians((payload) => {
+      console.log('[Technicians] Real-time update:', payload.eventType);
+      loadShops(); // Refresh the list when any technician changes
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      if (unsubscribe) unsubscribe();
     };
   }, []);
 
@@ -445,21 +439,25 @@ const Technicians = () => {
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {[...Array(8)].map((_, i) => (
-                <Card key={i} className="border-zinc-800 animate-pulse">
-                  <CardContent className="p-4">
-                    <div className="h-5 bg-zinc-800 rounded mb-3 w-3/4" />
-                    <div className="h-4 bg-zinc-800 rounded mb-2 w-full" />
-                    <div className="h-4 bg-zinc-800 rounded w-2/3" />
-                  </CardContent>
-                </Card>
+                <SkeletonTechnicianCard key={i} />
               ))}
             </div>
           ) : filteredShops.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="text-zinc-500 mb-4">No repair shops found matching your criteria</div>
-              <Button variant="outline" onClick={() => { setSearchTerm(''); setSelectedDistrict('all'); setSelectedType('all'); }}>
-                Clear Filters
-              </Button>
+            <div className="bg-zinc-900/50 rounded-3xl border border-zinc-800 border-dashed">
+              <EmptyState
+                icon={Package}
+                title="No Technicians Found"
+                description="We couldn't find any technicians matching your search filters. Try adjusting your search criteria or resetting the filters."
+                buttonText="Reset All Filters"
+                onAction={() => {
+                  setSearchTerm('');
+                  setSelectedDistrict('all');
+                  setSelectedType('all');
+                  setSelectedRating('all');
+                  setVerifiedOnly(false);
+                  setCurrentPage(1);
+                }}
+              />
             </div>
           ) : (
             <>

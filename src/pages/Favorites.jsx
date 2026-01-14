@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import EmptyState from '../components/EmptyState';
 import { techniciansAPI } from '../lib/api';
 import {
   Heart,
@@ -16,6 +17,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import { SkeletonTechnicianCard } from "@/components/ui/skeleton";
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
@@ -114,7 +116,13 @@ const Favorites = () => {
         </p>
       </div>
 
-      {favorites.length > 0 ? (
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <SkeletonTechnicianCard />
+          <SkeletonTechnicianCard />
+          <SkeletonTechnicianCard />
+        </div>
+      ) : favorites.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {favorites.map((tech) => (
             <Card key={tech.id} className="overflow-hidden group hover:shadow-lg transition-all duration-300">
@@ -183,18 +191,15 @@ const Favorites = () => {
           ))}
         </div>
       ) : (
-        <Card className="text-center py-16">
+        <Card className="border-dashed border-zinc-800 bg-zinc-900/50 py-12">
           <CardContent>
-            <div className="bg-muted/30 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Heart className="h-10 w-10 text-muted-foreground" />
-            </div>
-            <h3 className="text-xl font-semibold mb-2">No Saved Technicians</h3>
-            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-              Save your favorite technicians by clicking the heart icon on their profile for quick access and easy booking.
-            </p>
-            <Button size="lg" onClick={() => navigate('/')}>
-              Explore Technicians
-            </Button>
+            <EmptyState
+              icon={Heart}
+              title="No Saved Technicians"
+              description="Save your favorite technicians by clicking the heart icon on their profile for quick access and easy booking later."
+              buttonText="Explore Technicians"
+              onAction={() => navigate('/')}
+            />
           </CardContent>
         </Card>
       )}

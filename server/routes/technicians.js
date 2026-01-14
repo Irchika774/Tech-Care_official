@@ -243,6 +243,19 @@ router.get('/dashboard', supabaseAuth, verifyTechnician, async (req, res) => {
 
 router.get('/jobs', supabaseAuth, verifyTechnician, async (req, res) => {
     try {
+        const userId = req.user.id;
+
+        // Get technician ID
+        const { data: technician } = await supabaseAdmin
+            .from('technicians')
+            .select('id')
+            .eq('user_id', userId)
+            .single();
+
+        if (!technician) {
+            return res.status(404).json({ error: 'Technician profile not found' });
+        }
+
         // Fetch available jobs for technicians:
         // 1. Jobs with status pending/bidding/confirmed that don't have a technician assigned
         // 2. OR jobs where payment is completed and needs assignment
@@ -256,8 +269,20 @@ router.get('/jobs', supabaseAuth, verifyTechnician, async (req, res) => {
 
         if (error) throw error;
 
+        // Fetch jobs this technician has already bid on
+        const { data: existingBids } = await supabaseAdmin
+            .from('bids')
+            .select('booking_id')
+            .eq('technician_id', technician.id);
+
+        const bidBookingIds = new Set(existingBids?.map(b => b.booking_id) || []);
+
         // Filter out jobs that already have a technician assigned (except for pending status)
+        // AND exclude jobs the technician has already bid on
         const availableJobs = (jobs || []).filter(job => {
+            // Exclude if already bid
+            if (bidBookingIds.has(job.id)) return false;
+
             // If no technician assigned, it's available
             if (!job.technician_id) return true;
             // If status is pending, it's available for bidding

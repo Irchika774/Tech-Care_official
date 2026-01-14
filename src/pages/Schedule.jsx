@@ -40,22 +40,43 @@ const Schedule = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Initialize state from location.state if available
+  // Initialize state from location.state if available (supports persistence)
   const initialData = location.state || {};
 
-  const [step, setStep] = useState(initialData.paymentConfirmed ? 2 : 1);
-  const [deviceType, setDeviceType] = useState(initialData.service === 'PC Repair' ? 'pc' : 'smartphone');
-  const [showFlowError, setShowFlowError] = useState(false);
+  const [step, setStep] = useState(() => {
+    if (initialData.paymentConfirmed) return 2;
+    return 1;
+  });
 
-  const [deviceBrand, setDeviceBrand] = useState('');
-  const [deviceModel, setDeviceModel] = useState('');
-  const [repairService, setRepairService] = useState('general');
-  const [issueDescription, setIssueDescription] = useState(initialData.service || '');
-  const [technician, setTechnician] = useState(initialData.technician?.id || initialData.technician?._id || 'pending');
+  const [deviceType, setDeviceType] = useState(() => {
+    if (initialData.service === 'PC Repair') return 'pc';
+    if (initialData.deviceType) return initialData.deviceType;
+    return localStorage.getItem('techcare_booking_deviceType') || 'smartphone';
+  });
+
+  const [deviceBrand, setDeviceBrand] = useState(() => localStorage.getItem('techcare_booking_brand') || '');
+  const [deviceModel, setDeviceModel] = useState(() => localStorage.getItem('techcare_booking_model') || '');
+  const [repairService, setRepairService] = useState(() => localStorage.getItem('techcare_booking_service') || 'general');
+  const [issueDescription, setIssueDescription] = useState(() => initialData.service || localStorage.getItem('techcare_booking_description') || '');
+  const [technician, setTechnician] = useState(() => {
+    if (initialData.technician) return initialData.technician.id || initialData.technician._id;
+    return localStorage.getItem('techcare_booking_tech') || 'pending';
+  });
+
   const [date, setDate] = useState(new Date());
   const [timeSlot, setTimeSlot] = useState('09:00 AM');
   const [techniciansList, setTechnicians] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // Persistence Sync
+  useEffect(() => {
+    localStorage.setItem('techcare_booking_deviceType', deviceType);
+    localStorage.setItem('techcare_booking_brand', deviceBrand);
+    localStorage.setItem('techcare_booking_model', deviceModel);
+    localStorage.setItem('techcare_booking_service', repairService);
+    localStorage.setItem('techcare_booking_description', issueDescription);
+    localStorage.setItem('techcare_booking_tech', technician);
+  }, [deviceType, deviceBrand, deviceModel, repairService, issueDescription, technician]);
 
   useEffect(() => {
     // If coming back from payment success, we skip to Step 2
@@ -65,11 +86,12 @@ const Schedule = () => {
   }, [initialData.paymentConfirmed]);
 
   useEffect(() => {
-    // Restrict direct access
-    if (!initialData.service && !initialData.technician && step === 1 && !deviceBrand) {
+    // Restrict direct access only if no context is found
+    const hasContext = initialData.service || initialData.technician || initialData.diagnosis || deviceBrand || issueDescription;
+    if (!hasContext && step === 1) {
       navigate('/services', { replace: true });
     }
-  }, [initialData, navigate, step, deviceBrand]);
+  }, [initialData, navigate, step, deviceBrand, issueDescription]);
 
   useEffect(() => {
     // If a technician was passed in state, make sure they are in the list or handled
@@ -249,6 +271,12 @@ const Schedule = () => {
           title: "Schedule Confirmed",
           description: "Your repair has been successfully scheduled!",
         });
+
+        // Clear persistence logic
+        ['deviceType', 'brand', 'model', 'service', 'description', 'tech'].forEach(key =>
+          localStorage.removeItem(`techcare_booking_${key}`)
+        );
+
         navigate('/customer-dashboard');
       } catch (error) {
         console.error('Scheduling error:', error);
@@ -455,25 +483,25 @@ const Schedule = () => {
                               <SelectItem value="battery" className="text-white hover:bg-zinc-700">
                                 <div className="flex items-center gap-2 py-1">
                                   <Battery className="h-5 w-5 text-yellow-500" />
-                                  <span>Battery Replacement - LKR 5,000</span>
+                                  <span>Battery Replacement - <CurrencyDisplay amount={5000} /></span>
                                 </div>
                               </SelectItem>
                               <SelectItem value="screen" className="text-white hover:bg-zinc-700">
                                 <div className="flex items-center gap-2 py-1">
                                   <Monitor className="h-5 w-5 text-blue-400" />
-                                  <span>Screen Repair - LKR 12,000</span>
+                                  <span>Screen Repair - <CurrencyDisplay amount={12000} /></span>
                                 </div>
                               </SelectItem>
                               <SelectItem value="water-damage" className="text-white hover:bg-zinc-700">
                                 <div className="flex items-center gap-2 py-1">
                                   <Droplets className="h-5 w-5 text-cyan-400" />
-                                  <span>Water Damage - LKR 8,500</span>
+                                  <span>Water Damage - <CurrencyDisplay amount={8500} /></span>
                                 </div>
                               </SelectItem>
                               <SelectItem value="general" className="text-white hover:bg-zinc-700">
                                 <div className="flex items-center gap-2 py-1">
                                   <Wrench className="h-5 w-5 text-white" />
-                                  <span>General Repair - LKR 4,000</span>
+                                  <span>General Repair - <CurrencyDisplay amount={4000} /></span>
                                 </div>
                               </SelectItem>
                             </>
@@ -485,15 +513,15 @@ const Schedule = () => {
                     <div className="bg-zinc-800/50 p-6 rounded-xl border border-zinc-700">
                       <div className="flex justify-between items-center py-2">
                         <span className="text-zinc-400">Service Fee</span>
-                        <span className="text-white font-medium">LKR {Math.abs(serviceAmount).toLocaleString()}</span>
+                        <span className="text-white font-medium"><CurrencyDisplay amount={serviceAmount} /></span>
                       </div>
                       <div className="flex justify-between items-center py-2">
                         <span className="text-zinc-400">Platform Fee</span>
-                        <span className="text-white font-medium">LKR {Math.abs(platformFee).toLocaleString()}</span>
+                        <span className="text-white font-medium"><CurrencyDisplay amount={platformFee} /></span>
                       </div>
                       <div className="flex justify-between items-center py-4 mt-4 border-t border-zinc-600">
                         <span className="text-xl font-bold text-white">Total Amount</span>
-                        <span className="text-2xl font-bold text-white">LKR {Math.abs(totalAmount).toLocaleString()}</span>
+                        <span className="text-2xl font-bold text-white"><CurrencyDisplay amount={totalAmount} /></span>
                       </div>
                     </div>
 

@@ -221,7 +221,7 @@ router.patch('/:id', supabaseAuth, async (req, res) => {
     try {
         const customerId = req.user.customerId || req.user.id;
 
-        // Check ownership
+        // Check ownership or admin status
         const { data: existingReview } = await supabaseAdmin
             .from('reviews')
             .select('customer_id, technician_id')
@@ -232,17 +232,26 @@ router.patch('/:id', supabaseAuth, async (req, res) => {
             return res.status(404).json({ error: 'Review not found' });
         }
 
-        if (existingReview.customer_id !== customerId) {
+        const isAdmin = req.user.role === 'admin';
+
+        if (existingReview.customer_id !== customerId && !isAdmin) {
             return res.status(403).json({ error: 'You can only edit your own reviews' });
         }
 
-        const allowedFields = ['rating', 'title', 'comment', 'service_quality', 'communication', 'value_for_money', 'would_recommend'];
+        const allowedFields = ['rating', 'title', 'comment', 'service_quality', 'communication', 'value_for_money', 'would_recommend', 'status'];
         const updates = {};
 
         for (const field of allowedFields) {
             if (req.body[field] !== undefined) {
+                // Only admins can change status to/from restricted states if needed, but here we just allow it
+                if (field === 'status' && !isAdmin) continue;
                 updates[field] = req.body[field];
             }
+        }
+
+        // If it is admin, allow status update specifically
+        if (isAdmin && req.body.status) {
+            updates.status = req.body.status;
         }
         updates.updated_at = new Date().toISOString();
 

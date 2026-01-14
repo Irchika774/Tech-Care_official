@@ -22,6 +22,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { SkeletonDashboard } from "@/components/ui/skeleton";
 import { useToast } from '../hooks/use-toast';
 
 import { useAuth } from '../context/AuthContext';
@@ -30,6 +31,7 @@ import CurrencyDisplay from '../components/CurrencyDisplay';
 import SEO from '../components/SEO';
 import ServiceManagement from '../components/admin/ServiceManagement';
 import TransactionHistory from '../components/admin/TransactionHistory';
+import realtimeService from '../utils/realtimeService';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -108,6 +110,7 @@ const Admin = () => {
   const [technicians, setTechnicians] = useState([]);
   const [appointments, setAppointments] = useState([]);
   const [reviews, setReviews] = useState([]);
+  const [logs, setLogs] = useState([]);
   const [stats, setStats] = useState({
     totalUsers: 0,
     activeTechnicians: 0,
@@ -136,82 +139,57 @@ const Admin = () => {
   });
 
   // Real-time subscription and initial data load
+  // Real-time subscription and initial data load
   useEffect(() => {
-    let realtimeChannel;
-
-    // Set up comprehensive Supabase real-time subscriptions
-    realtimeChannel = supabase
-      .channel('admin-dashboard')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'profiles' },
-        (payload) => {
-          console.log('[Admin] Profile change:', payload.eventType);
-          fetchUsers();
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'customers' },
-        (payload) => {
-          console.log('[Admin] Customer change:', payload.eventType);
-          fetchUsers();
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'technicians' },
-        (payload) => {
-          console.log('[Admin] Technician change:', payload.eventType);
-          fetchTechnicians();
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'bookings' },
-        (payload) => {
-          console.log('[Admin] Booking change:', payload.eventType);
-          fetchAppointments();
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'reviews' },
-        (payload) => {
-          console.log('[Admin] Review change:', payload.eventType);
-          fetchReviews();
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'gigs' },
-        (payload) => {
-          console.log('[Admin] Gig change:', payload.eventType);
-          fetchPendingGigs();
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'services' },
-        (payload) => {
-          console.log('[Admin] Service change:', payload.eventType);
-          // Trigger refresh of related data
-          refreshAllData();
-        }
-      )
-      .subscribe((status) => {
-        console.log('[Admin] Realtime subscription status:', status);
-      });
+    let unsubTechnicians;
+    let unsubBookings;
+    let unsubReviews;
+    let unsubGigs;
+    let unsubServices;
 
     // Initial data load
     fetchAllData();
 
-    // Fallback polling every 60 seconds (reduced from 30s)
+    // Fallback polling every 60 seconds
     const interval = setInterval(refreshAllData, 60000);
+
+    // Subscribe to real-time updates using centralized service
+    // Note: Profiles/Customers specific subscriptions might be added to realtimeService if needed, 
+    // or we can rely on general refreshes from other triggers for now, or add custom channel here if absolutely necessary.
+    // For now, let's map what we have in realtimeService.
+
+    unsubTechnicians = realtimeService.subscribeToTechnicians((payload) => {
+      console.log('[Admin] Technician update:', payload.eventType);
+      fetchTechnicians();
+    });
+
+    unsubBookings = realtimeService.subscribeToBookings((payload) => {
+      console.log('[Admin] Booking update:', payload.eventType);
+      fetchAppointments();
+    });
+
+    unsubReviews = realtimeService.subscribeToReviews((payload) => {
+      console.log('[Admin] Review update:', payload.eventType);
+      fetchReviews();
+    });
+
+    unsubGigs = realtimeService.subscribeToGigs((payload) => {
+      console.log('[Admin] Gig update:', payload.eventType);
+      fetchPendingGigs();
+    });
+
+    unsubServices = realtimeService.subscribeToServices((payload) => {
+      console.log('[Admin] Service update:', payload.eventType);
+      refreshAllData();
+    });
 
     return () => {
       clearInterval(interval);
-      if (realtimeChannel) supabase.removeChannel(realtimeChannel);
+      if (unsubTechnicians) unsubTechnicians();
+      if (unsubBookings) unsubBookings();
+      if (unsubReviews) unsubReviews();
+      if (unsubGigs) unsubGigs();
+      if (unsubServices) unsubServices();
     };
   }, []);
 
@@ -224,7 +202,8 @@ const Admin = () => {
         fetchTechnicians(),
         fetchAppointments(),
         fetchReviews(),
-        fetchPendingGigs()
+        fetchPendingGigs(),
+        fetchLogs()
       ]);
       calculateStats();
     } catch (error) {
@@ -259,12 +238,6 @@ const Admin = () => {
       setUsers(response.data);
     } catch (error) {
       console.error('[ADMIN] Error fetching users:', error);
-      try {
-        const response = await axios.get(`${API_URL}/api/users`);
-        setUsers(response.data);
-      } catch (err) {
-        console.error('[ADMIN] Fallback fetch also failed:', err);
-      }
     }
   };
 
@@ -339,6 +312,18 @@ const Admin = () => {
     } catch (error) {
       console.error('[ADMIN] Error fetching reviews:', error);
       setReviews([]);
+    }
+  };
+
+  const fetchLogs = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/admin/logs`, {
+        headers: await getAuthHeader()
+      });
+      setLogs(response.data);
+    } catch (error) {
+      console.error('[ADMIN] Error fetching logs:', error);
+      setLogs([]);
     }
   };
 
@@ -469,7 +454,7 @@ const Admin = () => {
   // Handle Update Appointment Status
   const handleUpdateAppointmentStatus = async (appointmentId, newStatus) => {
     try {
-      await axios.put(`${API_URL}/api/appointments/${appointmentId}`,
+      await axios.put(`${API_URL}/api/admin/bookings/${appointmentId}`,
         { status: newStatus },
         { headers: await getAuthHeader() }
       );
@@ -491,7 +476,7 @@ const Admin = () => {
   // Handle Update Review Status
   const handleUpdateReviewStatus = async (reviewId, newStatus) => {
     try {
-      await axios.put(`${API_URL}/api/reviews/${reviewId}`,
+      await axios.patch(`${API_URL}/api/reviews/${reviewId}`,
         { status: newStatus },
         { headers: await getAuthHeader() }
       );
@@ -585,10 +570,15 @@ const Admin = () => {
   // Loading state
   if (isLoading && users.length === 0) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
-          <p className="mt-4 text-zinc-400 font-['Inter']">Loading admin dashboard...</p>
+      <div className="min-h-screen bg-black text-white p-8">
+        <div className="max-w-7xl mx-auto space-y-6">
+          <div className="flex justify-between items-center mb-8">
+            <div className="space-y-2">
+              <div className="h-8 w-64 bg-zinc-800 animate-pulse rounded" />
+              <div className="h-4 w-48 bg-zinc-800 animate-pulse rounded" />
+            </div>
+          </div>
+          <SkeletonDashboard />
         </div>
       </div>
     );
@@ -669,7 +659,7 @@ const Admin = () => {
 
       {/* Secondary Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <Card className="bg-zinc-900 border-zinc-800 shadow-xl">
+        <Card className="bg-zinc-900/40 backdrop-blur-md border-zinc-800 shadow-xl">
           <CardContent className="p-6 flex items-center justify-between">
             <div>
               <p className="text-sm font-['Inter'] font-medium text-zinc-400">Completed Jobs</p>
@@ -679,7 +669,7 @@ const Admin = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-zinc-900 border-zinc-800 shadow-xl">
+        <Card className="bg-zinc-900/40 backdrop-blur-md border-zinc-800 shadow-xl">
           <CardContent className="p-6 flex items-center justify-between">
             <div>
               <p className="text-sm font-['Inter'] font-medium text-zinc-400">Avg Rating</p>
@@ -689,7 +679,7 @@ const Admin = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-zinc-900 border-zinc-800 shadow-xl">
+        <Card className="bg-zinc-900/40 backdrop-blur-md border-zinc-800 shadow-xl">
           <CardContent className="p-6 flex items-center justify-between">
             <div>
               <p className="text-sm font-['Inter'] font-medium text-zinc-400">Total Reviews</p>
@@ -699,7 +689,7 @@ const Admin = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-zinc-900 border-zinc-800 shadow-xl">
+        <Card className="bg-zinc-900/40 backdrop-blur-md border-zinc-800 shadow-xl">
           <CardContent className="p-6 flex items-center justify-between">
             <div>
               <p className="text-sm font-['Inter'] font-medium text-zinc-400">Cancellations</p>
@@ -712,7 +702,7 @@ const Admin = () => {
 
       {/* Quick Actions & Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="bg-zinc-900 border-zinc-800 shadow-xl">
+        <Card className="bg-zinc-900/40 backdrop-blur-md border-zinc-800 shadow-xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 font-['Outfit'] text-white">
               <Zap className="h-5 w-5 text-yellow-500" />
@@ -751,7 +741,7 @@ const Admin = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-zinc-900 border-zinc-800 shadow-xl">
+        <Card className="bg-zinc-900/40 backdrop-blur-md border-zinc-800 shadow-xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 font-['Outfit'] text-white">
               <Activity className="h-5 w-5 text-emerald-500" />
@@ -791,7 +781,7 @@ const Admin = () => {
       </div>
 
       {/* Top Technicians */}
-      <Card className="bg-zinc-900 border-zinc-800 shadow-xl">
+      <Card className="bg-zinc-900/40 backdrop-blur-md border-zinc-800 shadow-xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 font-['Outfit'] text-white">
             <TrendingUp className="h-5 w-5 text-blue-500" />
@@ -850,7 +840,7 @@ const Admin = () => {
         </Button>
       </div>
 
-      <Card className="bg-zinc-900 border-zinc-800 shadow-xl">
+      <Card className="bg-zinc-900/40 backdrop-blur-md border-zinc-800 shadow-xl">
         <CardContent className="p-0">
           {users.length === 0 ? (
             <div className="text-center py-12">
@@ -1051,7 +1041,7 @@ const Admin = () => {
         </div>
       </div>
 
-      <Card className="bg-zinc-900 border-zinc-800 shadow-xl">
+      <Card className="bg-zinc-900/40 backdrop-blur-md border-zinc-800 shadow-xl">
         <CardContent className="p-0">
           {appointments.length === 0 ? (
             <div className="text-center py-12">
@@ -1072,8 +1062,12 @@ const Admin = () => {
               <TableBody>
                 {appointments.map((apt) => (
                   <TableRow key={apt._id} className="border-zinc-800 hover:bg-zinc-800/50">
-                    <TableCell className="font-['Inter'] text-white">{apt.customerName || '-'}</TableCell>
-                    <TableCell className="font-['Inter'] text-zinc-300">{apt.technicianName || 'Pending'}</TableCell>
+                    <TableCell className="font-['Inter'] text-white">
+                      {apt.customer?.name || apt.customerName || '-'}
+                    </TableCell>
+                    <TableCell className="font-['Inter'] text-zinc-300">
+                      {apt.technician?.name || apt.technicianName || 'Pending'}
+                    </TableCell>
                     <TableCell className="text-zinc-300">{new Date(apt.scheduledDate || apt.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell>
                       <Select
@@ -1176,6 +1170,79 @@ const Admin = () => {
     </div>
   );
 
+  const renderLogs = () => (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-3xl font-['Outfit'] font-bold tracking-tight text-white">System Logs</h2>
+          <p className="text-zinc-400 font-['Inter']">Real-time audit of platform activities</p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={fetchLogs}
+          className="border-zinc-700 text-white hover:bg-zinc-800 gap-2"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Refresh
+        </Button>
+      </div>
+
+      <Card className="bg-zinc-900/40 backdrop-blur-md border-zinc-800 shadow-xl overflow-hidden">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-zinc-800 hover:bg-transparent">
+                  <TableHead className="text-zinc-400">Type</TableHead>
+                  <TableHead className="text-zinc-400">Activity</TableHead>
+                  <TableHead className="text-zinc-400">Timestamp</TableHead>
+                  <TableHead className="text-zinc-400">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {logs.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-24 text-zinc-500">
+                      <FileText className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                      No logs available
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  logs.map((log) => (
+                    <TableRow key={log.id} className="border-zinc-800 hover:bg-zinc-800/30 transition-colors">
+                      <TableCell>
+                        <Badge className={`${log.type === 'USER_SIGNUP' ? 'bg-blue-500/10 text-blue-400' :
+                            log.type === 'BOOKING_UPDATE' ? 'bg-purple-500/10 text-purple-400' :
+                              'bg-emerald-500/10 text-emerald-400'
+                          } border-0 text-[10px] font-bold px-2 py-0.5`}>
+                          {log.type}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-zinc-300 font-medium">{log.message}</TableCell>
+                      <TableCell className="text-zinc-500 text-xs">
+                        {new Date(log.timestamp).toLocaleString()}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className={`h-2 w-2 rounded-full ${log.severity === 'success' ? 'bg-emerald-500' :
+                              log.severity === 'warning' ? 'bg-amber-500' :
+                                'bg-blue-500'
+                            }`} />
+                          <span className="text-xs capitalize text-zinc-400">{log.severity}</span>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
   const renderSettings = () => (
     <div className="space-y-6">
       <div>
@@ -1184,7 +1251,7 @@ const Admin = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="bg-zinc-900 border-zinc-800 shadow-xl">
+        <Card className="bg-zinc-900/40 backdrop-blur-md border-zinc-800 shadow-xl">
           <CardHeader>
             <CardTitle className="font-['Outfit'] text-white">Notification Settings</CardTitle>
             <CardDescription className="text-zinc-400">Configure how you receive notifications</CardDescription>
@@ -1214,7 +1281,7 @@ const Admin = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-zinc-900 border-zinc-800 shadow-xl">
+        <Card className="bg-zinc-900/40 backdrop-blur-md border-zinc-800 shadow-xl">
           <CardHeader>
             <CardTitle className="font-['Outfit'] text-white">Account Information</CardTitle>
             <CardDescription className="text-zinc-400">Your admin account details</CardDescription>
@@ -1413,6 +1480,10 @@ const Admin = () => {
               <Star className="h-4 w-4 mr-2" />
               Reviews
             </TabsTrigger>
+            <TabsTrigger value="logs" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">
+              <FileText className="h-4 w-4 mr-2" />
+              Logs
+            </TabsTrigger>
             <TabsTrigger value="settings" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">
               <Settings className="h-4 w-4 mr-2" />
               Settings
@@ -1426,6 +1497,7 @@ const Admin = () => {
           <TabsContent value="services"><ServiceManagement /></TabsContent>
           <TabsContent value="financials"><TransactionHistory /></TabsContent>
           <TabsContent value="reviews">{renderReviews()}</TabsContent>
+          <TabsContent value="logs">{renderLogs()}</TabsContent>
           <TabsContent value="settings">{renderSettings()}</TabsContent>
         </Tabs>
       </div>

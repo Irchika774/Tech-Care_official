@@ -935,54 +935,52 @@ TechCare includes a curated database of **100+ top-rated repair shops** across S
 
 ---
 
-## 🤝 Contributing
+### 🤝 Contributing
 
-> ⚠️ **IMPORTANT: Read Before Contributing**
+This project was **built and is maintained by Wenura** ([@Wenura17125](https://github.com/Wenura17125)). We welcome contributions from the community to help make TechCare even better!
 
-This project is **solely owned by Wenura** ([@Wenura17125](https://github.com/Wenura17125)). All code, documentation, and features were developed exclusively by Wenura.
+### ⚙️ Core Project Structure
 
-### 🔒 Protected Files (DO NOT MODIFY)
-
-The following files are **strictly protected** and cannot be modified by contributors:
+To maintain consistency and security, the following files are considered core to the project identity:
 
 | File | Status | Reason |
 |------|--------|--------|
-| `README.md` | 🔒 **LOCKED** | Project identity and documentation |
-| `LICENSE` | 🔒 **LOCKED** | Legal terms and ownership |
-| `CONTRIBUTORS.md` | 🔒 **LOCKED** | Verified contributor list |
+| `README.md` | ⚠️ **Review Required** | Project identity and documentation |
+| `LICENSE` | 🔒 **LOCKED** | Legal terms and licensing |
+| `CONTRIBUTORS.md` | ✨ **OPEN** | Add yourself here if you contribute! |
 | `CODEOWNERS` | 🔒 **LOCKED** | Access control configuration |
-| `/docs/*` | 🔒 **LOCKED** | Official documentation |
-| `package.json` (name, author, license) | 🔒 **LOCKED** | Project identity fields |
+| `/docs/*` | 📝 **Contributable** | Official documentation improvements welcome |
+| `package.json` | 🛠️ **Source Only** | Identity fields should remain consistent |
 
-**Any pull requests modifying these files will be automatically rejected.**
+**Pull requests modifying core identity fields in these files will require specific review.**
 
 ### ✅ Allowed Contributions
 
-You may contribute to:
+We love contributions! You can help with:
 - Bug fixes in source code (`/src/`, `/server/`)
-- New features (with prior discussion)
+- New features (please open an issue first for discussion)
 - Performance improvements
-- Test coverage
+- Test coverage and documentation
 
 ### 📋 Contribution Terms
 
 By submitting a contribution, you agree that:
 
-1. ✅ All contributions become the **exclusive property of Wenura**
-2. ✅ You waive all ownership claims to your contributions
-3. ✅ Your contributions are original and don't infringe third-party rights
-4. ✅ Contributions do NOT grant you project ownership
-5. ❌ You may NOT modify protected files
-6. ❌ You may NOT claim authorship of the project
+1. ✅ Your contributions improve the platform for everyone
+2. ✅ Your contributions are original and don't infringe third-party rights
+3. ✅ You will follow the project's style and quality standards
+4. ✅ Contributions are welcome from all developers globally
+5. ❌ You may NOT claim sole authorship of the platform
+6. ❌ You will respect the project's licensing and goal
 
 ### 🔄 How to Contribute
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/your-feature`)
-3. Make changes (to allowed files only)
+3. Make changes
 4. Commit changes (`git commit -m 'Add feature'`)
 5. Push to branch (`git push origin feature/your-feature`)
-6. Open a Pull Request for review by @Wenura17125
+6. Open a Pull Request for review by the maintainers
 
 ---
 
@@ -999,10 +997,10 @@ This project is licensed under the **TechCare Proprietary License**.
 | ✅ View source code | Allowed |
 | ✅ Fork for learning | Allowed |
 | ✅ Personal use | Allowed |
+| ✅ Contributing improvements | Allowed |
 | ❌ Commercial use | **Prohibited** without permission |
 | ❌ Redistribution | **Prohibited** without permission |
-| ❌ Claiming ownership | **Prohibited** |
-| ❌ Modifying protected files | **Prohibited** |
+| ❌ Claiming sole authorship | **Prohibited** |
 
 See the [LICENSE](LICENSE) file for full terms and conditions.
 

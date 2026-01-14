@@ -1,471 +1,92 @@
-# TechCare Application - Complete Flow Diagrams
+# TechCare - Complete System Architecture & Flow Diagrams
 
-## Table of Contents
-1. [System Architecture](#1-system-architecture)
-2. [User Roles Overview](#2-user-roles-overview)
-3. [Customer Flows](#3-customer-flows)
-4. [Technician Flows](#4-technician-flows)
-5. [Admin Flows](#5-admin-flows)
-6. [Shared Features](#6-shared-features)
+This document illustrates the logical flow, data architecture, and interaction models of the TechCare application.
 
----
+## 1. High-Level Architecture
 
-## 1. System Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           FRONTEND (React + Vite)                           │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────────────────┐│
-│  │   Pages     │ │ Components  │ │  Context    │ │    Utils/Services       ││
-│  │ (40 pages)  │ │ (53 comps)  │ │ (5 ctx)     │ │ (realtime, currency)    ││
-│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────────────────┘│
-└────────────────────────────────────┬────────────────────────────────────────┘
-                                     │ HTTP/WebSocket
-┌────────────────────────────────────▼────────────────────────────────────────┐
-│                        BACKEND (Express.js on Vercel)                        │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────────────────┐│
-│  │   Routes    │ │ Middleware  │ │    Lib      │ │       Models            ││
-│  │ (16 routes) │ │ (auth,cors) │ │ (supabase)  │ │    (11 models)          ││
-│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────────────────┘│
-└────────────────────────────────────┬────────────────────────────────────────┘
-                                     │ PostgreSQL
-┌────────────────────────────────────▼────────────────────────────────────────┐
-│                         DATABASE (Supabase)                                  │
-│  Tables: profiles, customers, technicians, bookings, bids, payments,         │
-│          reviews, notifications, gigs, services, favorites, loyalty_*        │
-│  Features: Auth, Realtime, Storage, RLS Policies                            │
-└─────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    Client[React Frontend] --> |Auth/JSON| API[Express Backend]
+    Client --> |Real-time| Supabase[Supabase DB / Realtime]
+    API --> |Admin Override| Supabase
+    API --> |Process| Stripe[Stripe API]
+    API --> |Data| GS[Google Sheets Fallback]
+    Supabase --> |Auth| Auth[Supabase Auth]
 ```
 
 ---
 
-## 2. User Roles Overview
+## 2. Core Logic Flows
 
-| Role | Access Level | Dashboard | Key Features |
-|------|-------------|-----------|--------------|
-| **Guest** | Public | None | Browse, Diagnostics, View Technicians |
-| **Customer (user)** | Authenticated | CustomerDashboard | Book repairs, Track, Review, Favorites, Loyalty |
-| **Technician** | Authenticated | TechnicianDashboard | Manage jobs, Bids, Gigs, Earnings, Profile |
-| **Admin** | Authenticated | Admin | Full CRUD, Verify techs, Approve gigs, Stats |
+### A. The Booking Lifecycle (Customer -> Technician)
+1.  **Request**: Customer fills `QuickBookingForm` or `Schedule.jsx`.
+2.  **Payment**: System creates a `pending_payment` booking and redirects to Stripe.
+3.  **Confirmation**: On success, status changes to `pending` (for auto-assign) or `confirmed` (if tech selected).
+4.  **Marketplace**: If no tech selected, booking appears in Technician "Available Jobs".
+5.  **Bidding**: Techs submit `bids`. Customer accepts bid -> Status changes to `scheduled`.
+6.  **Fulfillment**: Tech updates status: `pickup` -> `diagnosis` -> `repairing` -> `testing` -> `completed`.
+7.  **Closure**: Status `completed` triggers invoice generation and allows Review entry.
 
----
-
-## 3. Customer Flows
-
-### 3.1 Registration Flow
-```
-[Landing Page] → [Register Button]
-       ↓
-┌──────────────────┐
-│  Register Form   │
-│  - Name          │
-│  - Email         │
-│  - Password      │
-│  - Role: user    │
-└────────┬─────────┘
-         ↓
-┌──────────────────┐     ┌──────────────────┐
-│ Supabase Auth    │────→│ Create Profile   │
-│ Create User      │     │ Create Customer  │
-└────────┬─────────┘     └────────┬─────────┘
-         ↓                        ↓
-    [Login Page] ←───── [Success Message]
-```
-
-### 3.2 Booking a Repair (Complete Flow)
-```
-[Home/Mobile Repair/PC Repair]
-         ↓
-┌──────────────────────────────────────────────────────┐
-│  Step 1: Browse Technicians                          │
-│  - View technician cards with ratings                │
-│  - Filter by location, service type                  │
-│  - See real-time availability                        │
-└────────────────────────┬─────────────────────────────┘
-                         ↓
-┌──────────────────────────────────────────────────────┐
-│  Step 2: Select Service & Technician                 │
-│  - Choose repair type (screen, battery, etc.)        │
-│  - Select technician OR "Find Best Match"            │
-└────────────────────────┬─────────────────────────────┘
-                         ↓
-┌──────────────────────────────────────────────────────┐
-│  Step 3: Schedule Page (/schedule)                   │
-│  - Device details (brand, model, type)               │
-│  - Issue description                                 │
-│  - Preferred date/time                               │
-│  - Address/location                                  │
-└────────────────────────┬─────────────────────────────┘
-                         ↓
-┌──────────────────────────────────────────────────────┐
-│  Step 4: Payment (/payment)                          │
-│  - View cost breakdown                               │
-│  - Stripe payment (platform fee)                     │
-│  - Apply loyalty reward codes                        │
-└────────────────────────┬─────────────────────────────┘
-                         ↓
-┌──────────────────────────────────────────────────────┐
-│  Step 5: Booking Created (status: pending)           │
-│  - Booking saved to DB                               │
-│  - Notification sent to customer                     │
-│  - Available to technicians                          │
-└────────────────────────┬─────────────────────────────┘
-                         ↓
-              [Customer Dashboard]
-              [Track via /tracker/:id]
-```
-
-### 3.3 Bid Selection Flow
-```
-[Customer Dashboard - View Bids]
-         ↓
-┌────────────────────────────────┐
-│  Multiple Technicians Bid:     │
-│  - Technician A: Rs. 5000      │
-│  - Technician B: Rs. 4500      │
-│  - Technician C: Rs. 5500      │
-└──────────────┬─────────────────┘
-               ↓
-┌────────────────────────────────┐
-│  Customer Selects Bid          │
-│  - Accept Technician B         │
-└──────────────┬─────────────────┘
-               ↓
-┌────────────────────────────────┐
-│  System Actions:               │
-│  1. Selected bid → "accepted"  │
-│  2. Other bids → "rejected"    │
-│  3. Booking → "confirmed"      │
-│  4. Technician notified        │
-└──────────────┬─────────────────┘
-               ↓
-        [Booking Confirmed]
-```
-
-### 3.4 Review Submission Flow
-```
-[Completed Booking]
-         ↓
-┌────────────────────────────────┐
-│  Submit Review:                │
-│  - Star rating (1-5)           │
-│  - Written comment             │
-│  - Service quality             │
-│  - Communication rating        │
-└──────────────┬─────────────────┘
-               ↓
-┌────────────────────────────────┐
-│  System Updates:               │
-│  1. Review saved               │
-│  2. Technician rating updated  │
-│  3. Technician notified        │
-│  4. Loyalty points awarded     │
-└────────────────────────────────┘
-```
+### B. Real-time Synchronization Flow
+1.  Frontend component mounts and calls `realtimeService.subscribeToX()`.
+2.  `RealtimeService` creates (or joins) a Supabase Broadcast Channel.
+3.  Database mutation occurs (via Backend API or SQL Trigger).
+4.  Supabase emits a `postgres_changes` event.
+5.  `RealtimeService` catches event and executes all registered component callbacks.
+6.  Component calls `fetchData()` or updates state in-place.
 
 ---
 
-## 4. Technician Flows
+## 3. Detailed Data Schemas (Supabase)
 
-### 4.1 Technician Dashboard Overview
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    TECHNICIAN DASHBOARD                         │
-├─────────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐              │
-│  │ Profile     │  │ Stats       │  │ Earnings    │              │
-│  │ - Shop name │  │ - Rating    │  │ - Today     │              │
-│  │ - Status    │  │ - Jobs done │  │ - Weekly    │              │
-│  │ - Verified  │  │ - Active    │  │ - Pending   │              │
-│  └─────────────┘  └─────────────┘  └─────────────┘              │
-├─────────────────────────────────────────────────────────────────┤
-│  TABS:                                                          │
-│  [Active Jobs] [Available Jobs] [Bids] [Gigs] [Reviews] [More]  │
-├─────────────────────────────────────────────────────────────────┤
-│  Active Jobs:          │  Available Jobs:                       │
-│  - In-progress work    │  - Open bookings                       │
-│  - Accept/Complete     │  - Submit bids                         │
-├────────────────────────┴────────────────────────────────────────┤
-│  Gigs (Services):      │  Reviews:                              │
-│  - Create custom gigs  │  - View customer feedback              │
-│  - Pending approval    │  - Rating breakdown                    │
-└─────────────────────────────────────────────────────────────────┘
-```
+### `bookings` Table
+| Column | Type | Purpose |
+|--------|------|---------|
+| `id` | UUID (PK) | Unique ID |
+| `customer_id` | UUID (FK) | Link to `customers.id` |
+| `technician_id`| UUID (FK)| Link to `technicians.id` (Nullable) |
+| `status` | Text | `pending`, `confirmed`, `in_progress`, `completed`, `cancelled` |
+| `device_type` | Text | `smartphone`, `laptop`, `pc` |
+| `issue_description`| Text | User entered details |
+| `estimated_cost`| Numeric | Total price in LKR |
+| `scheduled_date` | Timestamp | Appointment time |
 
-### 4.2 Job Acceptance Flow
-```
-[Available Jobs List]
-         ↓
-┌────────────────────────────────┐
-│  View Job Details:             │
-│  - Device: iPhone 14           │
-│  - Issue: Screen cracked       │
-│  - Location: Colombo           │
-│  - Customer: John D.           │
-│  [Accept Job] [Submit Bid]     │
-└──────────────┬─────────────────┘
-               ↓
-      ┌────────┴────────┐
-      ▼                 ▼
-[Direct Accept]    [Submit Bid]
-      │                 │
-      ▼                 ▼
-┌────────────┐   ┌────────────────┐
-│ Booking:   │   │ Bid Created:   │
-│ confirmed  │   │ - Amount       │
-│ Tech: You  │   │ - Message      │
-└─────┬──────┘   │ - Est. time    │
-      │          └───────┬────────┘
-      ▼                  ▼
-[Customer Notified] [Customer Notified]
-```
-
-### 4.3 Gig Creation Flow
-```
-[Technician Dashboard - Create Gig]
-         ↓
-┌────────────────────────────────┐
-│  Gig Details:                  │
-│  - Title: "iPhone Screen Fix"  │
-│  - Description                 │
-│  - Price: Rs. 5000             │
-│  - Category: Mobile Repair     │
-│  - Duration: 1 hour            │
-└──────────────┬─────────────────┘
-               ↓
-┌────────────────────────────────┐
-│  Status: pending               │
-│  → Sent to Admin for approval  │
-└──────────────┬─────────────────┘
-               ↓
-      ┌────────┴────────┐
-      ▼                 ▼
-[Admin Approves]   [Admin Rejects]
-      │                 │
-      ▼                 ▼
-  Status:          Status:
-  approved         rejected
-  (visible)        (+ feedback)
-```
+### `notifications` Table
+| Column | Type | Purpose |
+|--------|------|---------|
+| `user_id` | UUID (FK) | Recipient ID |
+| `type` | Text | `booking_update`, `new_bid`, `payment_success` |
+| `title` | Text | Display title |
+| `message` | Text | Body content |
+| `read` | Boolean | Read status |
 
 ---
 
-## 5. Admin Flows
+## 4. API Endpoint Map (100% Coverage)
 
-### 5.1 Admin Dashboard Overview
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                       ADMIN DASHBOARD                           │
-├─────────────────────────────────────────────────────────────────┤
-│  Stats Cards:                                                   │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐           │
-│  │ Users    │ │ Techs    │ │ Bookings │ │ Revenue  │           │
-│  │ 150      │ │ 45       │ │ 320      │ │ Rs 2.5M  │           │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────┘           │
-├─────────────────────────────────────────────────────────────────┤
-│  SECTIONS:                                                      │
-│  [Dashboard] [Users] [Technicians] [Bookings] [Reviews]         │
-│  [Services] [Transactions] [Settings]                           │
-├─────────────────────────────────────────────────────────────────┤
-│  Management Actions:                                            │
-│  - CRUD Users/Technicians                                       │
-│  - Verify/Unverify Technicians                                  │
-│  - Approve/Reject Gigs                                          │
-│  - Update Booking Status                                        │
-│  - Delete Reviews                                               │
-│  - Manage Services                                              │
-└─────────────────────────────────────────────────────────────────┘
-```
+### Admin Operations (`/api/admin`)
+- `GET /stats`: Aggregate data for charts.
+- `GET /users`: List all authenticated users.
+- `PATCH /technicians/:id/verify`: Approve/Reject tech applications.
+- `PUT /services/:id`: Update master price list.
 
-### 5.2 Technician Verification Flow
-```
-[Admin Dashboard - Technicians]
-         ↓
-┌────────────────────────────────┐
-│  Technician List:              │
-│  - Name, Email, Status         │
-│  - Rating, Jobs completed      │
-│  - Verified badge (or not)     │
-└──────────────┬─────────────────┘
-               ↓
-┌────────────────────────────────┐
-│  [Verify Technician] clicked   │
-└──────────────┬─────────────────┘
-               ↓
-┌────────────────────────────────┐
-│  System Actions:               │
-│  1. is_verified = true         │
-│  2. Notification sent to tech  │
-│  3. Verified badge appears     │
-│  4. Higher visibility          │
-└────────────────────────────────┘
-```
+### Technician Hub (`/api/technicians`)
+- `GET /dashboard`: Complex fetch: Profile + Stats + Gigs + Active Jobs.
+- `GET /jobs`: Marketplace fetch - excludes jobs where tech has active bid.
+- `POST /bids`: Create interest in a job.
+- `PUT /profile`: Update shop details & availability.
+- `POST /withdraw`: Payout request.
+
+### Customer Hub (`/api/customers`)
+- `GET /me/bookings`: User specific history.
+- `POST /favorites`: Link tech to user.
+- `DELETE /me`: full GDPR account deletion.
 
 ---
 
-## 6. Shared Features
-
-### 6.1 Authentication Flow
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    AUTHENTICATION FLOW                          │
-└─────────────────────────────────────────────────────────────────┘
-
-[Login Page]
-     ↓
-┌────────────────┐
-│ Enter Email    │
-│ Enter Password │
-└───────┬────────┘
-        ↓
-┌────────────────────────┐
-│ Supabase Auth          │
-│ signInWithPassword()   │
-└───────────┬────────────┘
-            ↓
-┌────────────────────────┐
-│ Fetch Profile          │
-│ from profiles table    │
-└───────────┬────────────┘
-            ↓
-    ┌───────┴───────┬────────────────┐
-    ▼               ▼                ▼
-role=user     role=technician    role=admin
-    │               │                │
-    ▼               ▼                ▼
-/customer-    /technician-       /admin
- dashboard     dashboard
-```
-
-### 6.2 Real-Time Data Sync
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                 SUPABASE REALTIME SUBSCRIPTIONS                 │
-└─────────────────────────────────────────────────────────────────┘
-
-Component               │ Subscribed Tables
-────────────────────────┼──────────────────────────────
-CustomerDashboard       │ bookings, technicians
-TechnicianDashboard     │ technicians, bookings, bids, reviews, gigs
-Admin                   │ profiles, customers, technicians, bookings, 
-                        │ reviews, gigs, services
-MobileRepair            │ technicians
-Technicians             │ technicians
-BookingTracker          │ bookings (filtered by ID)
-QuickBookingForm        │ technicians
-
-Event Types: INSERT, UPDATE, DELETE
-→ Triggers immediate UI refresh
-→ Fallback: Polling every 60-120 seconds
-```
-
-### 6.3 Payment Flow
-```
-[Payment Page]
-     ↓
-┌─────────────────────────┐
-│ Create PaymentIntent    │
-│ POST /api/payment/      │
-│ create-payment-intent   │
-└───────────┬─────────────┘
-            ↓
-┌─────────────────────────┐
-│ Stripe Elements         │
-│ Card input form         │
-└───────────┬─────────────┘
-            ↓
-┌─────────────────────────┐
-│ Confirm Payment         │
-│ stripe.confirmPayment() │
-└───────────┬─────────────┘
-            ↓
-┌─────────────────────────┐
-│ POST /api/payment/      │
-│ confirm-payment         │
-│ - Save to payments DB   │
-│ - Update booking status │
-└───────────┬─────────────┘
-            ↓
-[Payment Success Page]
-→ Redirect to Dashboard
-```
-
-### 6.4 Notification System
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                   NOTIFICATION TRIGGERS                         │
-└─────────────────────────────────────────────────────────────────┘
-
-Action                      │ Recipient        │ Type
-────────────────────────────┼──────────────────┼────────────────
-Customer creates booking    │ Customer         │ booking_created
-Customer cancels booking    │ Technician       │ booking_cancelled
-Customer selects bid        │ Technician       │ bid_accepted
-Customer submits review     │ Technician       │ review_received
-Technician accepts job      │ Customer         │ booking_accepted
-Technician completes job    │ Customer         │ booking_completed
-Technician submits bid      │ Customer         │ new_bid
-Admin verifies technician   │ Technician       │ account_verified
-Admin updates booking       │ Customer + Tech  │ booking_status_change
-
-Storage: notifications table
-Delivery: Real-time via Supabase subscriptions
-```
-
----
-
-## 7. Database Schema Overview
-
-```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│    profiles     │     │   customers     │     │   technicians   │
-├─────────────────┤     ├─────────────────┤     ├─────────────────┤
-│ id (PK)         │←───→│ user_id (FK)    │     │ user_id (FK)    │
-│ email           │     │ id (PK)         │     │ id (PK)         │
-│ name            │     │ name            │     │ name            │
-│ role            │     │ email           │     │ rating          │
-│ phone           │     │ phone           │     │ is_verified     │
-└─────────────────┘     └────────┬────────┘     │ specializations │
-                                 │              └────────┬────────┘
-                                 ▼                       ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                           bookings                               │
-├─────────────────────────────────────────────────────────────────┤
-│ id (PK) │ customer_id (FK) │ technician_id (FK) │ status        │
-│ device_type │ device_brand │ issue_description │ price          │
-│ scheduled_date │ payment_status │ created_at                    │
-└───────────────────────────────┬─────────────────────────────────┘
-                                │
-        ┌───────────────────────┼───────────────────────┐
-        ▼                       ▼                       ▼
-┌───────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│     bids      │     │    reviews      │     │    payments     │
-├───────────────┤     ├─────────────────┤     ├─────────────────┤
-│ booking_id    │     │ booking_id      │     │ booking_id      │
-│ technician_id │     │ customer_id     │     │ customer_id     │
-│ amount        │     │ technician_id   │     │ amount          │
-│ status        │     │ rating          │     │ status          │
-└───────────────┘     └─────────────────┘     └─────────────────┘
-```
-
----
-
-## 8. API Routes Summary
-
-| Route Prefix | File | Key Endpoints |
-|-------------|------|---------------|
-| `/api/auth` | auth.js | POST /register |
-| `/api/technicians` | technicians.js | GET /all, /nearby, /dashboard, POST /bids |
-| `/api/customers` | customers.js | GET /dashboard, /bookings, /favorites |
-| `/api/bookings` | bookings.js | POST /, GET /:id, POST /:id/select-bid |
-| `/api/payment` | payment.js | POST /create-payment-intent, /confirm |
-| `/api/admin` | admin.js | All CRUD for users, technicians, bookings |
-| `/api/reviews` | reviews.js | GET /, POST /, PATCH /:id |
-| `/api/notifications` | notifications.js | GET /, PATCH /:id/read |
-| `/api/loyalty` | loyalty.js | GET /account, POST /redeem |
-| `/api/services` | services.js | GET /, POST / |
-| `/api/gigs` | gigs.js | GET /approved, POST /:id/bid |
-
----
-
-*Document generated for TechCare Application v1.0*
+## 5. Security & Permission Flow (RLS)
+- **Public**: Can Read `technicians`, `services`, `reviews`.
+- **Authenticated**: Can Read `profiles` (Self), `notifications` (Self).
+- **Customer**: Can CRUD `user_devices` (Self), Create `bookings`, CRUD `favorites` (Self).
+- **Technician**: Can Read `bookings` (Assigned), Create `bids`, CRUD `gigs` (Self).
+- **Admin**: All access via `service_role` key in backend.

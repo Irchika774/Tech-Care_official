@@ -70,7 +70,6 @@ const MobileRepair = () => {
             const { data: techData, error } = await supabase
                 .from('technicians')
                 .select('*')
-                .eq('status', 'active')
                 .order('rating', { ascending: false });
 
             if (error) {

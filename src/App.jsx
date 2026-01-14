@@ -139,6 +139,15 @@ function App() {
                         <Route path="/diagnostics" element={<Diagnostics />} />
                         <Route path="/service-areas" element={<ServiceAreas />} />
 
+                        <Route
+                          path="/profile"
+                          element={
+                            <ProtectedRoute allowedRoles={['user', 'technician', 'admin']} >
+                              <Profile />
+                            </ProtectedRoute>
+                          }
+                        />
+
 
 
                         {/* Dashboards - Role-Based Access */}

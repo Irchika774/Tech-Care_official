@@ -12,11 +12,12 @@ const Diagnostics = () => {
     const navigate = useNavigate();
 
     const handleDiagnosisComplete = (diagnosis) => {
-        navigate('/booking', {
+        navigate('/schedule', {
             state: {
                 diagnosis: diagnosis,
                 estimatedCost: diagnosis.totalCost,
-                issue: diagnosis.primary.issue
+                service: diagnosis.primary.issue,
+                deviceType: diagnosis.deviceType // Pass device type if available
             }
         });
     };
