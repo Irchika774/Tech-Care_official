@@ -30,7 +30,7 @@ export function validateEnv() {
         console.error('❌ Missing required environment variables:');
         missing.forEach(v => console.error(`   - ${v}`));
         console.error('\nPlease configure these in your .env file');
-        process.exit(1);
+        // process.exit(1); // Don't crash in production to avoid CORS errors masking the issue
     }
 
     if (warnings.length > 0) {
