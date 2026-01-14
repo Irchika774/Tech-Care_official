@@ -45,6 +45,16 @@ const Schedule = () => {
   const [deviceType, setDeviceType] = useState(initialData.service === 'PC Repair' ? 'pc' : 'smartphone');
   const [showFlowError, setShowFlowError] = useState(false);
 
+  const [deviceBrand, setDeviceBrand] = useState('');
+  const [deviceModel, setDeviceModel] = useState('');
+  const [repairService, setRepairService] = useState('general');
+  const [issueDescription, setIssueDescription] = useState(initialData.service || '');
+  const [technician, setTechnician] = useState(initialData.technician?.id || initialData.technician?._id || 'pending');
+  const [date, setDate] = useState(new Date());
+  const [timeSlot, setTimeSlot] = useState('09:00 AM');
+  const [techniciansList, setTechnicians] = useState([]);
+  const [loading, setLoading] = useState(false);
+
   useEffect(() => {
     // If coming back from payment success, we skip to Step 2
     if (initialData.paymentConfirmed) {
@@ -58,15 +68,6 @@ const Schedule = () => {
       navigate('/services', { replace: true });
     }
   }, [initialData, navigate, step, deviceBrand]);
-  const [deviceBrand, setDeviceBrand] = useState('');
-  const [deviceModel, setDeviceModel] = useState('');
-  const [repairService, setRepairService] = useState('general');
-  const [issueDescription, setIssueDescription] = useState(initialData.service || '');
-  const [technician, setTechnician] = useState(initialData.technician?.id || initialData.technician?._id || 'pending');
-  const [date, setDate] = useState(new Date());
-  const [timeSlot, setTimeSlot] = useState('09:00 AM');
-  const [techniciansList, setTechnicians] = useState([]);
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     // If a technician was passed in state, make sure they are in the list or handled
@@ -295,13 +296,13 @@ const Schedule = () => {
               <div key={s.num} className="flex items-center flex-1">
                 <div className="flex flex-col items-center">
                   <div className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all ${(initialData.paymentConfirmed && s.num === 3) || (!initialData.paymentConfirmed && step >= s.num)
-                      ? 'bg-white border-white text-black'
-                      : 'border-zinc-700 text-zinc-500 bg-zinc-900'
+                    ? 'bg-white border-white text-black'
+                    : 'border-zinc-700 text-zinc-500 bg-zinc-900'
                     }`}>
                     {(initialData.paymentConfirmed && s.num < 3) ? <CheckCircle2 className="h-6 w-6" /> : s.num}
                   </div>
                   <span className={`text-sm mt-2 ${(initialData.paymentConfirmed && s.num === 3) || (!initialData.paymentConfirmed && step >= s.num)
-                      ? 'text-white font-semibold' : 'text-zinc-500'}`}>
+                    ? 'text-white font-semibold' : 'text-zinc-500'}`}>
                     {s.label}
                   </span>
                 </div>
