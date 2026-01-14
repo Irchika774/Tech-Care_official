@@ -47,8 +47,28 @@ const PORT = process.env.PORT || 5000;
 // Connect to MongoDB
 // Global Middleware
 // Global Middleware
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Explicitly handle OPTIONS requests
+// Global Middleware
+// Manual CORS Middleware to fix persistent issues
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    // Allow all origins that look like our frontends, or localhost
+    // For debugging: Allow ALL origins if they are defined
+    if (origin) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+    }
+
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+    }
+    next();
+});
+
+// app.use(cors(corsOptions)); // Disabled for manual handling
+// app.options('*', cors(corsOptions)); 
 app.use(securityHeaders);
 app.use(permissionsPolicy);
 app.use(express.json({ limit: '10mb' }));

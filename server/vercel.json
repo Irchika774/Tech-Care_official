@@ -9,15 +9,7 @@
     "env": {
         "NODE_ENV": "production"
     },
-    "headers": [
-        {
-            "source": "/(.*)",
-            "headers": [
-                {
-                    "key": "Permissions-Policy",
-                    "value": "geolocation=(), microphone=(), camera=(), payment=(), usb=()"
-                }
-            ]
-        }
-    ]
+    "env": {
+        "NODE_ENV": "production"
+    }
 }
