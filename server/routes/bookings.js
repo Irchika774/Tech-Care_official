@@ -292,16 +292,13 @@ router.post('/:id/review', supabaseAuth, async (req, res) => {
                     }]);
                 }
             }
-
-
         }
-    }
 
         res.status(201).json({ review, message: 'Review submitted successfully' });
-} catch (error) {
-    console.error('Review submission error:', error);
-    res.status(500).json({ error: 'Failed to submit review' });
-}
+    } catch (error) {
+        console.error('Review submission error:', error);
+        res.status(500).json({ error: 'Failed to submit review' });
+    }
 });
 
 export default router;
