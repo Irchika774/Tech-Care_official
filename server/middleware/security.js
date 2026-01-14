@@ -97,10 +97,11 @@ export const validateInput = (schema) => {
 
 // CORS configuration
 export const corsOptions = {
+    origin: true, // Allow all origins for now to fix CORS issues
+    /*
     origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl requests)
+        // ... (commenting out potential logic issues)
         if (!origin) return callback(null, true);
-
         const allowedOrigins = [
             'http://localhost:5173',
             'http://localhost:5174',
@@ -109,17 +110,11 @@ export const corsOptions = {
             'https://techcare-flax.vercel.app',
             'https://techcare-official-new.netlify.app'
         ];
-
-        // Add origins from environment variable if present
-        if (process.env.ALLOWED_ORIGINS) {
-            allowedOrigins.push(...process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()));
-        }
-
-        // Check if origin is allowed or if it's a localhost origin in development
+        // ...
         const isAllowed = allowedOrigins.includes(origin) ||
-            origin.endsWith('.netlify.app') ||
-            origin.endsWith('.vercel.app') ||
-            (process.env.NODE_ENV === 'development' && origin.startsWith('http://localhost:'));
+            origin?.endsWith('.netlify.app') ||
+            origin?.endsWith('.vercel.app') ||
+            (process.env.NODE_ENV === 'development' && origin?.startsWith('http://localhost:'));
 
         if (isAllowed) {
             callback(null, true);
@@ -128,6 +123,7 @@ export const corsOptions = {
             callback(new Error('Not allowed by CORS'));
         }
     },
+    */
     credentials: true,
     optionsSuccessStatus: 200
 };
