@@ -117,6 +117,8 @@ export const corsOptions = {
 
         // Check if origin is allowed or if it's a localhost origin in development
         const isAllowed = allowedOrigins.includes(origin) ||
+            origin.endsWith('.netlify.app') ||
+            origin.endsWith('.vercel.app') ||
             (process.env.NODE_ENV === 'development' && origin.startsWith('http://localhost:'));
 
         if (isAllowed) {

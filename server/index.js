@@ -46,9 +46,10 @@ const PORT = process.env.PORT || 5000;
 
 // Connect to MongoDB
 // Global Middleware
+// Global Middleware
+app.use(cors(corsOptions));
 app.use(securityHeaders);
 app.use(permissionsPolicy);
-app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(requestLogger);
 
