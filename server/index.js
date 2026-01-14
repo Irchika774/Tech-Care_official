@@ -46,29 +46,38 @@ const PORT = process.env.PORT || 5000;
 
 // Connect to MongoDB
 // Global Middleware
-// Global Middleware
-// Global Middleware
-// Manual CORS Middleware to fix persistent issues
-app.use((req, res, next) => {
-    const origin = req.headers.origin;
-    // Allow all origins that look like our frontends, or localhost
-    // For debugging: Allow ALL origins if they are defined
-    if (origin) {
-        res.setHeader('Access-Control-Allow-Origin', origin);
-    }
+app.use(cors({
+    origin: function (origin, callback) {
+        // Allow all origins for now to fix CORS issues, or a specific whitelist
+        if (!origin) return callback(null, true);
+        const allowedOrigins = [
+            'http://localhost:5173',
+            'http://localhost:5174',
+            'http://localhost:3000',
+            'https://techcareofficial.netlify.app',
+            'https://techcare-flax.vercel.app',
+            'https://techcare-official-new.netlify.app'
+        ];
+        const isAllowed = allowedOrigins.includes(origin) ||
+            origin?.endsWith('.netlify.app') ||
+            origin?.endsWith('.vercel.app') ||
+            origin?.includes('localhost');
 
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
+        if (isAllowed) {
+            callback(null, true);
+        } else {
+            console.warn(`Blocked request from origin: ${origin}`);
+            callback(null, true); // Still allow during debugging, or change to callback(new Error('Not allowed by CORS')) for strict mode
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+    optionsSuccessStatus: 200
+}));
 
-    if (req.method === 'OPTIONS') {
-        return res.sendStatus(200);
-    }
-    next();
-});
+app.options('*', cors()); // Enable pre-flight for all routes
 
-// app.use(cors(corsOptions)); // Disabled for manual handling
-// app.options('*', cors(corsOptions)); 
 app.use(securityHeaders);
 app.use(permissionsPolicy);
 app.use(express.json({ limit: '10mb' }));
