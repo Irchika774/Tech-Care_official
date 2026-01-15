@@ -2552,10 +2552,15 @@
               });
             }
 
-            gsap.set(section.querySelectorAll(".border-left"), { height: 0 });
-            gsap.set(section.querySelectorAll(".border-right"), {
-              height: 0,
-            });
+            const borderLeftSet = section.querySelectorAll(".border-left");
+            if (borderLeftSet.length > 0) {
+              gsap.set(borderLeftSet, { height: 0 });
+            }
+
+            const borderRightSet = section.querySelectorAll(".border-right");
+            if (borderRightSet.length > 0) {
+              gsap.set(borderRightSet, { height: 0 });
+            }
 
             tl.to(section.querySelectorAll(".card .card_content"), {
               opacity: 1,
