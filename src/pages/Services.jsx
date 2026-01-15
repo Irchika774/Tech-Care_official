@@ -69,7 +69,7 @@ const Services = () => {
                 'Touch screen calibration',
                 'Hardware upgrades'
             ],
-            link: '/mobile-repair'
+            link: '/tablet-repair'
         },
         {
             id: 4,

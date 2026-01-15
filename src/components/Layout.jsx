@@ -8,7 +8,7 @@ const Layout = ({ children }) => {
     const isHomePage = location.pathname === '/';
     const normalizedPath = location.pathname.toLowerCase().replace(/\/$/, '') || '/';
     const darkRoutes = [
-        '/mobile-repair', '/pc-repair', '/company', '/services', '/schedule',
+        '/mobile-repair', '/pc-repair', '/tablet-repair', '/company', '/services', '/schedule',
         '/technicians', '/support', '/login', '/register', '/customer-dashboard',
         '/technician-dashboard', '/admin', '/bidding', '/account', '/settings',
         '/history', '/favorites', '/compare', '/payment', '/payment-success',

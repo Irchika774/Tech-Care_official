@@ -21,6 +21,7 @@ const PaymentSuccess = lazy(() => import('./pages/PaymentSuccess'));
 const Admin = lazy(() => import('./pages/Admin'));
 const PCRepair = lazy(() => import('./pages/PCRepair'));
 const MobileRepair = lazy(() => import('./pages/MobileRepair'));
+const TabletRepair = lazy(() => import('./pages/TabletRepair'));
 const Profile = lazy(() => import('./pages/Profile'));
 const History = lazy(() => import('./pages/History'));
 const Favorites = lazy(() => import('./pages/Favorites'));
@@ -68,8 +69,9 @@ function App() {
                       <Routes>
                         {/* Public Routes */}
                         <Route path="/" element={<Home />} />
-                        <Route path="/pc-repair" element={<PCRepair />} />
-                        <Route path="/mobile-repair" element={<MobileRepair />} />
+<Route path="/pc-repair" element={<PCRepair />} />
+                          <Route path="/mobile-repair" element={<MobileRepair />} />
+                          <Route path="/tablet-repair" element={<TabletRepair />} />
                         <Route path="/reviews" element={<Reviews />} />
                         <Route path="/schedule" element={
                           <BookingGuard requiredContext="service">

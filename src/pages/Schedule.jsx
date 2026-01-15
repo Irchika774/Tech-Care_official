@@ -88,8 +88,10 @@ const Schedule = () => {
   useEffect(() => {
     // Restrict direct access only if no context is found
     const hasContext = initialData.service || initialData.technician || initialData.diagnosis || deviceBrand || issueDescription;
-    if (!hasContext && step === 1) {
-      navigate('/services', { replace: true });
+    const hasLocalStorageContext = localStorage.getItem('techcare_booking_deviceType') || 
+                                   localStorage.getItem('techcare_booking_description');
+    if (!hasContext && !hasLocalStorageContext && step === 1) {
+      navigate('/services');
     }
   }, [initialData, navigate, step, deviceBrand, issueDescription]);
 

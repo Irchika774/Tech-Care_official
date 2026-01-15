@@ -115,7 +115,7 @@ const Header = () => {
   const serviceItems = [
     { label: 'Mobile Repair', path: '/mobile-repair', icon: Smartphone },
     { label: 'PC Repair', path: '/pc-repair', icon: Laptop },
-    { label: 'Tablet Repair', path: '/services', icon: Tablet },
+    { label: 'Tablet Repair', path: '/tablet-repair', icon: Tablet },
     { label: 'All Services', path: '/services', icon: Wrench },
   ];
 

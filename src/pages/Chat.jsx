@@ -284,11 +284,11 @@ export default function Chat() {
                             />
                             <Button
                                 type="submit"
-                                size="icon"
                                 disabled={!recipient || !newMessage.trim()}
-                                className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed px-6"
                             >
-                                <Send className="h-4 w-4" />
+                                <Send className="h-4 w-4 mr-2" />
+                                Send
                             </Button>
                         </form>
                     </CardFooter>
