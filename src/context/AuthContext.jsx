@@ -190,7 +190,7 @@ export const AuthProvider = ({ children }) => {
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
             console.log('Auth event:', event);
-            if (isMounted) setSession(currentSession);
+            if (isMounted.current) setSession(currentSession);
 
             if (event === 'SIGNED_IN' && currentSession?.user) {
                 // Set user immediately for faster UI update
@@ -205,14 +205,18 @@ export const AuthProvider = ({ children }) => {
                 setUser(null);
                 setProfile(null);
                 setSession(null);
-            } else if ((event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED' || event === 'INITIAL_SESSION') && currentSession?.user) {
-                // Update session first so components get fresh token immediately
+                try { realtimeService.unsubscribeAll(); } catch (e) { console.error(e); }
+            } else if (event === 'TOKEN_REFRESHED' && currentSession?.user) {
+                // Update session first
                 if (isMounted.current) {
                     setSession(currentSession);
                 }
-                console.log('[AUTH] Token refreshed, session updated');
-                await loadUserProfile(currentSession.user);
+                console.log('[AUTH] Token refreshed');
+                // We typically don't need to reload profile on token refresh unless claims changed
+                // await loadUserProfile(currentSession.user); 
                 realtimeService.refreshAllConnections();
+            } else if (event === 'USER_UPDATED' && currentSession?.user) {
+                await loadUserProfile(currentSession.user);
             }
         });
 

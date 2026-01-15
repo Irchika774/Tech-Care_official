@@ -49,6 +49,7 @@ import SEO from '../components/SEO';
 import CurrencyDisplay from '../components/CurrencyDisplay';
 import EmptyState from '../components/EmptyState';
 import { QuickBookingForm } from '../components/QuickBookingForm';
+import LoyaltyPoints from '../components/LoyaltyPoints';
 import { format, formatDistanceToNow } from 'date-fns';
 import realtimeService from '../utils/realtimeService';
 
@@ -452,7 +453,9 @@ function CustomerDashboard() {
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <h1 className="text-3xl font-bold font-['Outfit']">Hello, {customer?.name?.split(' ')[0]}</h1>
-                  <Badge className="bg-white/10 text-white border-white/20">Pro Member</Badge>
+                  <div className="scale-90 origin-left">
+                    <LoyaltyPoints userId={user.id} compact={true} />
+                  </div>
                 </div>
                 <p className="text-zinc-400 flex items-center gap-2">
                   <User className="w-4 h-4" /> {customer?.email}
@@ -528,6 +531,9 @@ function CustomerDashboard() {
                 </TabsTrigger>
                 <TabsTrigger value="favorites" className="rounded-lg h-full px-6 data-[state=active]:bg-white data-[state=active]:text-black">
                   <Heart className="w-4 h-4 mr-2" /> Favorites
+                </TabsTrigger>
+                <TabsTrigger value="loyalty" className="rounded-lg h-full px-6 data-[state=active]:bg-white data-[state=active]:text-black">
+                  <Award className="w-4 h-4 mr-2" /> Loyalty Rewards
                 </TabsTrigger>
 
                 <TabsTrigger value="settings" className="rounded-lg h-full px-6 data-[state=active]:bg-white data-[state=active]:text-black">
@@ -691,6 +697,12 @@ function CustomerDashboard() {
                       </CardContent>
                     </Card>
                   </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="loyalty">
+                <div className="max-w-4xl mx-auto">
+                  <LoyaltyPoints userId={user.id} />
                 </div>
               </TabsContent>
 
