@@ -41,7 +41,8 @@ import {
   Shield,
   Bell,
   LogOut,
-  Edit3
+  Edit3,
+  Award
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
