@@ -12,6 +12,7 @@ import {
   Smartphone,
   Laptop,
   Monitor,
+  Tablet,
   Battery,
   Droplets,
   Wrench,
@@ -88,6 +89,13 @@ export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
 
   const platformFee = 500;
   const totalAmount = effectivePrice + platformFee;
+
+  const placeholders = {
+    smartphone: { brand: 'e.g. Apple', model: 'e.g. iPhone 15' },
+    laptop: { brand: 'e.g. Dell', model: 'e.g. XPS 13' },
+    tablet: { brand: 'e.g. Samsung', model: 'e.g. Galaxy Tab S9' },
+    pc: { brand: 'e.g. Custom Build', model: 'e.g. RTX 4090 Workstation' }
+  };
 
   useEffect(() => {
     const fetchTechs = async () => {
@@ -167,9 +175,10 @@ export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
     <div className="space-y-6">
       <div className="space-y-6">
         {/* Device Selection */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
             { value: 'smartphone', icon: Smartphone, label: 'Smartphone' },
+            { value: 'tablet', icon: Tablet, label: 'Tablet' },
             { value: 'laptop', icon: Laptop, label: 'Laptop' },
             { value: 'pc', icon: Monitor, label: 'Desktop PC' }
           ].map(({ value, icon: Icon, label }) => (
@@ -177,7 +186,12 @@ export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
               key={value}
               variant={deviceType === value ? 'default' : 'outline'}
               className={`h-24 flex flex-col gap-2 ${deviceType === value ? 'bg-white text-black' : 'border-zinc-800 bg-zinc-900/50 text-white'}`}
-              onClick={() => setDeviceType(value)}
+              onClick={() => {
+                setDeviceType(value);
+                // Clear previous inputs when switching generic types to trigger new placeholders visually if needed
+                // But keeping values might be better UX if they switch accidentally.
+                // Let's just switch the type.
+              }}
             >
               <Icon className="h-8 w-8" />
               <span>{label}</span>
@@ -193,7 +207,7 @@ export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
               value={deviceBrand}
               onChange={(e) => setDeviceBrand(e.target.value)}
               className="w-full bg-zinc-900 border-zinc-800 rounded-lg p-2.5 text-white"
-              placeholder="e.g. Apple"
+              placeholder={placeholders[deviceType]?.brand || 'e.g. Brand'}
             />
           </div>
           <div className="space-y-2">
@@ -203,7 +217,7 @@ export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
               value={deviceModel}
               onChange={(e) => setDeviceModel(e.target.value)}
               className="w-full bg-zinc-900 border-zinc-800 rounded-lg p-2.5 text-white"
-              placeholder="e.g. iPhone 15"
+              placeholder={placeholders[deviceType]?.model || 'e.g. Model'}
             />
           </div>
         </div>
