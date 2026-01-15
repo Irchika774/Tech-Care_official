@@ -148,12 +148,12 @@ const PaymentSuccessModal = ({ payment, booking, onClose }) => {
                     </div>
                 </div>
                 <button
-                    onClick={() => navigate('/schedule', { 
-                        state: { 
-                            paymentConfirmed: true, 
+                    onClick={() => navigate('/schedule', {
+                        state: {
+                            paymentConfirmed: true,
                             booking: booking,
                             service: booking.serviceType
-                        } 
+                        }
                     })}
                     className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
                 >
@@ -182,10 +182,26 @@ const Payment = () => {
 
     useEffect(() => {
         const initializePayment = async () => {
-            const booking = location.state?.booking;
+            // Try to get booking from location state first, then session storage
+            let booking = location.state?.booking;
+
+            if (booking) {
+                sessionStorage.setItem('current_booking_payment', JSON.stringify(booking));
+            } else {
+                const saved = sessionStorage.getItem('current_booking_payment');
+                if (saved) {
+                    try {
+                        booking = JSON.parse(saved);
+                    } catch (e) {
+                        console.error('Failed to parse saved booking', e);
+                    }
+                }
+            }
 
             if (!booking) {
-                console.error('No booking data found in state');
+                console.error('No booking data found in state or storage');
+                // clear storage to be safe
+                sessionStorage.removeItem('current_booking_payment');
                 navigate('/customer-dashboard', { replace: true });
                 return;
             }
