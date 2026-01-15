@@ -440,52 +440,67 @@ function CustomerDashboard() {
       {/* Hero Header */}
       <div className="relative border-b border-zinc-800 bg-zinc-900/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
+          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-8">
+            {/* User Profile Info */}
             <div className="flex items-center gap-6">
               <div className="relative">
-                <Avatar className="h-24 w-24 border-4 border-zinc-800 ring-2 ring-zinc-700 shadow-2xl">
+                <Avatar className="h-20 w-20 md:h-24 md:w-24 border-4 border-zinc-800 ring-2 ring-zinc-700 shadow-2xl">
                   <AvatarImage src={customer?.profileImage} />
                   <AvatarFallback className="bg-zinc-800 text-3xl font-bold">
                     {customer?.name?.charAt(0) || 'U'}
                   </AvatarFallback>
                 </Avatar>
-                <div className="absolute -bottom-1 -right-1 bg-green-500 w-6 h-6 rounded-full border-4 border-black" />
+                <div className="absolute -bottom-1 -right-1 bg-green-500 w-5 h-5 md:w-6 md:h-6 rounded-full border-4 border-black" />
               </div>
               <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <h1 className="text-3xl font-bold font-['Outfit']">Hello, {customer?.name?.split(' ')[0]}</h1>
-                  <div className="scale-90 origin-left">
-                    <LoyaltyPoints userId={user.id} compact={true} />
-                  </div>
-                </div>
-                <p className="text-zinc-400 flex items-center gap-2">
+                <h1 className="text-2xl md:text-3xl font-bold font-['Outfit'] mb-1">
+                  Hello, {customer?.name?.split(' ')[0]}
+                </h1>
+                <p className="text-zinc-400 flex items-center gap-2 text-sm md:text-base">
                   <User className="w-4 h-4" /> {customer?.email}
                 </p>
+                {/* Mobile Loyalty Badge (visible only on small screens) */}
+                <div className="mt-3 md:hidden">
+                  <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/50">
+                    Rewards Member
+                  </Badge>
+                </div>
               </div>
             </div>
-            <div className="flex flex-wrap gap-3">
+
+            {/* Loyalty Status Card (Desktop) */}
+            <div className="hidden md:flex flex-1 justify-center max-w-sm mx-auto xl:mx-0">
+              <div className="w-full transform transition-all hover:scale-105 duration-300">
+                <LoyaltyPoints userId={user.id} compact={true} />
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-wrap md:flex-nowrap gap-3 items-center justify-start xl:justify-end">
               <Button
                 onClick={() => setActiveTab('schedule')}
-                className="bg-white text-black hover:bg-gray-100 font-bold px-8 rounded-full h-12 shadow-lg hover:scale-105 transition-all"
+                className="bg-white text-black hover:bg-gray-100 font-bold px-6 md:px-8 rounded-full h-12 shadow-lg hover:scale-105 transition-all text-sm md:text-base whitespace-nowrap"
               >
                 Book Now
-                <Plus className="ml-2 w-5 h-5" />
+                <Plus className="ml-2 w-4 h-4 md:w-5 md:h-5" />
               </Button>
-              <Button
-                variant="outline"
-                onClick={() => navigate('/chat')}
-                className="border-zinc-800 text-white hover:bg-zinc-900 rounded-full h-12"
-              >
-                <MessageSquare className="w-5 h-5 mr-2" />
-                Messages
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => navigate('/support')}
-                className="border-zinc-800 text-white hover:bg-zinc-900 rounded-full h-12"
-              >
-                Get Support
-              </Button>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => navigate('/chat')}
+                  className="border-zinc-800 text-white hover:bg-zinc-900 rounded-full h-12 px-6"
+                >
+                  <MessageSquare className="w-4 h-4 md:w-5 md:h-5 mr-2" />
+                  Messages
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate('/support')}
+                  className="border-zinc-800 text-white hover:bg-zinc-900 rounded-full h-12 px-6"
+                >
+                  Support
+                </Button>
+              </div>
             </div>
           </div>
         </div>
