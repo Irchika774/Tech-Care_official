@@ -12,42 +12,62 @@ import ErrorBoundary from './components/ErrorBoundary';
 import RoleBasedRedirect from './components/RoleBasedRedirect';
 import BookingGuard from './components/BookingGuard';
 
+// Helper to handle lazy load failures (like when a new version is deployed)
+const lazyRetry = (componentImport) => {
+  return lazy(async () => {
+    const lastPageVisit = localStorage.getItem('last_page_visit');
+    const now = new Date().getTime();
+
+    try {
+      return await componentImport();
+    } catch (error) {
+      // If we haven't refreshed in the last 10 seconds, try refreshing the page
+      if (!lastPageVisit || (now - parseInt(lastPageVisit) > 10000)) {
+        localStorage.setItem('last_page_visit', now.toString());
+        window.location.reload();
+        return { default: () => null }; // Return dummy component while reloading
+      }
+      throw error;
+    }
+  });
+};
+
 // Lazy load all pages for code splitting and better performance
-const Home = lazy(() => import('./pages/Home'));
-const Schedule = lazy(() => import('./pages/Schedule'));
-const Reviews = lazy(() => import('./pages/Reviews'));
-const Payment = lazy(() => import('./pages/Payment'));
-const PaymentSuccess = lazy(() => import('./pages/PaymentSuccess'));
-const Admin = lazy(() => import('./pages/Admin'));
-const PCRepair = lazy(() => import('./pages/PCRepair'));
-const MobileRepair = lazy(() => import('./pages/MobileRepair'));
-const TabletRepair = lazy(() => import('./pages/TabletRepair'));
-const Profile = lazy(() => import('./pages/Profile'));
-const History = lazy(() => import('./pages/History'));
-const Favorites = lazy(() => import('./pages/Favorites'));
-const Settings = lazy(() => import('./pages/Settings'));
-const TechnicianDashboard = lazy(() => import('./pages/TechnicianDashboard'));
-const CustomerDashboard = lazy(() => import('./pages/CustomerDashboard'));
-const Compare = lazy(() => import('./pages/Compare'));
-const Login = lazy(() => import('./pages/Login'));
-const Register = lazy(() => import('./pages/Register'));
-const Terms = lazy(() => import('./pages/Terms'));
-const Privacy = lazy(() => import('./pages/Privacy'));
-const Services = lazy(() => import('./pages/Services'));
-const Support = lazy(() => import('./pages/Support'));
-const Company = lazy(() => import('./pages/Company'));
-const Technicians = lazy(() => import('./pages/Technicians'));
-const Chat = lazy(() => import('./pages/Chat'));
-const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
-const ResetPassword = lazy(() => import('./pages/ResetPassword'));
-const BookingTracker = lazy(() => import('./pages/BookingTracker'));
-const Diagnostics = lazy(() => import('./pages/Diagnostics'));
-const ServiceAreas = lazy(() => import('./pages/ServiceAreas'));
-const Careers = lazy(() => import('./pages/Careers'));
-const Partner = lazy(() => import('./pages/Partner'));
-const HowItWorks = lazy(() => import('./pages/HowItWorks'));
-const Blog = lazy(() => import('./pages/Blog'));
-const BlogPost = lazy(() => import('./pages/BlogPost'));
+const Home = lazyRetry(() => import('./pages/Home'));
+const Schedule = lazyRetry(() => import('./pages/Schedule'));
+const Reviews = lazyRetry(() => import('./pages/Reviews'));
+const Payment = lazyRetry(() => import('./pages/Payment'));
+const PaymentSuccess = lazyRetry(() => import('./pages/PaymentSuccess'));
+const Admin = lazyRetry(() => import('./pages/Admin'));
+const PCRepair = lazyRetry(() => import('./pages/PCRepair'));
+const MobileRepair = lazyRetry(() => import('./pages/MobileRepair'));
+const TabletRepair = lazyRetry(() => import('./pages/TabletRepair'));
+const Profile = lazyRetry(() => import('./pages/Profile'));
+const History = lazyRetry(() => import('./pages/History'));
+const Favorites = lazyRetry(() => import('./pages/Favorites'));
+const Settings = lazyRetry(() => import('./pages/Settings'));
+const TechnicianDashboard = lazyRetry(() => import('./pages/TechnicianDashboard'));
+const CustomerDashboard = lazyRetry(() => import('./pages/CustomerDashboard'));
+const Compare = lazyRetry(() => import('./pages/Compare'));
+const Login = lazyRetry(() => import('./pages/Login'));
+const Register = lazyRetry(() => import('./pages/Register'));
+const Terms = lazyRetry(() => import('./pages/Terms'));
+const Privacy = lazyRetry(() => import('./pages/Privacy'));
+const Services = lazyRetry(() => import('./pages/Services'));
+const Support = lazyRetry(() => import('./pages/Support'));
+const Company = lazyRetry(() => import('./pages/Company'));
+const Technicians = lazyRetry(() => import('./pages/Technicians'));
+const Chat = lazyRetry(() => import('./pages/Chat'));
+const ForgotPassword = lazyRetry(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazyRetry(() => import('./pages/ResetPassword'));
+const BookingTracker = lazyRetry(() => import('./pages/BookingTracker'));
+const Diagnostics = lazyRetry(() => import('./pages/Diagnostics'));
+const ServiceAreas = lazyRetry(() => import('./pages/ServiceAreas'));
+const Careers = lazyRetry(() => import('./pages/Careers'));
+const Partner = lazyRetry(() => import('./pages/Partner'));
+const HowItWorks = lazyRetry(() => import('./pages/HowItWorks'));
+const Blog = lazyRetry(() => import('./pages/Blog'));
+const BlogPost = lazyRetry(() => import('./pages/BlogPost'));
 
 // Loading fallback component
 const LoadingFallback = () => (

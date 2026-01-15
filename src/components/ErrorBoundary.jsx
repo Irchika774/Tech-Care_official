@@ -15,6 +15,22 @@ class ErrorBoundary extends Component {
     componentDidCatch(error, errorInfo) {
         this.setState({ errorInfo });
         console.error('ErrorBoundary caught an error:', error, errorInfo);
+
+        // Auto-refresh on chunk load errors (often happens after a new deployment)
+        const isChunkLoadError = error.name === 'ChunkLoadError' ||
+            error.message?.includes('Failed to fetch dynamically imported module');
+
+        if (isChunkLoadError) {
+            const lastReload = localStorage.getItem('last_chunk_reload');
+            const now = Date.now();
+
+            // Only auto-reload if we haven't reloaded in the last 10 seconds to avoid loops
+            if (!lastReload || (now - parseInt(lastReload) > 10000)) {
+                localStorage.setItem('last_chunk_reload', now.toString());
+                console.warn('Chunk load error detected! Attempting automatic page refresh...');
+                window.location.reload();
+            }
+        }
     }
 
     handleReload = () => {
