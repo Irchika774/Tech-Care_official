@@ -12,21 +12,20 @@ import ErrorBoundary from './components/ErrorBoundary';
 import RoleBasedRedirect from './components/RoleBasedRedirect';
 import BookingGuard from './components/BookingGuard';
 
-// Helper to handle lazy load failures (like when a new version is deployed)
+// Helper to handle lazy load failures with infinite loop protection
 const lazyRetry = (componentImport) => {
   return lazy(async () => {
-    const lastPageVisit = localStorage.getItem('last_page_visit');
-    const now = new Date().getTime();
+    const pageHasBeenRefreshed = sessionStorage.getItem('page_has_been_refreshed');
 
     try {
       return await componentImport();
     } catch (error) {
-      // If we haven't refreshed in the last 10 seconds, try refreshing the page
-      if (!lastPageVisit || (now - parseInt(lastPageVisit) > 10000)) {
-        localStorage.setItem('last_page_visit', now.toString());
+      if (!pageHasBeenRefreshed) {
+        sessionStorage.setItem('page_has_been_refreshed', 'true');
         window.location.reload();
-        return { default: () => null }; // Return dummy component while reloading
+        return { default: () => <LoadingFallback /> };
       }
+      // If already refreshed, throw chunk load error to be caught by ErrorBoundary
       throw error;
     }
   });
