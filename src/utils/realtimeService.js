@@ -75,16 +75,20 @@ class RealtimeService {
 
     _subscribe(channelKey, options, callback, methodName, args, isInternal = false) {
         // External call to existing channel: just add callback
-        if (this.channels.has(channelKey) && !isInternal) {
+        if (this.channels.has(channelKey)) {
+            const channel = this.channels.get(channelKey);
+            // If internal re-subscription or just adding a callback, ensure callback is registered
             const callbacks = this.callbacks.get(channelKey) || [];
             if (!callbacks.includes(callback)) {
                 callbacks.push(callback);
                 this.callbacks.set(channelKey, callbacks);
             }
+            // If the channel is in a bad state, we might want to rejoin, but the heartbeat handles that.
+            // Just return the unsubscriber.
             return () => this.removeCallback(channelKey, callback);
         }
 
-        // Always update config on fresh subscription
+        // Always update config on fresh specific subscription (not internal refresh)
         if (!isInternal) {
             this.configs.set(channelKey, { methodName, args });
             const callbacks = this.callbacks.get(channelKey) || [];

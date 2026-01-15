@@ -52,12 +52,12 @@ const Partner = () => {
                         Join the TechCare network and start receiving high-quality repair leads in your area today.
                     </p>
 
-                    <Link to="/register">
+                    <a href="mailto:partners@techcare.com">
                         <button className="inline-flex items-center gap-3 px-8 py-4 bg-white text-black font-medium hover:bg-gray-200 transition-all">
                             Apply to Partner
                             <ArrowRight className="h-5 w-5" />
                         </button>
-                    </Link>
+                    </a>
                 </div>
             </section>
 

@@ -333,9 +333,9 @@ const TechnicianDashboard = () => {
     }
   };
 
-  const fetchAvailableJobs = async () => {
+  const fetchAvailableJobs = async (isBackground = false) => {
     try {
-      setCheckingJobs(true);
+      if (!isBackground) setCheckingJobs(true);
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
       const response = await fetch(`${API_URL}/api/technicians/jobs`, {
@@ -531,7 +531,7 @@ const TechnicianDashboard = () => {
       interval = setInterval(() => {
         if (!authError) {
           fetchDashboardData(true);
-          fetchAvailableJobs();
+          fetchAvailableJobs(true);
         } else {
           console.log('[TechnicianDashboard] Polling skipped - auth error state');
         }
@@ -550,7 +550,7 @@ const TechnicianDashboard = () => {
         console.log('[TechnicianDashboard] Booking update:', payload.eventType);
         if (!authError) {
           fetchDashboardData(true);
-          fetchAvailableJobs(); // Refresh available jobs when bookings change
+          fetchAvailableJobs(true); // Refresh available jobs when bookings change
         }
       }, user.id);
 
@@ -558,7 +558,7 @@ const TechnicianDashboard = () => {
         console.log('[TechnicianDashboard] Bid update:', payload.eventType);
         if (!authError) {
           fetchDashboardData(true);
-          fetchAvailableJobs();
+          fetchAvailableJobs(true);
         }
       });
 
