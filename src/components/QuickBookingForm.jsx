@@ -42,6 +42,14 @@ export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
   const [techniciansList, setTechnicians] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if (initialData) {
+      setDeviceType(initialData.type || 'smartphone');
+      setDeviceBrand(initialData.brand || '');
+      setDeviceModel(initialData.model || '');
+    }
+  }, [initialData]);
+
   const serviceDetails = {
     battery: { label: 'Battery Replacement', price: 5000 },
     screen: { label: 'Screen Repair', price: 12000 },

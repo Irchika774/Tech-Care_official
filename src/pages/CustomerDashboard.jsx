@@ -202,7 +202,7 @@ function CustomerDashboard() {
         recentBookings: bookings.slice(0, 5) // Last 5 bookings
       });
 
-      // 5. Fetch Favorites (table is named 'favorites')
+      // 5. Fetch Favorites
       if (customerId) {
         const { data: favoritesData } = await supabase
           .from('favorites')
@@ -216,6 +216,18 @@ function CustomerDashboard() {
           reviewCount: f.technician?.review_count || 0,
           profileImage: f.technician?.profile_image
         })));
+      }
+
+      // 6. Fetch User Devices
+      const { data: devicesData, error: devicesError } = await supabase
+        .from('user_devices')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (devicesError) {
+        console.error('Error fetching devices:', devicesError);
+      } else {
+        setDevices(devicesData || []);
       }
 
     } catch (err) {
