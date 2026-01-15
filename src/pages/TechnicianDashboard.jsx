@@ -340,6 +340,9 @@ const TechnicianDashboard = () => {
     'Polonnaruwa', 'Puttalam', 'Ratnapura', 'Trincomalee', 'Vavuniya'
   ];
 
+  // Track if we're currently experiencing auth errors to stop polling
+  const [authError, setAuthError] = useState(false);
+
   const fetchDashboardData = async () => {
     let timeoutId;
     console.log('fetchDashboardData called, user:', user?.id);
@@ -357,15 +360,11 @@ const TechnicianDashboard = () => {
       });
 
       const fetchDataPromise = (async () => {
-        // Use session directly from context, fallback only if needed
-        let token = session?.access_token;
-        if (!token) {
-          console.log('Session missing in context, fetching...');
-          const { data: { session: currentSession } } = await supabase.auth.getSession();
-          token = currentSession?.access_token;
-        }
+        // ALWAYS fetch fresh session to avoid stale token issues after TOKEN_REFRESHED
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        const token = currentSession?.access_token;
 
-        console.log('Using session token length:', token?.length);
+        console.log('Using fresh session token length:', token?.length);
 
         if (!token) {
           console.log('No token available, skipping fetch');
@@ -380,7 +379,17 @@ const TechnicianDashboard = () => {
         });
         console.log('Response received, status:', response.status);
 
+        // Handle 401 specially - stop polling until session is refreshed
+        if (response.status === 401 || response.status === 403) {
+          console.warn('Auth error detected, stopping polling until session refreshes');
+          setAuthError(true);
+          throw new Error(`Auth failed: ${response.status}`);
+        }
+
         if (!response.ok) throw new Error(`Failed to fetch dashboard data: ${response.status}`);
+
+        // Clear auth error on success
+        setAuthError(false);
 
         const result = await response.json();
         console.log('Data received:', result ? 'yes' : 'no');
@@ -389,6 +398,8 @@ const TechnicianDashboard = () => {
 
       const result = await Promise.race([fetchDataPromise, timeoutPromise]);
       clearTimeout(timeoutId);
+
+      if (!result) return;
 
       setData(result);
 
@@ -412,16 +423,27 @@ const TechnicianDashboard = () => {
         setInventory(result.inventory || []);
         setRecentTransactions(result.recentTransactions || []);
       } else {
-
         setProfileData(prev => ({ ...prev, shopName: user.name || '', email: user.email || '' }));
       }
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
-      setError(err.message);
+      // Only set error for non-auth errors (auth errors just stop polling)
+      if (!err.message.includes('Auth failed')) {
+        setError(err.message);
+      }
     } finally {
       setLoading(false);
     }
   };
+
+  // Reset auth error and refetch when session changes (e.g., after TOKEN_REFRESHED)
+  useEffect(() => {
+    if (session?.access_token && authError) {
+      console.log('[TechnicianDashboard] Session refreshed, resuming polling');
+      setAuthError(false);
+      fetchDashboardData();
+    }
+  }, [session?.access_token]);
 
   useEffect(() => {
     let interval;
@@ -436,10 +458,14 @@ const TechnicianDashboard = () => {
       fetchDashboardData();
       fetchAvailableJobs(); // Fetch available jobs on mount
 
-      // Poll every 30 seconds as fallback
+      // Poll every 30 seconds as fallback, but skip if auth error
       interval = setInterval(() => {
-        fetchDashboardData();
-        fetchAvailableJobs();
+        if (!authError) {
+          fetchDashboardData();
+          fetchAvailableJobs();
+        } else {
+          console.log('[TechnicianDashboard] Polling skipped - auth error state');
+        }
       }, 30000);
 
       // Subscribe to real-time updates using centralized service
@@ -447,30 +473,34 @@ const TechnicianDashboard = () => {
         // Only update if it pertains to this technician user
         if (payload.new?.user_id === user.id || payload.old?.user_id === user.id) {
           console.log('[TechnicianDashboard] Technician update:', payload.eventType);
-          fetchDashboardData();
+          if (!authError) fetchDashboardData();
         }
       });
 
       unsubBookings = realtimeService.subscribeToBookings((payload) => {
         console.log('[TechnicianDashboard] Booking update:', payload.eventType);
-        fetchDashboardData();
-        fetchAvailableJobs(); // Refresh available jobs when bookings change
+        if (!authError) {
+          fetchDashboardData();
+          fetchAvailableJobs(); // Refresh available jobs when bookings change
+        }
       }, user.id);
 
       unsubBids = realtimeService.subscribeToBids((payload) => {
         console.log('[TechnicianDashboard] Bid update:', payload.eventType);
-        fetchDashboardData();
-        fetchAvailableJobs();
+        if (!authError) {
+          fetchDashboardData();
+          fetchAvailableJobs();
+        }
       });
 
       unsubReviews = realtimeService.subscribeToReviews((payload) => {
         console.log('[TechnicianDashboard] Review update:', payload.eventType);
-        fetchDashboardData();
+        if (!authError) fetchDashboardData();
       });
 
       unsubGigs = realtimeService.subscribeToGigs((payload) => {
         console.log('[TechnicianDashboard] Gig update:', payload.eventType);
-        if (payload.new?.technician_id === data?.technician?.id) {
+        if (payload.new?.technician_id === data?.technician?.id && !authError) {
           fetchDashboardData();
         }
       });
@@ -478,7 +508,7 @@ const TechnicianDashboard = () => {
       // Special notification handling to just refresh dashboard data which includes notif count
       unsubNotifications = realtimeService.subscribeToNotifications(user.id, (payload) => {
         console.log('[TechnicianDashboard] New notification:', payload.new?.type);
-        fetchDashboardData();
+        if (!authError) fetchDashboardData();
       });
     }
 
@@ -491,7 +521,7 @@ const TechnicianDashboard = () => {
       if (unsubGigs) unsubGigs();
       if (unsubNotifications) unsubNotifications();
     };
-  }, [user?.id]);
+  }, [user?.id, authError]);
 
   const handleStatusUpdate = async (jobId, newStatus) => {
     try {

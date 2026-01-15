@@ -17,6 +17,7 @@ class RealtimeService {
 
     startHeartbeat() {
         if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
+        this.retryBackoff = new Map(); // Track retry attempts per channel
 
         this.heartbeatInterval = setInterval(() => {
             this.channels.forEach((channel, key) => {
@@ -24,11 +25,27 @@ class RealtimeService {
                 // Note: 'closed' isn't a standard state in some versions, but 'left' or 'errored' are.
                 const state = channel.state;
                 if (state === 'errored' || state === 'left') {
-                    console.warn(`[Realtime] Channel ${key} is ${state}. Re-subscribing...`);
-                    this.reSubscribe(key);
+                    const backoff = this.retryBackoff.get(key) || 0;
+                    const maxBackoff = 5; // Max 5 retry cycles before slowing way down
+
+                    if (backoff < maxBackoff) {
+                        console.warn(`[Realtime] Channel ${key} is ${state}. Re-subscribing (attempt ${backoff + 1})...`);
+                        this.retryBackoff.set(key, backoff + 1);
+                        this.reSubscribe(key);
+                    } else {
+                        // After max retries, only try once per 5 heartbeat cycles
+                        if (backoff % 5 === 0) {
+                            console.warn(`[Realtime] Channel ${key} still errored, periodic retry...`);
+                            this.reSubscribe(key);
+                        }
+                        this.retryBackoff.set(key, backoff + 1);
+                    }
+                } else if (state === 'joined') {
+                    // Reset backoff on successful connection
+                    this.retryBackoff.set(key, 0);
                 }
             });
-        }, 45000); // Increased to 45 seconds to be less aggressive
+        }, 45000); // 45 seconds between checks
     }
 
     reSubscribe(channelKey) {

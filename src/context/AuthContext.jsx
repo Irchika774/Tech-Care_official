@@ -202,6 +202,11 @@ export const AuthProvider = ({ children }) => {
                 setProfile(null);
                 setSession(null);
             } else if ((event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED' || event === 'INITIAL_SESSION') && currentSession?.user) {
+                // Update session first so components get fresh token immediately
+                if (isMounted.current) {
+                    setSession(currentSession);
+                }
+                console.log('[AUTH] Token refreshed, session updated');
                 await loadUserProfile(currentSession.user);
                 realtimeService.refreshAllConnections();
             }
