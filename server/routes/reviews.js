@@ -21,9 +21,9 @@ router.get('/', async (req, res) => {
             .from('reviews')
             .select(`
                 *,
-                technician:technician_id (id, name, avatar_url, specialty),
-                customer:customer_id (id, name, avatar_url),
-                booking:booking_id (id, device_type, device_brand, device_model, service_type)
+                technician:technician_id (id, name, profile_image, services),
+                customer:customer_id (id, name, profile_image),
+                booking:booking_id (id, device_type, device_brand, device_model, issue_type)
             `, { count: 'exact' });
 
         // Apply filters
@@ -75,7 +75,7 @@ router.get('/', async (req, res) => {
         });
     } catch (error) {
         console.error('Reviews fetch error:', error);
-        res.status(500).json({ error: 'Failed to fetch reviews' });
+        res.status(500).json({ error: error.message || 'Failed to fetch reviews' });
     }
 });
 
@@ -86,9 +86,9 @@ router.get('/:id', async (req, res) => {
             .from('reviews')
             .select(`
                 *,
-                technician:technician_id (id, name, avatar_url, specialty),
-                customer:customer_id (id, name, avatar_url),
-                booking:booking_id (id, device_type, device_brand, device_model, service_type)
+                technician:technician_id (id, name, profile_image, services),
+                customer:customer_id (id, name, profile_image),
+                booking:booking_id (id, device_type, device_brand, device_model, issue_type)
             `)
             .eq('id', req.params.id)
             .single();
@@ -103,7 +103,7 @@ router.get('/:id', async (req, res) => {
         res.json(review);
     } catch (error) {
         console.error('Review fetch error:', error);
-        res.status(500).json({ error: 'Failed to fetch review' });
+        res.status(500).json({ error: error.message || 'Failed to fetch review' });
     }
 });
 
@@ -239,7 +239,7 @@ router.post('/', supabaseAuth, async (req, res) => {
         });
     } catch (error) {
         console.error('Review creation error:', error);
-        res.status(500).json({ error: 'Failed to create review' });
+        res.status(500).json({ error: error.message || 'Failed to create review' });
     }
 });
 

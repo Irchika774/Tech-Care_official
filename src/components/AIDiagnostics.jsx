@@ -23,7 +23,6 @@ import {
     AlertTriangle,
     CheckCircle,
     ArrowRight,
-    Sparkles,
     RefreshCw
 } from 'lucide-react';
 
@@ -35,6 +34,7 @@ const AIDiagnostics = ({ onComplete, deviceType: initialDeviceType }) => {
     const { toast } = useToast();
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
+    const messageIdRef = useRef(0); // Unique ID counter for messages
 
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
@@ -43,6 +43,12 @@ const AIDiagnostics = ({ onComplete, deviceType: initialDeviceType }) => {
     const [deviceType, setDeviceType] = useState(initialDeviceType || null);
     const [symptoms, setSymptoms] = useState([]);
     const [diagnosis, setDiagnosis] = useState(null);
+
+    // Generate unique message ID
+    const getNextMessageId = () => {
+        messageIdRef.current += 1;
+        return `msg_${messageIdRef.current}_${Date.now()}`;
+    };
 
     // Common symptoms by category
     const symptomCategories = {
@@ -160,7 +166,7 @@ const AIDiagnostics = ({ onComplete, deviceType: initialDeviceType }) => {
         setIsTyping(true);
         setTimeout(() => {
             setMessages(prev => [...prev, {
-                id: Date.now(),
+                id: getNextMessageId(),
                 type: 'bot',
                 content,
                 action,
@@ -173,7 +179,7 @@ const AIDiagnostics = ({ onComplete, deviceType: initialDeviceType }) => {
     // Add user message
     const addUserMessage = (content) => {
         setMessages(prev => [...prev, {
-            id: Date.now(),
+            id: getNextMessageId(),
             type: 'user',
             content,
             timestamp: new Date()
@@ -326,7 +332,7 @@ const AIDiagnostics = ({ onComplete, deviceType: initialDeviceType }) => {
                         </div>
                         TechCare AI Diagnostics
                         <Badge variant="outline" className="ml-2 border-green-500/50 text-green-400">
-                            <Sparkles className="h-3 w-3 mr-1" />
+                            <Bot className="h-3 w-3 mr-1" />
                             AI Powered
                         </Badge>
                     </CardTitle>
@@ -435,7 +441,7 @@ const AIDiagnostics = ({ onComplete, deviceType: initialDeviceType }) => {
                                 disabled={symptoms.length === 0}
                                 className="w-full bg-green-600 hover:bg-green-700 mt-4"
                             >
-                                <Sparkles className="h-4 w-4 mr-2" />
+                                <Cpu className="h-4 w-4 mr-2" />
                                 Analyze & Diagnose
                             </Button>
                         </div>

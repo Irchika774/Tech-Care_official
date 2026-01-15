@@ -352,11 +352,12 @@ router.patch('/profile', supabaseAuth, verifyCustomer, async (req, res) => {
         const userId = req.user.id;
         const updates = { ...req.body, updated_at: new Date().toISOString() };
 
-        // Sync name and email to customers table as well if they are being updated
+        // Sync name, email, phone, and address to customers table as well if they are being updated
         const syncUpdates = {};
         if (updates.name) syncUpdates.name = updates.name;
         if (updates.email) syncUpdates.email = updates.email;
         if (updates.phone) syncUpdates.phone = updates.phone;
+        if (updates.address) syncUpdates.address = updates.address;
 
         const [profileRes, customerRes] = await Promise.all([
             supabaseAdmin

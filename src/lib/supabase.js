@@ -134,7 +134,11 @@ export const getCustomerProfile = async (userId) => {
         if (error && error.code !== 'PGRST116') throw error;
         return data;
     } catch (err) {
-        console.error('getCustomerProfile error:', err.message);
+        if (err.message && !err.message.includes('timed out')) {
+            console.error('getCustomerProfile error:', err.message);
+        } else {
+            console.log(`[DEBUG] Customer profile fetch timed out for user ${userId} - using fallback`);
+        }
         return null;
     }
 };

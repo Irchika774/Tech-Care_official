@@ -25,9 +25,11 @@ import {
   Sparkles
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../hooks/use-toast';
 
 export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [step, setStep] = useState(1);
   const [deviceType, setDeviceType] = useState(initialData?.type || 'smartphone');
   const [deviceBrand, setDeviceBrand] = useState(initialData?.brand || '');
@@ -112,7 +114,7 @@ export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
         device_brand: deviceBrand || deviceType,
         device_model: deviceModel || 'Unknown',
         issue_description: issueDescription || selectedServiceInfo?.label,
-        status: 'pending_payment',
+        status: 'pending', // Use 'pending' status, payment_status is tracked separately
         estimated_cost: totalAmount
       };
 
@@ -137,7 +139,11 @@ export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
       navigate('/payment', { state: { booking: enrichedBooking } });
     } catch (error) {
       console.error('Booking error:', error);
-      alert('Failed to initiate booking.');
+      toast({
+        title: "Booking Error",
+        description: "Failed to initiate booking. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }

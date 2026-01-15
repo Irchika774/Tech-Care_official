@@ -4,6 +4,7 @@ import SEO from '../components/SEO';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
+import { useToast } from '../hooks/use-toast';
 import {
     Sparkles,
     HelpCircle,
@@ -21,12 +22,22 @@ import {
     Zap,
     CheckCircle,
     ArrowRight,
-    Send
+    Send,
+    Loader2
 } from 'lucide-react';
 
 const Support = () => {
+    const { toast } = useToast();
     const [openFaq, setOpenFaq] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [formLoading, setFormLoading] = useState(false);
+    const [contactForm, setContactForm] = useState({
+        name: '',
+        email: '',
+        subject: '',
+        category: '',
+        message: ''
+    });
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -156,6 +167,55 @@ const Support = () => {
         })).filter(category => category.questions.length > 0)
         : faqs;
 
+    // Get quick answers for the search query
+    const getQuickAnswers = () => {
+        if (!searchQuery || searchQuery.length < 3) return [];
+        const answers = [];
+        faqs.forEach(category => {
+            category.questions.forEach(faq => {
+                if (faq.q.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    faq.a.toLowerCase().includes(searchQuery.toLowerCase())) {
+                    answers.push({ category: category.category, ...faq });
+                }
+            });
+        });
+        return answers.slice(0, 3);
+    };
+
+    const quickAnswers = getQuickAnswers();
+
+    const handleContactSubmit = async (e) => {
+        e.preventDefault();
+        setFormLoading(true);
+
+        try {
+            // Simulate API call
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            toast({
+                title: "Message Sent! ✓",
+                description: "We've received your message and will get back to you within 24 hours.",
+            });
+
+            // Reset form
+            setContactForm({
+                name: '',
+                email: '',
+                subject: '',
+                category: '',
+                message: ''
+            });
+        } catch (error) {
+            toast({
+                variant: "destructive",
+                title: "Failed to send message",
+                description: "Please try again or contact us directly.",
+            });
+        } finally {
+            setFormLoading(false);
+        }
+    };
+
     const contactMethods = [
         { icon: Mail, title: 'Email Us', value: 'support@techcare.com', description: 'Get a response within 24 hours' },
         { icon: Phone, title: 'Call Us', value: '+94 11 234 5678', description: 'Available during business hours' },
@@ -212,6 +272,24 @@ const Support = () => {
                                     className="w-full pl-12 pr-4 py-4 bg-zinc-900 border border-zinc-800 rounded-full text-white placeholder-zinc-500 focus:outline-none focus:border-white/50 transition-colors"
                                 />
                             </div>
+
+                            {/* Quick Answers - Show matching FAQs directly */}
+                            {quickAnswers.length > 0 && (
+                                <div className="mt-4 space-y-3">
+                                    <p className="text-sm text-zinc-400 text-left">Quick Answers Found:</p>
+                                    {quickAnswers.map((answer, idx) => (
+                                        <div key={idx} className="text-left bg-zinc-900/80 border border-zinc-800 rounded-xl p-4">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
+                                                    {answer.category}
+                                                </Badge>
+                                            </div>
+                                            <h4 className="font-medium text-white mb-2">{answer.q}</h4>
+                                            <p className="text-sm text-zinc-400">{answer.a}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -352,14 +430,7 @@ const Support = () => {
                         {/* Contact Form */}
                         <Card className="lg:col-span-2 bg-zinc-900 border-zinc-800">
                             <CardContent className="p-8">
-                                <form className="space-y-6" onSubmit={(e) => {
-                                    e.preventDefault();
-                                    toast({
-                                        title: "Message Sent",
-                                        description: "We've received your message and will get back to you soon.",
-                                    });
-                                    e.target.reset();
-                                }}>
+                                <form className="space-y-6" onSubmit={handleContactSubmit}>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div>
                                             <label htmlFor="name" className="block text-sm font-medium text-white mb-2">
@@ -369,6 +440,8 @@ const Support = () => {
                                                 type="text"
                                                 id="name"
                                                 required
+                                                value={contactForm.name}
+                                                onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
                                                 className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-white/50 transition-colors"
                                                 placeholder="Your name"
                                             />
@@ -381,6 +454,8 @@ const Support = () => {
                                                 type="email"
                                                 id="email"
                                                 required
+                                                value={contactForm.email}
+                                                onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
                                                 className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-white/50 transition-colors"
                                                 placeholder="your@email.com"
                                             />
@@ -395,6 +470,8 @@ const Support = () => {
                                             type="text"
                                             id="subject"
                                             required
+                                            value={contactForm.subject}
+                                            onChange={(e) => setContactForm({ ...contactForm, subject: e.target.value })}
                                             className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-white/50 transition-colors"
                                             placeholder="How can we help?"
                                         />
@@ -407,6 +484,8 @@ const Support = () => {
                                         <select
                                             id="category"
                                             required
+                                            value={contactForm.category}
+                                            onChange={(e) => setContactForm({ ...contactForm, category: e.target.value })}
                                             className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-white/50 transition-colors"
                                         >
                                             <option value="">Select a category</option>
@@ -427,6 +506,8 @@ const Support = () => {
                                             id="message"
                                             rows="5"
                                             required
+                                            value={contactForm.message}
+                                            onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
                                             className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-white/50 transition-colors resize-none"
                                             placeholder="Please describe your issue in detail..."
                                         ></textarea>
@@ -434,10 +515,20 @@ const Support = () => {
 
                                     <Button
                                         type="submit"
-                                        className="w-full bg-white text-black hover:bg-gray-100 font-semibold py-6 text-lg rounded-full"
+                                        disabled={formLoading}
+                                        className="w-full bg-white text-black hover:bg-gray-100 font-semibold py-6 text-lg rounded-full disabled:opacity-50"
                                     >
-                                        Send Message
-                                        <Send className="ml-2 w-5 h-5" />
+                                        {formLoading ? (
+                                            <>
+                                                <Loader2 className="mr-2 w-5 h-5 animate-spin" />
+                                                Sending...
+                                            </>
+                                        ) : (
+                                            <>
+                                                Send Message
+                                                <Send className="ml-2 w-5 h-5" />
+                                            </>
+                                        )}
                                     </Button>
                                 </form>
                             </CardContent>

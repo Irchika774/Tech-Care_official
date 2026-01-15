@@ -17,7 +17,8 @@ import {
     Shield,
     ArrowRight,
     Check,
-    Sparkles
+    Headphones,
+    Award
 } from 'lucide-react';
 
 const Services = () => {
@@ -144,7 +145,7 @@ const Services = () => {
                 <div className="relative container mx-auto px-4">
                     <div className="text-center max-w-4xl mx-auto">
                         <Badge className="mb-6 bg-white/10 text-white border-white/30 backdrop-blur-sm px-4 py-2">
-                            <Sparkles className="w-4 h-4 mr-2" />
+                            <Award className="w-4 h-4 mr-2" />
                             Professional Tech Repair
                         </Badge>
 
@@ -331,7 +332,7 @@ const Services = () => {
                         </div>
                         <CardContent className="relative p-12 md:p-16 text-center">
                             <Badge className="mb-6 bg-white/10 text-white border-white/30 px-4 py-2">
-                                <Sparkles className="w-4 h-4 mr-2" />
+                                <Headphones className="w-4 h-4 mr-2" />
                                 Get Help Today
                             </Badge>
                             <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
