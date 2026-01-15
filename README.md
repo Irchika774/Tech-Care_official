@@ -5,7 +5,7 @@
 ### _Connecting Customers with Expert Technicians_
 
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-success?style=for-the-badge)](https://github.com)
-[![Last Updated](https://img.shields.io/badge/Last%20Updated-Jan%2013,%202026-blue?style=for-the-badge)](https://github.com/Wenura17125/Tech-Care_official/commits/main)
+[![Last Updated](https://img.shields.io/badge/Last%20Updated-Jan%2015,%202026-blue?style=for-the-badge)](https://github.com/Wenura17125/Tech-Care_official/commits/main)
 [![Version](https://img.shields.io/badge/Version-2.1-blue?style=for-the-badge)](https://github.com)
 [![License](https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge)](LICENSE)
 [![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=for-the-badge&logo=github-actions)](https://github.com/Wenura17125/Tech-Care_official/actions)
@@ -25,6 +25,12 @@
 |-----------|-----|--------|
 | **🖥️ Frontend** | [https://techcare-official-new.netlify.app/](https://techcare-official-new.netlify.app/) | ![Netlify](https://img.shields.io/badge/Netlify-Online-00C7B7?logo=netlify) |
 | **⚙️ Backend API** | [server-seven-ecru.vercel.app](https://server-seven-ecru.vercel.app) | ![Vercel](https://img.shields.io/badge/Vercel-Online-000?logo=vercel) |
+
+### 🆕 Recent Updates (v2.1 Patch)
+- ✅ **API Stability**: Fixed schema mismatches in Reviews API reducing server errors.
+- ✅ **UI/UX Polish**: Eliminated visual gaps on dark-themed pages (Careers, Partner, etc.).
+- ✅ **Error Handling**: Improved authentication flow robustness and reduced console noise.
+- ✅ **Deployment**: Verified production deployments on Vercel and Netlify.
 
 ---
 
@@ -1043,7 +1049,7 @@ If you find TechCare helpful or interesting, please consider:
 
 ---
 
-**Last Updated**: January 13, 2026 | **Version**: 2.1 | **Status**: ✅ Production Ready | **CI/CD**: ✅ Auto-Deploy
+**Last Updated**: January 15, 2026 | **Version**: 2.1 | **Status**: ✅ Production Ready | **CI/CD**: ✅ Auto-Deploy
 
 [![Made with React](https://img.shields.io/badge/Made%20with-React-61DAFB?style=flat-square&logo=react)](https://reactjs.org)
 [![Powered by Supabase](https://img.shields.io/badge/Powered%20by-Supabase-3ECF8E?style=flat-square&logo=supabase)](https://supabase.io)
