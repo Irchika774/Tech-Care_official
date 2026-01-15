@@ -1,26 +1,23 @@
 import { supabaseAdmin, verifySupabaseToken, getProfileByUserId, getCustomerByUserId, getTechnicianByUserId } from '../lib/supabase.js';
 
 export const supabaseAuth = async (req, res, next) => {
-    console.log('[DEBUG] supabaseAuth started');
+    // console.log('[DEBUG] supabaseAuth started');
     const authHeader = req.header('Authorization');
     const token = authHeader?.replace('Bearer ', '');
 
     if (!token) {
-        console.log('[DEBUG] supabaseAuth: No token');
+        console.warn('[AUTH] Missing token');
         return res.status(401).json({ error: 'Access denied. No token provided.' });
     }
 
     try {
-        console.log('[DEBUG] supabaseAuth: Verifying token...');
         const user = await verifySupabaseToken(token);
-        console.log('[DEBUG] supabaseAuth: Token verified for user:', user.id);
 
-        // Optimize: Fetch profile first to know the role, then fetch specific data
+        // Fetch or create profile
         let profile = await getProfileByUserId(user.id).catch(() => null);
 
         if (!profile) {
-            console.log('[DEBUG] supabaseAuth: No profile found for user, creating one:', user.id);
-            // Auto-create profile if missing (robustness)
+            console.log('[AUTH] Auto-creating missing profile for user:', user.id);
             const { data: newProfile, error: profileError } = await supabaseAdmin
                 .from('profiles')
                 .insert([{
@@ -33,8 +30,8 @@ export const supabaseAuth = async (req, res, next) => {
                 .single();
 
             if (profileError) {
-                console.error('Failed to auto-create profile:', profileError);
-                return res.status(401).json({ error: 'User profile not found and could not be created.' });
+                console.error('[AUTH] Failed to auto-create profile:', profileError);
+                return res.status(401).json({ error: 'User profile initialization failed.' });
             }
             profile = newProfile;
         }
@@ -42,12 +39,12 @@ export const supabaseAuth = async (req, res, next) => {
         let customer = null;
         let technician = null;
 
-        // Only fetch role-specific data if needed
+        // Ensure role-specific records exist
         if (profile.role === 'technician') {
             technician = await getTechnicianByUserId(user.id).catch(() => null);
             if (!technician) {
-                console.log('[DEBUG] supabaseAuth: Creating missing technician record for:', user.id);
-                const { data: newTechnician } = await supabaseAdmin
+                console.log('[AUTH] Creating missing technician record for:', user.id);
+                const { data: newTech, error: techError } = await supabaseAdmin
                     .from('technicians')
                     .insert([{
                         user_id: user.id,
@@ -56,13 +53,15 @@ export const supabaseAuth = async (req, res, next) => {
                     }])
                     .select()
                     .single();
-                technician = newTechnician;
+
+                if (techError) console.error('[AUTH] Technician Record Creation Failed:', techError);
+                technician = newTech;
             }
         } else if (profile.role === 'user' || profile.role === 'customer') {
             customer = await getCustomerByUserId(user.id).catch(() => null);
             if (!customer) {
-                console.log('[DEBUG] supabaseAuth: Creating missing customer record for:', user.id);
-                const { data: newCustomer } = await supabaseAdmin
+                console.log('[AUTH] Creating missing customer record for:', user.id);
+                const { data: newCust, error: custError } = await supabaseAdmin
                     .from('customers')
                     .insert([{
                         user_id: user.id,
@@ -71,14 +70,13 @@ export const supabaseAuth = async (req, res, next) => {
                     }])
                     .select()
                     .single();
-                customer = newCustomer;
+
+                if (custError) console.error('[AUTH] Customer Record Creation Failed:', custError);
+                customer = newCust;
             }
         }
 
-        console.log('[DEBUG] supabaseAuth: Profile found with role:', profile.role);
-
         req.user = {
-            _id: user.id,
             id: user.id,
             email: user.email,
             role: profile.role,
@@ -91,10 +89,15 @@ export const supabaseAuth = async (req, res, next) => {
             req.user.customerId = customer.id;
         }
 
-        console.log('[DEBUG] supabaseAuth finished');
+        // Final check: if user is logged in as user role but no customer record exists, 
+        // we might want to know why.
+        if ((profile.role === 'user' || profile.role === 'customer') && !req.user.customerId) {
+            console.error(`[AUTH] Critical: User ${user.id} has profile role '${profile.role}' but no customer record found/created.`);
+        }
+
         next();
     } catch (error) {
-        console.error('[DEBUG] supabaseAuth error:', error.message);
+        console.error('[AUTH] Token verification error:', error.message);
         res.status(401).json({ error: 'Invalid or expired token.' });
     }
 };

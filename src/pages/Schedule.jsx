@@ -86,14 +86,25 @@ const Schedule = () => {
   }, [initialData.paymentConfirmed]);
 
   useEffect(() => {
+    // Role-based restriction: Technicians and Admins cannot create bookings
+    if (user && (user.role === 'technician' || user.role === 'admin')) {
+      toast({
+        title: "Access Restricted",
+        description: "Only customer accounts can create repair bookings.",
+        variant: "destructive"
+      });
+      navigate(user.role === 'technician' ? '/technician-dashboard' : '/admin');
+      return;
+    }
+
     // Restrict direct access only if no context is found
     const hasContext = initialData.service || initialData.technician || initialData.diagnosis || deviceBrand || issueDescription;
-    const hasLocalStorageContext = localStorage.getItem('techcare_booking_deviceType') || 
-                                   localStorage.getItem('techcare_booking_description');
+    const hasLocalStorageContext = localStorage.getItem('techcare_booking_deviceType') ||
+      localStorage.getItem('techcare_booking_description');
     if (!hasContext && !hasLocalStorageContext && step === 1) {
       navigate('/services');
     }
-  }, [initialData, navigate, step, deviceBrand, issueDescription]);
+  }, [initialData, navigate, step, deviceBrand, issueDescription, user, toast]);
 
   useEffect(() => {
     // If a technician was passed in state, make sure they are in the list or handled
@@ -196,6 +207,15 @@ const Schedule = () => {
     }
 
     if (step === 1) {
+      if (user.role === 'technician' || user.role === 'admin') {
+        toast({
+          title: "Access Restricted",
+          description: "As a technician, you cannot create repair bookings. Please use a customer account.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       // Create pending booking and go to payment
       setLoading(true);
       try {
@@ -222,7 +242,11 @@ const Schedule = () => {
           body: JSON.stringify(bookingPayload)
         });
 
-        if (!response.ok) throw new Error('Failed to create initial booking');
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to create initial booking');
+        }
+
         const bookingData = await response.json();
 
         navigate('/payment', {
@@ -236,7 +260,11 @@ const Schedule = () => {
         });
       } catch (error) {
         console.error('Pre-payment booking error:', error);
-        alert('Failed to initiate booking.');
+        toast({
+          title: "Booking Error",
+          description: error.message || "Failed to initiate booking. Please try again.",
+          variant: "destructive"
+        });
       } finally {
         setLoading(false);
       }

@@ -84,8 +84,7 @@ export const getCurrentUser = async () => {
 };
 
 // Helper to wrap Supabase calls with a timeout for better UI control
-const withTimeout = (promise, name = 'Request', timeoutMs = 15000) => {
-    // console.log(`[DEBUG] withTimeout called for ${name} with ${timeoutMs}ms`);
+const withTimeout = (promise, name = 'Request', timeoutMs = 8000) => {
     return Promise.race([
         promise,
         new Promise((_, reject) =>

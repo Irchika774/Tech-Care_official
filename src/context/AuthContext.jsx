@@ -120,18 +120,16 @@ export const AuthProvider = ({ children }) => {
         isMounted.current = true;
 
         const initializeAuth = async () => {
-            // Reduced timeout to 3s to prevent long waits on slow connections, but show UI sooner
+            // Reduced timeout to 5s to prevent long waits on slow connections
             const timeoutId = setTimeout(() => {
                 if (isMounted && loading) {
-                    console.warn('[AUTH] Initialization timed out, forcing loading to false to show UI');
+                    console.warn('[AUTH] Initialization hanging, showing UI with best-effort data');
                     setLoading(false);
                 }
-            }, 10000);
+            }, 5000);
 
             try {
-                console.log('[DEBUG] initializeAuth started');
-
-                // Get session immediately from local storage if possible
+                // Get session immediately
                 const { data: { session: currentSession }, error } = await supabase.auth.getSession();
 
                 if (error) {
@@ -141,7 +139,6 @@ export const AuthProvider = ({ children }) => {
                 }
 
                 if (currentSession && isMounted) {
-                    console.log('[DEBUG] Session found, user:', currentSession.user.id);
                     setSession(currentSession);
 
                     // OPTIMIZATION: Try to load profile from cache IMMEDIATELY for instant UI

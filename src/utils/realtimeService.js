@@ -19,42 +19,45 @@ class RealtimeService {
         if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
 
         this.heartbeatInterval = setInterval(() => {
-            console.log('[Realtime] Heartbeat check...');
             this.channels.forEach((channel, key) => {
-                const status = channel.state;
-                // If channel is in a bad state, re-subscribe
-                if (status === 'closed' || status === 'errored') {
-                    console.warn(`[Realtime] Channel ${key} is ${status}. Re-subscribing...`);
+                // Supabase channel states: 'joined', 'joining', 'leaving', 'left', 'errored'
+                // Note: 'closed' isn't a standard state in some versions, but 'left' or 'errored' are.
+                const state = channel.state;
+                if (state === 'errored' || state === 'left') {
+                    console.warn(`[Realtime] Channel ${key} is ${state}. Re-subscribing...`);
                     this.reSubscribe(key);
                 }
             });
-        }, 30000); // 30 seconds
+        }, 45000); // Increased to 45 seconds to be less aggressive
     }
 
     reSubscribe(channelKey) {
         const config = this.configs.get(channelKey);
         if (!config) return;
 
-        // Cleanup old channel
+        // Cleanup old channel without clearing config
         const oldChannel = this.channels.get(channelKey);
-        if (oldChannel) supabase.removeChannel(oldChannel);
+        if (oldChannel) {
+            try {
+                supabase.removeChannel(oldChannel);
+            } catch (e) { }
+            this.channels.delete(channelKey);
+        }
 
         // Re-call the original subscription method
         const { methodName, args } = config;
-        this[methodName](...args, true); // Pass true to indicate it's an internal re-subscription
+        // The original method will populate this.channels with the new one
+        this[methodName](...args, true);
     }
 
-    // New method for AuthContext to call on TOKEN_REFRESHED
     refreshAllConnections() {
-        console.log('[Realtime] Refreshing all connections due to auth change...');
+        console.log('[Realtime] Refreshing connections...');
         const keys = Array.from(this.configs.keys());
         keys.forEach(key => this.reSubscribe(key));
     }
 
-    /**
-     * Internal helper to handle the common subscription pattern
-     */
     _subscribe(channelKey, options, callback, methodName, args, isInternal = false) {
+        // External call to existing channel: just add callback
         if (this.channels.has(channelKey) && !isInternal) {
             const callbacks = this.callbacks.get(channelKey) || [];
             if (!callbacks.includes(callback)) {
@@ -64,34 +67,36 @@ class RealtimeService {
             return () => this.removeCallback(channelKey, callback);
         }
 
-        // Store config for re-subscription
+        // Always update config on fresh subscription
         if (!isInternal) {
             this.configs.set(channelKey, { methodName, args });
+            const callbacks = this.callbacks.get(channelKey) || [];
+            if (!callbacks.includes(callback)) {
+                callbacks.push(callback);
+                this.callbacks.set(channelKey, callbacks);
+            }
         }
 
         const channel = supabase
-            .channel(channelKey + '-changes')
+            .channel(`rt-${channelKey}`)
             .on(
                 'postgres_changes',
                 options,
                 (payload) => {
-                    console.log(`[Realtime] ${channelKey} change:`, payload.eventType);
                     const callbacks = this.callbacks.get(channelKey) || [];
-                    callbacks.forEach(cb => cb(payload));
+                    callbacks.forEach(cb => {
+                        try { cb(payload); } catch (e) { console.error('Realtime callback error:', e); }
+                    });
                 }
             )
             .subscribe((status) => {
-                console.log(`[Realtime] ${channelKey} status:`, status);
-                if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-                    // Optional: proactive re-try
+                // Only log if not a standard success
+                if (status !== 'SUBSCRIBED' && status !== 'CHANNEL_ERROR') {
+                    // console.log(`[Realtime] ${channelKey} status:`, status);
                 }
             });
 
         this.channels.set(channelKey, channel);
-        if (!isInternal) {
-            this.callbacks.set(channelKey, [callback]);
-        }
-
         return () => this.removeCallback(channelKey, callback);
     }
 
@@ -145,7 +150,6 @@ class RealtimeService {
         const index = callbacks.indexOf(callback);
         if (index > -1) {
             callbacks.splice(index, 1);
-            this.callbacks.set(channelKey, callbacks);
         }
 
         if (callbacks.length === 0) {
@@ -157,17 +161,15 @@ class RealtimeService {
     unsubscribe(channelKey) {
         const channel = this.channels.get(channelKey);
         if (channel) {
-            supabase.removeChannel(channel);
+            try {
+                supabase.removeChannel(channel);
+            } catch (e) { }
             this.channels.delete(channelKey);
-            console.log(`[Realtime] Unsubscribed from ${channelKey}`);
         }
     }
 
     unsubscribeAll() {
-        this.channels.forEach((channel, key) => {
-            supabase.removeChannel(channel);
-            console.log(`[Realtime] Unsubscribed from ${key}`);
-        });
+        this.channels.forEach((c) => { try { supabase.removeChannel(c); } catch (e) { } });
         this.channels.clear();
         this.callbacks.clear();
         this.configs.clear();
