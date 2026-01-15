@@ -36,11 +36,10 @@ export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
   const [deviceModel, setDeviceModel] = useState(initialData?.model || '');
   const [repairService, setRepairService] = useState('general');
   const [issueDescription, setIssueDescription] = useState('');
-  const [technician, setTechnician] = useState('pending');
-  const [date, setDate] = useState(new Date());
-  const [timeSlot, setTimeSlot] = useState('09:00 AM');
+  const [technician, setTechnician] = useState(null); // Changed to object to store full tech data
   const [techniciansList, setTechnicians] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [showTechList, setShowTechList] = useState(false);
 
   useEffect(() => {
     if (initialData) {
@@ -57,54 +56,61 @@ export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
     general: { label: 'General Repair', price: 4000 }
   };
 
-  const selectedServiceInfo = serviceDetails[repairService];
-  const serviceAmount = selectedServiceInfo?.price || 4000;
-  const platformFee = 500;
-  const totalAmount = serviceAmount + platformFee;
+  const getCustomPrice = (tech) => {
+    if (!tech?.services || !Array.isArray(tech.services)) return null;
 
-  const timeSlots = [
-    '09:00 AM', '10:00 AM', '11:00 AM',
-    '01:00 PM', '02:00 PM', '03:00 PM', '04:00 PM'
-  ];
+    // 1. Exact Match: Service + Brand + Model
+    const exactMatch = tech.services.find(s =>
+      s.service === repairService &&
+      s.brand?.toLowerCase() === deviceBrand?.toLowerCase() &&
+      s.model?.toLowerCase() === deviceModel?.toLowerCase()
+    );
+    if (exactMatch) return exactMatch.price;
+
+    // 2. Brand Match: Service + Brand + (All Models/Empty)
+    const brandMatch = tech.services.find(s =>
+      s.service === repairService &&
+      s.brand?.toLowerCase() === deviceBrand?.toLowerCase() &&
+      (!s.model || s.model === 'All Models')
+    );
+    if (brandMatch) return brandMatch.price;
+
+    return null;
+  };
+
+  // Base price (default)
+  const defaultPrice = serviceDetails[repairService]?.price || 4000;
+
+  // Effective price: Technician's custom price -> or Default
+  const effectivePrice = technician
+    ? (getCustomPrice(technician) || defaultPrice)
+    : defaultPrice;
+
+  const platformFee = 500;
+  const totalAmount = effectivePrice + platformFee;
 
   useEffect(() => {
     const fetchTechs = async () => {
       try {
-        // Try Supabase first for real-time enabled data
         const { data: supabaseTechs, error } = await supabase
           .from('technicians')
-          .select('id, name, email, phone, rating, is_verified, profile_image')
+          .select('*') // Select all to get services JSON
           .order('rating', { ascending: false });
 
-        if (!error && supabaseTechs && supabaseTechs.length > 0) {
+        if (!error && supabaseTechs) {
           setTechnicians(supabaseTechs);
-          return;
+        } else {
+          // Fallback
+          const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+          const response = await fetch(`${apiUrl}/api/technicians`);
+          const data = await response.json();
+          setTechnicians(data || []);
         }
-
-        // Fallback to API
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-        const response = await fetch(`${apiUrl}/api/technicians`);
-        const data = await response.json();
-        setTechnicians(data || []);
       } catch (error) {
         console.error('Error fetching technicians:', error);
       }
     };
     fetchTechs();
-
-    // Subscribe to real-time technician updates
-    const channel = supabase
-      .channel('quick-booking-technicians')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'technicians' },
-        () => fetchTechs()
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
   const handleSubmit = async (e) => {
@@ -117,12 +123,12 @@ export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
 
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       const bookingPayload = {
-        technician_id: technician === 'pending' ? null : technician,
+        technician_id: technician?.id || null,
         device_type: deviceType,
         device_brand: deviceBrand || deviceType,
         device_model: deviceModel || 'Unknown',
-        issue_description: issueDescription || selectedServiceInfo?.label,
-        status: 'pending', // Use 'pending' status, payment_status is tracked separately
+        issue_description: issueDescription || serviceDetails[repairService]?.label,
+        status: 'pending',
         estimated_cost: totalAmount
       };
 
@@ -140,7 +146,7 @@ export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
 
       const enrichedBooking = {
         ...bookingData,
-        serviceType: selectedServiceInfo?.label || 'General Repair',
+        serviceType: serviceDetails[repairService]?.label || 'General Repair',
         total: totalAmount
       };
 
@@ -149,7 +155,7 @@ export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
       console.error('Booking error:', error);
       toast({
         title: "Booking Error",
-        description: "Failed to initiate booking. Please try again.",
+        description: error.message || "Failed to initiate booking.",
         variant: "destructive"
       });
     } finally {
@@ -160,6 +166,7 @@ export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
   return (
     <div className="space-y-6">
       <div className="space-y-6">
+        {/* Device Selection */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {[
             { value: 'smartphone', icon: Smartphone, label: 'Smartphone' },
@@ -201,6 +208,7 @@ export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
           </div>
         </div>
 
+        {/* Service Selection */}
         <div className="space-y-2">
           <Label className="text-zinc-400">Service Type</Label>
           <Select value={repairService} onValueChange={setRepairService}>
@@ -208,21 +216,101 @@ export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-zinc-900 border-zinc-800">
-              <SelectItem value="battery" className="text-white">Battery Replacement (LKR 5,000)</SelectItem>
-              <SelectItem value="screen" className="text-white">Screen Repair (LKR 12,000)</SelectItem>
-              <SelectItem value="water-damage" className="text-white">Water Damage (LKR 8,500)</SelectItem>
-              <SelectItem value="general" className="text-white">General Repair (LKR 4,000)</SelectItem>
+              <SelectItem value="battery" className="text-white">Battery Replacement</SelectItem>
+              <SelectItem value="screen" className="text-white">Screen Repair</SelectItem>
+              <SelectItem value="water-damage" className="text-white">Water Damage</SelectItem>
+              <SelectItem value="general" className="text-white">General Repair</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
+        {/* Technician Selection */}
+        <div className="space-y-2">
+          <Label className="text-zinc-400">Select Technician</Label>
+          {!showTechList ? (
+            <div
+              className="p-4 bg-zinc-900 border border-zinc-800 rounded-xl cursor-pointer hover:border-zinc-600 transition-colors flex justify-between items-center"
+              onClick={() => setShowTechList(true)}
+            >
+              <div className="flex items-center gap-3">
+                {technician ? (
+                  <>
+                    <div className="h-10 w-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-500 font-bold">
+                      {technician.name?.charAt(0) || 'T'}
+                    </div>
+                    <div>
+                      <div className="text-white font-medium">{technician.name || technician.shopName}</div>
+                      <div className="text-xs text-emerald-400 font-medium">
+                        {getCustomPrice(technician) ? `Custom Price: LKR ${getCustomPrice(technician).toLocaleString()}` : 'Standard Rate'}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="h-10 w-10 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-500">
+                      <User className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <div className="text-white font-medium">Any Available Technician</div>
+                      <div className="text-xs text-zinc-500">We'll assign the best match</div>
+                    </div>
+                  </>
+                )}
+              </div>
+              <Button variant="ghost" size="sm" className="text-zinc-400">Change</Button>
+            </div>
+          ) : (
+            <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden max-h-60 overflow-y-auto">
+              <div
+                className="p-3 border-b border-zinc-800 hover:bg-zinc-800 cursor-pointer flex justify-between items-center"
+                onClick={() => { setTechnician(null); setShowTechList(false); }}
+              >
+                <span className="text-white">Any Technician</span>
+                <span className="text-emerald-500 text-sm">LKR {serviceDetails[repairService].price.toLocaleString()}</span>
+              </div>
+              {techniciansList.map(tech => {
+                const techPrice = getCustomPrice(tech);
+                return (
+                  <div
+                    key={tech.id}
+                    className="p-3 border-b border-zinc-800 hover:bg-zinc-800 cursor-pointer flex justify-between items-center"
+                    onClick={() => { setTechnician(tech); setShowTechList(false); }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-full bg-zinc-800 flex items-center justify-center text-white text-xs">
+                        {tech.name?.charAt(0)}
+                      </div>
+                      <div>
+                        <div className="text-white text-sm font-medium">{tech.name || tech.shopName}</div>
+                        <div className="text-xs text-zinc-500 flex items-center gap-1">
+                          <Sparkles className="h-3 w-3 text-amber-500" /> {tech.rating || 'New'}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className={`text-sm font-bold ${techPrice ? 'text-emerald-400' : 'text-zinc-400'}`}>
+                        LKR {(techPrice || defaultPrice).toLocaleString()}
+                      </div>
+                      {techPrice && <div className="text-[10px] text-emerald-500/80">Special Deal</div>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
         <div className="bg-zinc-900/50 p-6 rounded-xl border border-zinc-800 space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-zinc-400">Service Cost</span>
+            <span className="text-white">LKR {effectivePrice.toLocaleString()}</span>
+          </div>
           <div className="flex justify-between text-sm">
             <span className="text-zinc-400">Platform Fee</span>
             <span className="text-white">LKR {Math.abs(platformFee).toLocaleString()}</span>
           </div>
           <div className="pt-4 border-t border-zinc-800 flex justify-between">
-            <span className="text-white font-bold">Initial Total</span>
+            <span className="text-white font-bold">Estimated Total</span>
             <span className="text-white font-bold">LKR {Math.abs(totalAmount).toLocaleString()}</span>
           </div>
         </div>

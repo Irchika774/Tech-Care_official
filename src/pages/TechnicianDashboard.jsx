@@ -32,7 +32,7 @@ const TechnicianDashboard = () => {
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['overview', 'profile', 'jobs', 'bids', 'earnings', 'analytics', 'services', 'inventory', 'marketplace'].includes(tab)) {
+    if (tab && ['overview', 'profile', 'jobs', 'bids', 'earnings', 'analytics', 'services', 'inventory', 'marketplace', 'pricing'].includes(tab)) {
       setActiveTab(tab);
     }
   }, [searchParams]);
@@ -56,11 +56,80 @@ const TechnicianDashboard = () => {
     email: '',
     logoUrl: '',
     coverUrl: '',
-    services: [],
+    services: [], // This will store pricing data now
     verified: false,
     availability: {},
     payoutDetails: { method: 'Bank Transfer', details: '' }
   });
+
+  const [pricingForm, setPricingForm] = useState({
+    service: 'screen',
+    brand: '',
+    model: '',
+    price: ''
+  });
+
+  const handleAddPricing = async () => {
+    if (!pricingForm.brand || !pricingForm.price) {
+      toast({ title: "Missing Fields", description: "Please fill in brand and price", variant: "destructive" });
+      return;
+    }
+
+    const newPricing = {
+      id: Date.now().toString(),
+      service: pricingForm.service,
+      brand: pricingForm.brand,
+      model: pricingForm.model || 'All Models',
+      price: parseFloat(pricingForm.price)
+    };
+
+    const updatedServices = [...(profileData.services || []), newPricing];
+    setProfileData({ ...profileData, services: updatedServices });
+
+    // Auto-save
+    try {
+      setSaving(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      await fetch(`${API_URL}/api/technicians/profile`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ ...profileData, services: updatedServices })
+      });
+      toast({ title: "Price Added", description: "Your service pricing has been updated." });
+      setPricingForm({ service: 'screen', brand: '', model: '', price: '' });
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to save pricing", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeletePricing = async (id) => {
+    const updatedServices = profileData.services.filter(s => s.id !== id);
+    setProfileData({ ...profileData, services: updatedServices });
+
+    try {
+      setSaving(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      await fetch(`${API_URL}/api/technicians/profile`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ ...profileData, services: updatedServices })
+      });
+      toast({ title: "Price Removed", description: "Service pricing deleted." });
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to delete pricing", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const [gigs, setGigs] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [inventory, setInventory] = useState([]);
@@ -983,6 +1052,7 @@ const TechnicianDashboard = () => {
             <TabsTrigger value="jobs" className="flex-1 py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">Active Jobs</TabsTrigger>
             <TabsTrigger value="marketplace" onClick={fetchAvailableJobs} className="flex-1 py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">Find Jobs</TabsTrigger>
             <TabsTrigger value="services" className="flex-1 py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">My Services</TabsTrigger>
+            <TabsTrigger value="pricing" className="flex-1 py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">Pricing</TabsTrigger>
             <TabsTrigger value="bids" className="flex-1 py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">Bids</TabsTrigger>
             <TabsTrigger value="inventory" className="flex-1 py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">Inventory</TabsTrigger>
             <TabsTrigger value="earnings" className="flex-1 py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">Earnings</TabsTrigger>
@@ -1596,6 +1666,69 @@ const TechnicianDashboard = () => {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+          </TabsContent>
+
+          <TabsContent value="pricing">
+            <Card className="bg-zinc-900 border-zinc-800">
+              <CardHeader>
+                <CardTitle className="text-lg font-['Outfit'] font-bold text-white">Specific Pricing</CardTitle>
+                <p className="text-sm text-zinc-500">Set custom prices for specific devices and repairs</p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex flex-col md:flex-row gap-4 items-end bg-zinc-800/30 p-4 rounded-xl border border-zinc-800">
+                  <div className="w-full md:w-1/4 space-y-2">
+                    <Label>Service Type</Label>
+                    <Select value={pricingForm.service} onValueChange={(v) => setPricingForm({ ...pricingForm, service: v })}>
+                      <SelectTrigger className="bg-black border-zinc-700 text-white"><SelectValue /></SelectTrigger>
+                      <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
+                        <SelectItem value="screen">Screen Repair</SelectItem>
+                        <SelectItem value="battery">Battery Replacement</SelectItem>
+                        <SelectItem value="water-damage">Water Damage</SelectItem>
+                        <SelectItem value="general">General Repair</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="w-full md:w-1/4 space-y-2">
+                    <Label>Brand</Label>
+                    <Input placeholder="Apple" value={pricingForm.brand} onChange={(e) => setPricingForm({ ...pricingForm, brand: e.target.value })} className="bg-black border-zinc-700 text-white" />
+                  </div>
+                  <div className="w-full md:w-1/4 space-y-2">
+                    <Label>Model</Label>
+                    <Input placeholder="iPhone 13" value={pricingForm.model} onChange={(e) => setPricingForm({ ...pricingForm, model: e.target.value })} className="bg-black border-zinc-700 text-white" />
+                  </div>
+                  <div className="w-full md:w-1/4 space-y-2">
+                    <Label>Price (LKR)</Label>
+                    <Input type="number" placeholder="15000" value={pricingForm.price} onChange={(e) => setPricingForm({ ...pricingForm, price: e.target.value })} className="bg-black border-zinc-700 text-white" />
+                  </div>
+                  <Button onClick={handleAddPricing} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700 text-white"><Plus className="h-4 w-4" /></Button>
+                </div>
+
+                <div className="rounded-xl border border-zinc-800 overflow-hidden">
+                  <div className="p-3 bg-zinc-800/50 flex text-sm font-medium text-zinc-400">
+                    <div className="flex-1">Service</div>
+                    <div className="flex-1">Brand</div>
+                    <div className="flex-1">Model</div>
+                    <div className="flex-1">Price</div>
+                    <div className="w-10"></div>
+                  </div>
+                  {(!profileData.services || profileData.services.length === 0) ? (
+                    <div className="p-8 text-center text-zinc-500">No specific pricing added yet.</div>
+                  ) : (
+                    (profileData.services || []).map((item) => (
+                      <div key={item.id} className="p-3 border-t border-zinc-800 flex items-center text-sm text-white hover:bg-zinc-800/30">
+                        <div className="flex-1 capitalize">{item.service}</div>
+                        <div className="flex-1">{item.brand}</div>
+                        <div className="flex-1">{item.model}</div>
+                        <div className="flex-1 text-emerald-400 font-bold"><CurrencyDisplay amount={item.price} /></div>
+                        <div className="w-10 text-right">
+                          <Button size="icon" variant="ghost" className="h-6 w-6 text-red-400 hover:bg-red-900/20" onClick={() => handleDeletePricing(item.id)}><Trash2 className="h-3 w-3" /></Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="inventory">
