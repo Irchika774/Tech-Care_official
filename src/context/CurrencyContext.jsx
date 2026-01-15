@@ -25,11 +25,14 @@ export const CurrencyProvider = ({ children }) => {
     const [loading, setLoading] = useState(false);
     const [initialized, setInitialized] = useState(true);
 
-    // No auto-detection - always use LKR
+    // Load saved currency preference
     useEffect(() => {
-        // Force LKR currency
-        setCurrency('LKR');
-        setCountry('Sri Lanka');
+        const savedCurrency = getUserCurrency();
+        // Try to get country from storage or default to Sri Lanka
+        const savedCountry = localStorage.getItem('userCountry') || 'Sri Lanka';
+
+        setCurrency(savedCurrency);
+        setCountry(savedCountry);
         setInitialized(true);
         setLoading(false);
     }, []);

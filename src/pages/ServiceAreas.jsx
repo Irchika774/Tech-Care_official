@@ -497,8 +497,18 @@ const ServiceAreas = () => {
                         We're rapidly expanding across Sri Lanka. Register your interest and we'll notify you when we launch in your district.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                        <Button className="bg-white text-black hover:bg-gray-200">Request Coverage</Button>
-                        <Button variant="outline">Become a Technician</Button>
+                        <Button
+                            className="bg-white text-black hover:bg-gray-200"
+                            onClick={() => navigate('/support')}
+                        >
+                            Request Coverage
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => navigate('/register')}
+                        >
+                            Become a Technician
+                        </Button>
                     </div>
                 </div>
             </section>

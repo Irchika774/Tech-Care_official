@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
+import { ThemeContext } from '../context/ThemeContext';
+import { useCurrency } from '../context/CurrencyContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -37,6 +39,8 @@ import {
 const Settings = () => {
     const { user, profile } = useAuth();
     const { toast } = useToast();
+    const { theme, setTheme } = useContext(ThemeContext);
+    const { currency, changeCurrency } = useCurrency();
     const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState('notifications');
 
@@ -89,6 +93,15 @@ const Settings = () => {
         }
     }, []);
 
+    // Sync global state to settings
+    useEffect(() => {
+        setSettings(prev => ({
+            ...prev,
+            theme: theme || 'system',
+            currency: currency || 'LKR'
+        }));
+    }, [theme, currency]);
+
     // Save settings to localStorage
     const saveSettings = (newSettings) => {
         setSettings(newSettings);
@@ -109,6 +122,13 @@ const Settings = () => {
     const handleSelectChange = (key, value) => {
         const newSettings = { ...settings, [key]: value };
         saveSettings(newSettings);
+
+        // Update global contexts
+        if (key === 'theme') {
+            setTheme(value);
+        } else if (key === 'currency') {
+            changeCurrency(value);
+        }
     };
 
     // Handle password change
