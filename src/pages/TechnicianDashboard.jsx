@@ -510,7 +510,7 @@ const TechnicianDashboard = () => {
     if (session?.access_token && authError) {
       console.log('[TechnicianDashboard] Session refreshed, resuming polling');
       setAuthError(false);
-      fetchDashboardData();
+      fetchDashboardData(true); // Use background fetch to prevent UI flash
     }
   }, [session?.access_token]);
 
