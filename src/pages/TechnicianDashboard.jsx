@@ -343,11 +343,11 @@ const TechnicianDashboard = () => {
   // Track if we're currently experiencing auth errors to stop polling
   const [authError, setAuthError] = useState(false);
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = async (isBackground = false) => {
     let timeoutId;
     console.log('fetchDashboardData called, user:', user?.id);
     try {
-      setLoading(true);
+      if (!isBackground) setLoading(true);
       if (!user) {
         console.log('No user, stopping loading');
         setLoading(false);
@@ -461,7 +461,7 @@ const TechnicianDashboard = () => {
       // Poll every 30 seconds as fallback, but skip if auth error
       interval = setInterval(() => {
         if (!authError) {
-          fetchDashboardData();
+          fetchDashboardData(true);
           fetchAvailableJobs();
         } else {
           console.log('[TechnicianDashboard] Polling skipped - auth error state');
@@ -473,14 +473,14 @@ const TechnicianDashboard = () => {
         // Only update if it pertains to this technician user
         if (payload.new?.user_id === user.id || payload.old?.user_id === user.id) {
           console.log('[TechnicianDashboard] Technician update:', payload.eventType);
-          if (!authError) fetchDashboardData();
+          if (!authError) fetchDashboardData(true);
         }
       });
 
       unsubBookings = realtimeService.subscribeToBookings((payload) => {
         console.log('[TechnicianDashboard] Booking update:', payload.eventType);
         if (!authError) {
-          fetchDashboardData();
+          fetchDashboardData(true);
           fetchAvailableJobs(); // Refresh available jobs when bookings change
         }
       }, user.id);
@@ -488,27 +488,27 @@ const TechnicianDashboard = () => {
       unsubBids = realtimeService.subscribeToBids((payload) => {
         console.log('[TechnicianDashboard] Bid update:', payload.eventType);
         if (!authError) {
-          fetchDashboardData();
+          fetchDashboardData(true);
           fetchAvailableJobs();
         }
       });
 
       unsubReviews = realtimeService.subscribeToReviews((payload) => {
         console.log('[TechnicianDashboard] Review update:', payload.eventType);
-        if (!authError) fetchDashboardData();
+        if (!authError) fetchDashboardData(true);
       });
 
       unsubGigs = realtimeService.subscribeToGigs((payload) => {
         console.log('[TechnicianDashboard] Gig update:', payload.eventType);
         if (payload.new?.technician_id === data?.technician?.id && !authError) {
-          fetchDashboardData();
+          fetchDashboardData(true);
         }
       });
 
       // Special notification handling to just refresh dashboard data which includes notif count
       unsubNotifications = realtimeService.subscribeToNotifications(user.id, (payload) => {
         console.log('[TechnicianDashboard] New notification:', payload.new?.type);
-        if (!authError) fetchDashboardData();
+        if (!authError) fetchDashboardData(true);
       });
     }
 

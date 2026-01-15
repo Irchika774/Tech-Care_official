@@ -25,7 +25,7 @@ import {
   MapPin,
   CreditCard,
   ArrowRight,
-  Sparkles,
+  CalendarCheck,
   Shield,
   Star,
   Zap
@@ -229,7 +229,7 @@ const Schedule = () => {
           device_brand: deviceBrand || deviceType,
           device_model: deviceModel || 'Unknown',
           issue_description: issueDescription || selectedServiceInfo?.label,
-          status: 'pending_payment',
+          status: 'pending', // Use 'pending' status, payment_status is tracked separately
           estimated_cost: totalAmount
         };
 
@@ -310,7 +310,11 @@ const Schedule = () => {
         navigate('/customer-dashboard');
       } catch (error) {
         console.error('Scheduling error:', error);
-        alert('Failed to save your schedule.');
+        toast({
+          title: "Scheduling Failed",
+          description: "Failed to save your schedule. Please try again.",
+          variant: "destructive"
+        });
       } finally {
         setLoading(false);
       }
@@ -343,7 +347,7 @@ const Schedule = () => {
         <div className="relative container mx-auto px-4">
           <div className="text-center max-w-3xl mx-auto">
             <Badge className="mb-6 bg-white/10 text-white border-white/30 backdrop-blur-sm px-4 py-2">
-              <Sparkles className="w-4 h-4 mr-2" />
+              <CalendarCheck className="w-4 h-4 mr-2" />
               Book Your Repair
             </Badge>
 

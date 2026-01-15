@@ -4,6 +4,39 @@ import { supabaseAuth } from '../middleware/supabaseAuth.js';
 
 const router = express.Router();
 
+const mockPosts = [
+    {
+        id: '1',
+        title: 'Essential Smartphone Maintenance Tips',
+        content: 'Learn how to extend your battery life and keep your screen scratch-free with these simple daily habits. Modern smartphones are marvels of engineering, but they still need care...',
+        author: 'Sarah Chen',
+        category: 'Maintenance',
+        image_url: 'https://images.unsplash.com/photo-1512054502232-120feb11f725?q=80&w=2000',
+        created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
+        tags: ['battery', 'screen', 'tips']
+    },
+    {
+        id: '2',
+        title: 'Common Laptop Issues & How to Fix Them',
+        content: 'From overheating to keyboard failures, we cover the most frequent problems laptop users face and when to seek professional help. Overheating is the number one enemy of performance...',
+        author: 'Mike Ross',
+        category: 'Repair Guide',
+        image_url: 'https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?q=80&w=2000',
+        created_at: new Date(Date.now() - 86400000 * 5).toISOString(),
+        tags: ['laptop', 'hardware', 'guide']
+    },
+    {
+        id: '3',
+        title: 'The Future of Right to Repair',
+        content: 'Understanding the new legislation and what it means for device owners and independent repair shops. The movement is gaining momentum across the globe...',
+        author: 'TechCare Editorial',
+        category: 'Industry News',
+        image_url: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=2000',
+        created_at: new Date(Date.now() - 86400000 * 10).toISOString(),
+        tags: ['news', 'legal', 'sustainability']
+    }
+];
+
 // Get all blog posts
 router.get('/', async (req, res) => {
     try {
@@ -12,7 +45,13 @@ router.get('/', async (req, res) => {
             .select('*')
             .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+            if (error.code === 'PGRST205' || error.message.includes('does not exist')) {
+                console.log('Blog table missing, using mock data');
+                return res.json(mockPosts);
+            }
+            throw error;
+        }
         res.json(posts);
     } catch (error) {
         console.error('Blog fetch error:', error);
@@ -29,7 +68,14 @@ router.get('/:id', async (req, res) => {
             .eq('id', req.params.id)
             .single();
 
-        if (error) throw error;
+        if (error) {
+            if (error.code === 'PGRST205' || error.message.includes('does not exist')) {
+                const post = mockPosts.find(p => p.id === req.params.id);
+                if (post) return res.json(post);
+                return res.status(404).json({ error: 'Post not found' });
+            }
+            throw error;
+        }
         res.json(post);
     } catch (error) {
         console.error('Blog post fetch error:', error);

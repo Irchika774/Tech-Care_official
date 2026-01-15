@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -61,6 +62,7 @@ const MapController = ({ center, zoom }) => {
 };
 
 const ServiceAreas = () => {
+    const navigate = useNavigate();
     const [selectedDistrict, setSelectedDistrict] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
@@ -188,7 +190,7 @@ const ServiceAreas = () => {
         ? serviceCenters.filter(c =>
             c.district?.toLowerCase() === selectedDistrict.name?.toLowerCase() ||
             c.district?.toLowerCase() === selectedDistrict.id?.toLowerCase()
-        ).slice(0, 5)
+        )
         : [];
 
     const handleDistrictSelect = (district) => {
@@ -437,7 +439,7 @@ const ServiceAreas = () => {
                                                     <div className="text-xs text-zinc-500">Technicians</div>
                                                 </div>
                                                 <div className="p-3 rounded-lg bg-zinc-800/50 text-center">
-                                                    <div className="text-xl font-bold text-blue-400">{selectedDistrict.shops}</div>
+                                                    <div className="text-xl font-bold text-blue-400">{selectedCenters.length || selectedDistrict.shops}</div>
                                                     <div className="text-xs text-zinc-500">Centers</div>
                                                 </div>
                                             </div>
@@ -446,7 +448,7 @@ const ServiceAreas = () => {
                                             {selectedCenters.length > 0 && (
                                                 <div className="space-y-2 mb-4">
                                                     <h4 className="text-sm font-medium text-zinc-300">Top Service Centers</h4>
-                                                    {selectedCenters.slice(0, 3).map((center) => (
+                                                    {selectedCenters.slice(0, 5).map((center) => (
                                                         <div key={center.id} className="p-2 rounded bg-zinc-800/50 text-sm">
                                                             <div className="flex justify-between items-start">
                                                                 <span className="font-medium">{center.name}</span>
@@ -455,15 +457,27 @@ const ServiceAreas = () => {
                                                                     {center.rating}
                                                                 </div>
                                                             </div>
-                                                            <div className="text-xs text-zinc-500 mt-1 flex items-center gap-2">
-                                                                <Phone className="h-3 w-3" /> {center.phone}
-                                                            </div>
+                                                            {center.phone ? (
+                                                                <div className="text-xs text-zinc-500 mt-1 flex items-center gap-2">
+                                                                    <Phone className="h-3 w-3" /> {center.phone}
+                                                                </div>
+                                                            ) : (
+                                                                <div className="text-xs text-zinc-600 mt-1 italic">
+                                                                    No phone available
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     ))}
+                                                    {selectedCenters.length > 5 && (
+                                                        <p className="text-xs text-zinc-500 text-center">+ {selectedCenters.length - 5} more centers</p>
+                                                    )}
                                                 </div>
                                             )}
 
-                                            <Button className="w-full bg-green-600 hover:bg-green-700 h-9 text-sm">
+                                            <Button
+                                                className="w-full bg-green-600 hover:bg-green-700 h-9 text-sm"
+                                                onClick={() => navigate('/technicians', { state: { district: selectedDistrict.name } })}
+                                            >
                                                 Find Technicians in {selectedDistrict.name}
                                             </Button>
                                         </div>

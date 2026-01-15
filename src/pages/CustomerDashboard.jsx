@@ -895,10 +895,18 @@ function CustomerDashboard() {
 
                           if (response.ok) {
                             fetchData();
-                            alert('Profile updated successfully');
+                            toast({
+                              title: "Profile Updated",
+                              description: "Your profile has been updated successfully.",
+                            });
                           }
                         } catch (err) {
                           console.error('Update profile error:', err);
+                          toast({
+                            variant: "destructive",
+                            title: "Update Failed",
+                            description: "Could not update profile. Please try again.",
+                          });
                         }
                       }}
                       className="space-y-6 max-w-lg"

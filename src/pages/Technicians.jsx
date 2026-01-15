@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -35,6 +35,7 @@ import { Package } from 'lucide-react';
 
 const Technicians = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [shops, setShops] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -47,6 +48,13 @@ const Technicians = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [districts, setDistricts] = useState(['all']);
   const shopsPerPage = 12;
+
+  // Apply district filter if navigating from ServiceAreas
+  useEffect(() => {
+    if (location.state?.district) {
+      setSelectedDistrict(location.state.district);
+    }
+  }, [location.state]);
 
   const sriLankaDistricts = [
     'Ampara', 'Anuradhapura', 'Badulla', 'Batticaloa', 'Colombo', 'Galle', 'Gampaha',
