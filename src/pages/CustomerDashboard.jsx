@@ -263,26 +263,26 @@ function CustomerDashboard() {
       // Subscribe using centralized service
       unsubBookings = realtimeService.subscribeToBookings(() => {
         console.log('[CustomerDashboard] Booking update');
-        fetchData();
+        fetchData(true);
       }, user.id);
 
       unsubTechnicians = realtimeService.subscribeToTechnicians(() => {
         console.log('[CustomerDashboard] Technician update');
-        fetchData();
+        fetchData(true);
       });
 
       unsubNotifications = realtimeService.subscribeToNotifications(user.id, () => {
         console.log('[CustomerDashboard] Notification update');
-        fetchData();
+        fetchData(true);
       });
 
       unsubBids = realtimeService.subscribeToBids(() => {
         console.log('[CustomerDashboard] Bid update');
-        fetchData();
+        fetchData(true);
       });
 
       // Fallback polling every 30 seconds
-      interval = setInterval(fetchData, 30000);
+      interval = setInterval(() => fetchData(true), 30000);
     }
 
     return () => {
