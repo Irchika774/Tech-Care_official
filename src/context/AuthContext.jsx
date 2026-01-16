@@ -335,6 +335,7 @@ export const AuthProvider = ({ children }) => {
             isTechnician,
             isCustomer,
             isAuthenticated,
+            refreshUser,
             supabase
         }}>
             {loading ? (

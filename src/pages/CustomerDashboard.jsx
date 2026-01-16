@@ -55,6 +55,13 @@ import { format, formatDistanceToNow } from 'date-fns';
 import realtimeService from '../utils/realtimeService';
 
 import { useToast } from '../hooks/use-toast';
+import {
+  BOOKING_STATUS,
+  BOOKING_PROGRESS,
+  POLLING_INTERVALS,
+  ACTIVE_BOOKING_STATUSES,
+  isActiveBookingStatus
+} from '../lib/constants';
 
 function CustomerDashboard() {
   const navigate = useNavigate();
@@ -189,8 +196,8 @@ function CustomerDashboard() {
       }
 
       // 3. Calculate Stats Locally
-      const active = bookings.filter(b => ['pending', 'confirmed', 'scheduled', 'in_progress'].includes(b.status));
-      const completed = bookings.filter(b => b.status === 'completed');
+      const active = bookings.filter(b => isActiveBookingStatus(b.status));
+      const completed = bookings.filter(b => b.status === BOOKING_STATUS.COMPLETED);
       const totalSpent = completed.reduce((sum, b) => sum + (Number(b.price || b.estimated_cost) || 0), 0);
 
       // 4. Update Main State
@@ -283,7 +290,7 @@ function CustomerDashboard() {
       });
 
       // Fallback polling every 30 seconds
-      interval = setInterval(() => fetchData(true), 30000);
+      interval = setInterval(() => fetchData(true), POLLING_INTERVALS.DASHBOARD);
     }
 
     return () => {
@@ -386,7 +393,7 @@ function CustomerDashboard() {
           'Authorization': `Bearer ${session?.access_token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ status: 'cancelled' })
+        body: JSON.stringify({ status: BOOKING_STATUS.CANCELLED })
       });
 
       if (!response.ok) throw new Error('Failed to cancel booking');
@@ -606,7 +613,7 @@ function CustomerDashboard() {
                                     <Button size="sm" className="bg-white text-black hover:bg-gray-200 rounded-full" onClick={() => navigate(`/chat/${booking.id}`)}>
                                       <MessageSquare className="w-4 h-4 mr-2" /> Chat
                                     </Button>
-                                    {(booking.status === 'pending' || booking.status === 'confirmed') && (
+                                    {(booking.status === BOOKING_STATUS.PENDING || booking.status === BOOKING_STATUS.CONFIRMED) && (
                                       <Button
                                         size="sm"
                                         variant="ghost"
@@ -626,7 +633,7 @@ function CustomerDashboard() {
                                     <span>Testing</span>
                                     <span>Delivery</span>
                                   </div>
-                                  <Progress value={booking.status === 'pending' ? 20 : booking.status === 'confirmed' ? 40 : booking.status === 'in_progress' ? 70 : 100} className="h-2 bg-zinc-800" />
+                                  <Progress value={BOOKING_PROGRESS[booking.status] || 0} className="h-2 bg-zinc-800" />
                                 </div>
                               </div>
                             ))}

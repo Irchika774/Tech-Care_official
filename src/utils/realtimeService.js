@@ -7,6 +7,9 @@
 import { supabase } from '../lib/supabase';
 
 class RealtimeService {
+    /**
+     * Initialize the RealtimeService
+     */
     constructor() {
         this.channels = new Map();
         this.callbacks = new Map();
@@ -15,6 +18,9 @@ class RealtimeService {
         this.startHeartbeat();
     }
 
+    /**
+     * Start the heartbeat mechanism to monitor and restore connections
+     */
     startHeartbeat() {
         if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
         this.retryBackoff = new Map(); // Track retry attempts per channel
@@ -48,6 +54,10 @@ class RealtimeService {
         }, 45000); // 45 seconds between checks
     }
 
+    /**
+     * Re-subscribe to a channel (used for recovery)
+     * @param {string} channelKey - The unique key for the channel
+     */
     reSubscribe(channelKey) {
         const config = this.configs.get(channelKey);
         if (!config) return;
@@ -67,12 +77,19 @@ class RealtimeService {
         this[methodName](...args, true);
     }
 
+    /**
+     * Refresh all active connections (useful after auth change or network recovery)
+     */
     refreshAllConnections() {
         console.log('[Realtime] Refreshing connections...');
         const keys = Array.from(this.configs.keys());
         keys.forEach(key => this.reSubscribe(key));
     }
 
+    /**
+     * Internal method to handle subscription logic
+     * @private
+     */
     _subscribe(channelKey, options, callback, methodName, args, isInternal = false) {
         // External call to existing channel: just add callback
         if (this.channels.has(channelKey)) {
@@ -121,10 +138,21 @@ class RealtimeService {
         return () => this.removeCallback(channelKey, callback);
     }
 
+    /**
+     * Subscribe to changes in the technicians table
+     * @param {Function} callback - Function called with payload on change
+     * @returns {Function} Unsubscribe function
+     */
     subscribeToTechnicians(callback, isInternal = false) {
         return this._subscribe('technicians', { event: '*', schema: 'public', table: 'technicians' }, callback, 'subscribeToTechnicians', [callback], isInternal);
     }
 
+    /**
+     * Subscribe to changes in the bookings table
+     * @param {Function} callback - Function called with payload on change
+     * @param {string} [userId] - Optional User ID to scope subscription (though RLS usually handles this)
+     * @returns {Function} Unsubscribe function
+     */
     subscribeToBookings(callback, userId = null, isInternal = false) {
         const channelKey = userId ? `bookings-${userId}` : 'bookings-all';
         return this._subscribe(channelKey, { event: '*', schema: 'public', table: 'bookings' }, callback, 'subscribeToBookings', [callback, userId], isInternal);
@@ -142,6 +170,12 @@ class RealtimeService {
         return this._subscribe('gigs', { event: '*', schema: 'public', table: 'gigs' }, callback, 'subscribeToGigs', [callback], isInternal);
     }
 
+    /**
+     * Subscribe to user-specific notifications
+     * @param {string} userId - The user ID to listen for
+     * @param {Function} callback - Function called with payload on change
+     * @returns {Function} Unsubscribe function
+     */
     subscribeToNotifications(userId, callback, isInternal = false) {
         const channelKey = `notifications-${userId}`;
         return this._subscribe(channelKey, {

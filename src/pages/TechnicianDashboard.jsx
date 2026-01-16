@@ -5,6 +5,11 @@ import { Button } from '../components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { useToast } from '../hooks/use-toast';
+import {
+  BOOKING_STATUS,
+  POLLING_INTERVALS,
+  ACTIVE_BOOKING_STATUSES
+} from '../lib/constants';
 import { Badge } from '../components/ui/badge';
 import { Progress } from '../components/ui/progress';
 import { Wallet, TrendingUp, CheckCircle, Star, Briefcase, Gavel, Smartphone, Monitor, Tablet, Loader2, User, Sparkles, ArrowRight, Activity, Calendar, Edit, Plus, Trash2, ShieldCheck, ShieldAlert, Save, BarChart3, Clock as ClockIcon, Settings, MapPin, Banknote, Bell, AlertCircle, DollarSign, Clock, Send, MessageSquare, Wrench } from 'lucide-react';
@@ -535,7 +540,7 @@ const TechnicianDashboard = () => {
         } else {
           console.log('[TechnicianDashboard] Polling skipped - auth error state');
         }
-      }, 30000);
+      }, POLLING_INTERVALS.DASHBOARD);
 
       // Subscribe to real-time updates using centralized service
       unsubTechnicians = realtimeService.subscribeToTechnicians((payload) => {
@@ -1917,10 +1922,10 @@ const TechnicianDashboard = () => {
                               <SelectValue placeholder="Update Status" />
                             </SelectTrigger>
                             <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
-                              <SelectItem value="diagnosing">Diagnosing</SelectItem>
-                              <SelectItem value="waiting_for_parts">Waiting Parts</SelectItem>
-                              <SelectItem value="in_progress">In Progress</SelectItem>
-                              <SelectItem value="completed">Completed</SelectItem>
+                              <SelectItem value={BOOKING_STATUS.DIAGNOSING}>Diagnosing</SelectItem>
+                              <SelectItem value={BOOKING_STATUS.WAITING_FOR_PARTS}>Waiting Parts</SelectItem>
+                              <SelectItem value={BOOKING_STATUS.IN_PROGRESS}>In Progress</SelectItem>
+                              <SelectItem value={BOOKING_STATUS.COMPLETED}>Completed</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
