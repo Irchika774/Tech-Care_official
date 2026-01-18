@@ -21,16 +21,14 @@
 
 ### 🌐 Live Demo
 
-| Component | URL | Status |
-|-----------|-----|--------|
 | **🖥️ Frontend** | [https://techcare-official-new.netlify.app/](https://techcare-official-new.netlify.app/) | ![Netlify](https://img.shields.io/badge/Netlify-Online-00C7B7?logo=netlify) |
-| **⚙️ Backend API** | [server-seven-ecru.vercel.app](https://server-seven-ecru.vercel.app) | ![Vercel](https://img.shields.io/badge/Vercel-Online-000?logo=vercel) |
+| **⚙️ Backend API** | [https://server-seven-ecru.vercel.app](https://server-seven-ecru.vercel.app) | ![Vercel](https://img.shields.io/badge/Vercel-Online-000?logo=vercel) |
 
-### 🆕 Recent Updates (v2.1 Patch)
-- ✅ **API Stability**: Fixed schema mismatches in Reviews API reducing server errors.
-- ✅ **UI/UX Polish**: Eliminated visual gaps on dark-themed pages (Careers, Partner, etc.).
-- ✅ **Error Handling**: Improved authentication flow robustness and reduced console noise.
-- ✅ **Deployment**: Verified production deployments on Vercel and Netlify.
+### 🆕 Recent Updates (v2.2 Payment Integration)
+- ✅ **Stripe MCP**: Full multi-currency payment support with saved cards.
+- ✅ **Supabase Migration**: Complete transition from MongoDB to Supabase (PostgreSQL).
+- ✅ **Automated CI/CD**: GitHub Actions pipeline for auto-deploying to Vercel and Netlify.
+- ✅ **Admin Access**: Fixed role-based access control for backend booking APIs.
 
 ---
 
@@ -545,6 +543,7 @@ flowchart LR
 - **Node.js** v20.x or higher
 - **npm** v10.x or higher
 - **Git** for version control
+- **Supabase Account** for database & auth
 
 ### ⚡ One-Click Start (Recommended)
 
@@ -588,21 +587,41 @@ cd ..
 
 ### Environment Variables
 
-**Root `.env`**
+**Frontend (`.env`)**
 ```env
+# API Configuration
 VITE_API_URL=http://localhost:5000
-VITE_GOOGLE_MAPS_API_KEY=your_google_maps_key
+
+# Supabase (Required)
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# Stripe (Payments)
 VITE_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
+
+# Google Maps
+VITE_GOOGLE_MAPS_API_KEY=your_google_maps_key
 ```
 
-**Server `.env`**
+**Backend (`server/.env`)**
 ```env
+# Server
 PORT=5000
-SUPABASE_URL=your_supabase_url
-SUPABASE_SERVICE_KEY=your_supabase_service_key
-JWT_SECRET=your_jwt_secret
-STRIPE_SECRET_KEY=your_stripe_secret_key
-RESEND_API_KEY=your_resend_api_key
+NODE_ENV=development
+
+# Supabase (Required)
+VITE_SUPABASE_URL=your_supabase_project_url
+SUPABASE_SERVICE_ROLE_KEY=your_super_secret_service_role_key
+
+# Stripe (Payments)
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+# Google Maps (Backend)
+GOOGLE_MAPS_API_KEY=your_google_maps_api_key
+
+# Email Service (Resend)
+RESEND_API_KEY=re_...
 ```
 
 ### Start Development Servers
@@ -697,18 +716,18 @@ pie title Technology Distribution
 | | Lucide React | Icon library |
 | **Backend** | Node.js | Runtime environment |
 | | Express.js | Web framework |
-| | JWT | Token authentication |
+| | Stripe SDK | Payment processing |
 | | Helmet | Security headers |
 | **Database** | Supabase (PostgreSQL) | Primary database |
-| | Row Level Security | Data protection |
+| | Row Level Security | Data protection & Auth |
 | | Realtime | Live updates |
-| **Services** | Stripe | Payment processing |
+| **Services** | Stripe | Payment processing (MCP) |
 | | Resend | Email delivery |
 | | Google Maps | Location services |
 | | Cloudinary | Image hosting |
 | **DevOps** | Netlify | Frontend hosting |
 | | Vercel | Backend hosting |
-| | GitHub | Version control |
+| | GitHub Actions | CI/CD Pipeline |
 
 ---
 
