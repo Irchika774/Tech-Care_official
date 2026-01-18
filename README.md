@@ -21,45 +21,71 @@
 
 ### 🌐 Live Demo
 
-| **🖥️ Frontend** | [https://techcare-official-new.netlify.app/](https://techcare-official-new.netlify.app/) | ![Netlify](https://img.shields.io/badge/Netlify-Online-00C7B7?logo=netlify) |
-| **⚙️ Backend API** | [https://server-seven-ecru.vercel.app](https://server-seven-ecru.vercel.app) | ![Vercel](https://img.shields.io/badge/Vercel-Online-000?logo=vercel) |
+| Component | URL | Status | host |
+|:----------|:----|:-------|:-----|
+| **🖥️ Frontend** | [techcare-official-new.netlify.app](https://techcare-official-new.netlify.app/) | ![Netlify](https://img.shields.io/badge/Online-00C7B7?style=flat&logo=netlify&logoColor=white) | **Netlify** |
+| **⚙️ Backend API** | [server-seven-ecru.vercel.app](https://server-seven-ecru.vercel.app) | ![Vercel](https://img.shields.io/badge/Online-000000?style=flat&logo=vercel&logoColor=white) | **Vercel** |
 
 ### 🆕 Version History
 
-#### **v2.2 - Payment & Infrastructure (Current)**
-- ✅ **Stripe MCP**: Full multi-currency payment support with saved cards.
-- ✅ **Supabase Migration**: Complete transition from MongoDB to Supabase (PostgreSQL).
-- ✅ **Automated CI/CD**: GitHub Actions pipeline for auto-deploying to Vercel and Netlify.
-- ✅ **Admin Access**: Fixed role-based access control for backend booking APIs.
+<details open>
+<summary><b>v2.2 - Payment & Infrastructure (Current)</b></summary>
+<br>
 
-#### **v2.1 - Stability Patch (Jan 2026)**
-- ✅ **API Stability**: Fixed schema mismatches in Reviews API reducing server errors.
-- ✅ **UI/UX Polish**: Eliminated visual gaps on dark-themed pages (Careers, Partner, etc.).
-- ✅ **Error Handling**: Improved authentication flow robustness and reduced console noise.
-- ✅ **Deployment**: Verified production deployments on Vercel and Netlify.
+*   ✅ **Stripe MCP**: Full multi-currency payment support with saved cards.
+*   ✅ **Supabase Migration**: Complete transition from MongoDB to Supabase (PostgreSQL).
+*   ✅ **Automated CI/CD**: GitHub Actions pipeline for auto-deploying to Vercel and Netlify.
+*   ✅ **Admin Access**: Fixed role-based access control for backend booking APIs.
+</details>
 
-#### **v2.0 - Core Platform Overhaul (Dec 2025)**
-- 🚀 **Frontend Remake**: Migrated from simple HTML/JS to React 18 + Vite.
-- 🎨 **New Design System**: Implemented dark-mode first UI with TailwindCSS & Radix UI.
-- 🔐 **Enhanced Auth**: Integrated Supabase Auth for secure, session-based login.
-- 📱 **Mobile Responsive**: Fully optimized layouts for all device sizes.
+<details>
+<summary><b>v2.1 - Stability Patch (Jan 2026)</b></summary>
+<br>
 
-#### **v1.5 - Backend Integration (Nov 2025)**
-- ⚙️ **Node.js Server**: Introduced Express.js backend for dynamic data handling.
-- 🗄️ **MongoDB Database**: Moved from local storage/JSON to MongoDB (Legacy).
-- 🔌 **REST API**: Created initial endpoints for bookings and technicians.
-- 🔒 **Basic Auth**: JWT-based authentication system.
+*   ✅ **API Stability**: Fixed schema mismatches in Reviews API reducing server errors.
+*   ✅ **UI/UX Polish**: Eliminated visual gaps on dark-themed pages (Careers, Partner, etc.).
+*   ✅ **Error Handling**: Improved authentication flow robustness and reduced console noise.
+*   ✅ **Deployment**: Verified production deployments on Vercel and Netlify.
+</details>
 
-#### **v1.0 - Initial Static Release (Oct 2025)**
-- 🌐 **Static Website**: Launched landing page with Services and About/Contact sections.
-- 🖼️ **UI Foundations**: Basic CSS styling and responsive grid layout.
-- 📝 **Forms**: Simple HTML forms for contact and career inquiries.
-- 🗺️ **Maps**: Basic Google Maps embed for store location.
+<details>
+<summary><b>v2.0 - Core Platform Overhaul (Dec 2025)</b></summary>
+<br>
 
-#### **v0.5 - Beta / MVP (Sept 2025)**
-- 🧪 **Prototype**: Proof-of-concept wireframes and basic navigation.
-- 🚧 **Services List**: Static list of repair services.
-- 👥 **Team**: Initial team page and project setup.
+*   🚀 **Frontend Remake**: Migrated from simple HTML/JS to React 18 + Vite.
+*   🎨 **New Design System**: Implemented dark-mode first UI with TailwindCSS & Radix UI.
+*   🔐 **Enhanced Auth**: Integrated Supabase Auth for secure, session-based login.
+*   📱 **Mobile Responsive**: Fully optimized layouts for all device sizes.
+</details>
+
+<details>
+<summary><b>v1.5 - Backend Integration (Nov 2025)</b></summary>
+<br>
+
+*   ⚙️ **Node.js Server**: Introduced Express.js backend for dynamic data handling.
+*   🗄️ **MongoDB Database**: Moved from local storage/JSON to MongoDB (Legacy).
+*   🔌 **REST API**: Created initial endpoints for bookings and technicians.
+*   🔒 **Basic Auth**: JWT-based authentication system.
+</details>
+
+<details>
+<summary><b>v1.0 - Initial Static Release (Oct 2025)</b></summary>
+<br>
+
+*   🌐 **Static Website**: Launched landing page with Services and About/Contact sections.
+*   🖼️ **UI Foundations**: Basic CSS styling and responsive grid layout.
+*   📝 **Forms**: Simple HTML forms for contact and career inquiries.
+*   🗺️ **Maps**: Basic Google Maps embed for store location.
+</details>
+
+<details>
+<summary><b>v0.5 - Beta / MVP (Sept 2025)</b></summary>
+<br>
+
+*   🧪 **Prototype**: Proof-of-concept wireframes and basic navigation.
+*   🚧 **Services List**: Static list of repair services.
+*   👥 **Team**: Initial team page and project setup.
+</details>
 
 ---
 
