@@ -44,6 +44,23 @@
 - 🔐 **Enhanced Auth**: Integrated Supabase Auth for secure, session-based login.
 - 📱 **Mobile Responsive**: Fully optimized layouts for all device sizes.
 
+#### **v1.5 - Backend Integration (Nov 2025)**
+- ⚙️ **Node.js Server**: Introduced Express.js backend for dynamic data handling.
+- 🗄️ **MongoDB Database**: Moved from local storage/JSON to MongoDB (Legacy).
+- 🔌 **REST API**: Created initial endpoints for bookings and technicians.
+- 🔒 **Basic Auth**: JWT-based authentication system.
+
+#### **v1.0 - Initial Static Release (Oct 2025)**
+- 🌐 **Static Website**: Launched landing page with Services and About/Contact sections.
+- 🖼️ **UI Foundations**: Basic CSS styling and responsive grid layout.
+- 📝 **Forms**: Simple HTML forms for contact and career inquiries.
+- 🗺️ **Maps**: Basic Google Maps embed for store location.
+
+#### **v0.5 - Beta / MVP (Sept 2025)**
+- 🧪 **Prototype**: Proof-of-concept wireframes and basic navigation.
+- 🚧 **Services List**: Static list of repair services.
+- 👥 **Team**: Initial team page and project setup.
+
 ---
 
 </div>
