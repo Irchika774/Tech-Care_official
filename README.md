@@ -166,7 +166,7 @@ erDiagram
         string email
         string name
         enum role "user|technician|admin"
-        string avatar_url
+        string stripe_customer_id
         timestamp created_at
     }
     
@@ -178,21 +178,14 @@ erDiagram
         uuid profile_id FK
         string phone
         string address
-        jsonb preferences
     }
     
     TECHNICIANS ||--o{ BOOKINGS : "receives"
-    TECHNICIANS ||--o{ REVIEWS : "gets"
     TECHNICIANS {
         uuid id PK
         uuid profile_id FK
         string business_name
-        string[] services
-        string[] districts
-        float rating
-        int total_reviews
         boolean verified
-        jsonb location
     }
     
     BOOKINGS ||--o{ PAYMENTS : "has"
@@ -200,38 +193,26 @@ erDiagram
         uuid id PK
         uuid customer_id FK
         uuid technician_id FK
-        string device_type
-        string issue_description
-        enum status "pending|confirmed|in_progress|completed|cancelled"
-        datetime scheduled_date
-        decimal amount
+        enum status "pending|confirmed|completed"
+        enum payment_status "pending|paid"
     }
     
-    REVIEWS {
+    PAYMENTS {
         uuid id PK
-        uuid customer_id FK
-        uuid technician_id FK
         uuid booking_id FK
-        int rating
-        string comment
-        timestamp created_at
+        uuid customer_id FK
+        decimal amount
+        string currency
+        string stripe_payment_intent_id
+        string status
     }
     
     LOYALTY_ACCOUNTS ||--o{ LOYALTY_TRANSACTIONS : "records"
     LOYALTY_ACCOUNTS {
         uuid id PK
         uuid customer_id FK
-        int points
-        enum tier "bronze|silver|gold|platinum"
-    }
-    
-    NOTIFICATIONS {
-        uuid id PK
-        uuid user_id FK
-        string title
-        string message
-        boolean read
-        timestamp created_at
+        int current_points
+        enum current_tier
     }
 ```
 
@@ -246,46 +227,52 @@ sequenceDiagram
     autonumber
     participant U as 👤 User
     participant F as 🖥️ Frontend
-    participant A as 🔑 Auth API
-    participant S as 🗄️ Supabase
-    participant E as 📧 Email Service
+    participant S as 🗄️ Supabase Auth
+    participant DB as �️ Database
 
     rect rgb(40, 40, 60)
-        Note over U,E: Registration Flow
-        U->>F: Fill registration form
-        F->>A: POST /api/auth/register
-        A->>S: Create user account
-        S->>E: Send verification email
-        E-->>U: Verification link
-        U->>F: Click verification link
-        F->>S: Verify email token
-        S-->>F: Email confirmed
-        F->>U: Redirect to login
-    end
-
-    rect rgb(60, 40, 40)
-        Note over U,E: Login Flow
+        Note over U,DB: Login Flow
         U->>F: Enter credentials
-        F->>A: POST /api/auth/login
-        A->>S: Authenticate user
-        S-->>A: User session + JWT
-        A-->>F: Auth token + user data
-        F->>F: Store in AuthContext
-        F->>U: Redirect to dashboard
+        F->>S: signInWithPassword(email, pass)
+        S-->>F: Session (JWT Access Token)
+        F->>F: Store Session in Context
+        F->>DB: Fetch User Profile (using JWT)
+        DB-->>F: Profile Data (Role, Usage)
+        F->>U: Redirect to Role-Based Dashboard
     end
+```
 
-    rect rgb(40, 60, 40)
-        Note over U,E: Password Reset Flow
-        U->>F: Click "Forgot Password"
-        F->>A: POST /api/auth/forgot-password
-        A->>S: Generate reset token
-        S->>E: Send reset email
-        E-->>U: Reset link
-        U->>F: Enter new password
-        F->>A: POST /api/auth/reset-password
-        A->>S: Update password
-        S-->>F: Password updated
-        F->>U: Redirect to login
+### 💳 Payment Flow (Stripe MCP)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as 👤 Customer
+    participant F as 🖥️ Frontend
+    participant B as ⚙️ Backend API
+    participant ST as 💳 Stripe
+    participant DB as 🗄️ Database
+
+    Note over U,DB: Payment for Booking
+    U->>F: Click "Pay Now"
+    F->>B: POST /create-payment-intent (amount, currency)
+    B->>DB: Get/Create Stripe Customer ID
+    B->>ST: Create PaymentIntent (with Customer ID)
+    ST-->>B: client_secret
+    B-->>F: client_secret received
+    
+    U->>F: Enter Card Details & Confirm
+    F->>ST: confirmPayment(client_secret, card)
+    ST-->>F: Payment Success/Failure
+    
+    par Async Webhook
+        ST->>B: Webhook: payment_intent.succeeded
+        B->>DB: Update Booking (PAID) & Create Payment Record
+    and Client Completion
+        F->>B: POST /confirm-payment (Verify & Record)
+        B->>DB: Verify Payment Status
+        B-->>F: Confirmation Success
+        F->>U: Show Success Message
     end
 ```
 
