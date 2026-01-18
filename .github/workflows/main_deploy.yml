@@ -1,4 +1,4 @@
-name: TechCare CI/CD
+name: TechCare Production Deployment
 
 on:
   push:
@@ -6,52 +6,63 @@ on:
   workflow_dispatch:
 
 jobs:
+  # ------------------------------------------------------------------
+  # 1. Deploy Backend (Express/Node.js) to Vercel
+  # ------------------------------------------------------------------
   deploy-backend:
+    name: 🚀 Deploy Backend (Vercel)
     runs-on: ubuntu-latest
-    name: Deploy Backend to Vercel
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Install Vercel CLI
-        run: npm install --global vercel@latest
-        
-      - name: Pull Vercel Environment Information
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-        working-directory: ./server
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-          
-      - name: Build Project Artifacts
-        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
-        working-directory: ./server
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-          
-      - name: Deploy Project Artifacts to Vercel
-        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
-        working-directory: ./server
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
 
+      - name: 📦 Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: 🔗 Pull Vercel Environment
+        working-directory: ./server
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: 🏗️ Build Backend Artifacts
+        working-directory: ./server
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: 🚀 Deploy to Vercel
+        working-directory: ./server
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+  # ------------------------------------------------------------------
+  # 2. Deploy Frontend (React/Vite) to Netlify
+  # ------------------------------------------------------------------
   deploy-frontend:
-    runs-on: ubuntu-latest
+    name: 🚀 Deploy Frontend (Netlify)
     needs: deploy-backend
-    name: Deploy Frontend to Netlify
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js v20
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install Dependencies
+      - name: 📚 Install Dependencies
         run: npm ci
 
-      - name: Build Project
+      - name: 🏗️ Build Frontend
         env:
+          # These are injected into the Vite build
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
@@ -59,13 +70,13 @@ jobs:
           VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
         run: npm run build
 
-      - name: Deploy to Netlify
+      - name: ☁️ Deploy to Netlify
         uses: nwtgck/actions-netlify@v3.0
         with:
           publish-dir: './dist'
           production-branch: main
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          deploy-message: "Deploy from GitHub Actions"
+          deploy-message: "🚀 Deployed via GitHub Actions"
           enable-pull-request-comment: false
           enable-commit-comment: true
           overwrites-pull-request-comment: true
