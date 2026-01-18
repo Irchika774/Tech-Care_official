@@ -84,7 +84,8 @@ export const bidsAPI = {
 // Appointments API
 // Bookings API (Customer Focused)
 export const bookingsAPI = {
-    getAll: (params) => apiClient.get('/api/customers/bookings', { params }), // supports status, limit, skip
+    getAll: (params) => apiClient.get('/api/customers/bookings', { params }), // Customer specific
+    getAllSystem: (params) => apiClient.get('/api/bookings', { params }), // Admin Only
     getById: (id) => apiClient.get(`/api/bookings/${id}`),
     create: (data) => apiClient.post('/api/bookings', data),
     cancel: (id) => apiClient.patch(`/api/customers/bookings/${id}`, { action: 'cancel' }),

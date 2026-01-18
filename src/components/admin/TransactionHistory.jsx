@@ -22,8 +22,8 @@ const TransactionHistory = () => {
     const fetchTransactions = async () => {
         try {
             setLoading(true);
-            // Fetching all bookings as a proxy for transactions since we don't have a dedicated /payments/all endpoint yet
-            const response = await bookingsAPI.getAll({ limit: 100 });
+            // Fetching all bookings using the Admin endpoint
+            const response = await bookingsAPI.getAllSystem({ limit: 100 });
             const data = response.data?.bookings || [];
 
             // Transform bookings to transaction-like objects

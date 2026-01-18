@@ -4,6 +4,47 @@ import { supabaseAuth } from '../middleware/supabaseAuth.js';
 
 const router = express.Router();
 
+// GET / - List all bookings (Admin only)
+router.get('/', supabaseAuth, async (req, res) => {
+    try {
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'Access denied. Admin role required.' });
+        }
+
+        const { limit = 20, skip = 0, status, search } = req.query;
+
+        let query = supabaseAdmin
+            .from('bookings')
+            .select('*, customer:customers(name, email), technician:technicians(name)', { count: 'exact' });
+
+        if (status) query = query.eq('status', status);
+
+        // Search logic (basic) - Supabase doesn't support OR across relations easily in one go without RPC or complex filter
+        // We will just search ID or status for now if provided
+        if (search) {
+            query = query.or(`id.eq.${search},status.ilike.%${search}%`);
+        }
+
+        const { data: bookings, count, error } = await query
+            .order('created_at', { ascending: false })
+            .range(parseInt(skip), parseInt(skip) + parseInt(limit) - 1);
+
+        if (error) throw error;
+
+        // Transform for UI consistency
+        const formatted = bookings.map(b => ({
+            ...b,
+            customerName: b.customer?.name || 'Unknown',
+            technicianName: b.technician?.name || 'Unassigned'
+        }));
+
+        res.json({ bookings: formatted, total: count || 0 });
+    } catch (error) {
+        console.error('Admin bookings fetch error:', error);
+        res.status(500).json({ error: 'Failed to fetch bookings' });
+    }
+});
+
 router.post('/', supabaseAuth, async (req, res) => {
     try {
         const {
