@@ -30,13 +30,13 @@ export const AuthProvider = ({ children }) => {
 
         // Prevent concurrent fetches
         if (isFetchingProfile.current) {
-            console.log('[DEBUG] loadUserProfile skipped: Already fetching');
+            // console.debug('[DEBUG] loadUserProfile skipped: Already fetching');
             return;
         }
 
         try {
             isFetchingProfile.current = true;
-            console.log('[DEBUG] loadUserProfile started for:', authUser.id);
+            // console.debug('[DEBUG] loadUserProfile started for:', authUser.id);
 
             // Fetch profile and extended profile in parallel for performance
             const role = authUser.user_metadata?.role || 'user';
@@ -85,7 +85,7 @@ export const AuthProvider = ({ children }) => {
                     return newUser;
                 });
             }
-            console.log('[DEBUG] loadUserProfile finished successfully');
+            // console.debug('[DEBUG] loadUserProfile finished successfully');
         } catch (error) {
             console.error('Error loading profile:', error);
             // ... (keep existing cache fallback logic)
@@ -129,7 +129,7 @@ export const AuthProvider = ({ children }) => {
             // This prevents "flashing" incorrect states if the network is just very slow
             const perfTimer = setTimeout(() => {
                 if (isMounted.current && loading) {
-                    console.log('[PERF] Auth initialization is taking longer than expected (>8s). Network might be slow.');
+                    console.warn('[PERF] Auth initialization is taking longer than expected. check network.');
                 }
             }, 8000);
 
@@ -151,7 +151,7 @@ export const AuthProvider = ({ children }) => {
                     if (cached) {
                         try {
                             const { profile: cachedProfile, extendedProfile: cachedExtended } = JSON.parse(cached);
-                            console.log('[DEBUG] Loaded profile from cache (Instant UI)');
+                            // console.debug('[DEBUG] Loaded profile from cache (Instant UI)');
                             setProfile(cachedProfile);
                             setUser({
                                 ...currentSession.user,
@@ -174,14 +174,14 @@ export const AuthProvider = ({ children }) => {
                     // Load fresh profile in background
                     loadUserProfile(currentSession.user);
                 } else {
-                    console.log('[DEBUG] No session found in getSession');
+                    // console.debug('[DEBUG] No session found in getSession');
                 }
             } catch (error) {
                 console.error('Auth initialization error:', error.message);
             } finally {
                 clearTimeout(perfTimer);
                 if (isMounted.current) {
-                    console.log('[DEBUG] initializeAuth finished');
+                    // console.debug('[DEBUG] initializeAuth finished');
                     setLoading(false);
                 }
             }
@@ -190,7 +190,7 @@ export const AuthProvider = ({ children }) => {
         initializeAuth();
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
-            console.log('Auth event:', event);
+            // console.debug('Auth event:', event);
             if (isMounted.current) setSession(currentSession);
 
             if (event === 'SIGNED_IN' && currentSession?.user) {

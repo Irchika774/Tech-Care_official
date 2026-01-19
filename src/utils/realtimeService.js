@@ -81,7 +81,7 @@ class RealtimeService {
      * Refresh all active connections (useful after auth change or network recovery)
      */
     refreshAllConnections() {
-        console.log('[Realtime] Refreshing connections...');
+        // console.log('[Realtime] Refreshing connections...');
         const keys = Array.from(this.configs.keys());
         keys.forEach(key => this.reSubscribe(key));
     }
@@ -130,7 +130,7 @@ class RealtimeService {
             .subscribe((status) => {
                 // Only log if not a standard success
                 if (status !== 'SUBSCRIBED' && status !== 'CHANNEL_ERROR') {
-                    // console.log(`[Realtime] ${channelKey} status:`, status);
+                    // console.debug(`[Realtime] ${channelKey} status:`, status);
                 }
             });
 
