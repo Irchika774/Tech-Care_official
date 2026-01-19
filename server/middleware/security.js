@@ -13,26 +13,28 @@ export const createRateLimiter = (windowMs = 15 * 60 * 1000, max = 100, options 
         standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
         legacyHeaders: false, // Disable the `X-RateLimit-*` headers
         // Skip rate limiting for OPTIONS requests (CORS preflight)
-        if(req.method === 'OPTIONS') {
-        return true;
-    }
+        skip: (req) => {
+            // Skip rate limiting for OPTIONS requests (CORS preflight)
+            if (req.method === 'OPTIONS') {
+                return true;
+            }
 
-    // Skip rate limiting for localhost (for testing)
-    const ip = req.ip || req.connection?.remoteAddress || req.socket?.remoteAddress;
-    const isLocalhost = ip === '127.0.0.1' ||
-        ip === '::1' ||
-        ip === '::ffff:127.0.0.1' ||
-        ip?.includes('127.0.0.1') ||
-        ip === 'localhost';
+            // Skip rate limiting for localhost (for testing)
+            const ip = req.ip || req.connection?.remoteAddress || req.socket?.remoteAddress;
+            const isLocalhost = ip === '127.0.0.1' ||
+                ip === '::1' ||
+                ip === '::ffff:127.0.0.1' ||
+                ip?.includes('127.0.0.1') ||
+                ip === 'localhost';
 
-    if (isLocalhost && process.env.NODE_ENV === 'development') {
-        // Silently skip for localhost in development
-        return true;
-    }
+            if (isLocalhost && process.env.NODE_ENV === 'development') {
+                // Silently skip for localhost in development
+                return true;
+            }
 
-    // Use custom skip function if provided
-    return options.skip ? options.skip(req) : false;
-}
+            // Use custom skip function if provided
+            return options.skip ? options.skip(req) : false;
+        }
     });
 };
 
