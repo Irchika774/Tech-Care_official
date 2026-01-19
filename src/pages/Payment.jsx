@@ -509,6 +509,7 @@ const Payment = () => {
 
                             {clientSecret ? (
                                 <Elements
+                                    key={clientSecret} // Force re-mount when secret changes
                                     stripe={stripePromise}
                                     options={{
                                         clientSecret,
