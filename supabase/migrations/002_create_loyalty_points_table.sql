@@ -216,13 +216,13 @@ ALTER TABLE redeemed_rewards ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
 CREATE POLICY "Users can view own loyalty account" ON loyalty_accounts
-    FOR SELECT USING (auth.uid() = customer_id);
+    FOR SELECT USING (customer_id IN (SELECT id FROM customers WHERE user_id = auth.uid()));
 
 CREATE POLICY "Users can view own transactions" ON loyalty_transactions
-    FOR SELECT USING (auth.uid() = customer_id);
+    FOR SELECT USING (customer_id IN (SELECT id FROM customers WHERE user_id = auth.uid()));
 
 CREATE POLICY "Users can view own redeemed rewards" ON redeemed_rewards
-    FOR SELECT USING (auth.uid() = customer_id);
+    FOR SELECT USING (customer_id IN (SELECT id FROM customers WHERE user_id = auth.uid()));
 
 -- Public read for tiers and rewards
 GRANT SELECT ON loyalty_tiers TO anon, authenticated;

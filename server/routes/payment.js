@@ -146,11 +146,17 @@ router.post('/create-payment-intent', supabaseAuth, async (req, res) => {
             customer: stripeCustomerId
         });
     } catch (error) {
-        console.error('Payment Route 500 Error:', error);
+        console.error('[STRIPE ERROR] create-payment-intent failed:', {
+            message: error.message,
+            code: error.code,
+            type: error.type,
+            stack: error.stack,
+            body: req.body
+        });
         res.status(500).json({
-            error: error.message || 'An internal error occurred',
+            error: error.message || 'An internal error occurred while creating the payment intent',
             code: error.code || 'UNKNOWN_ERROR',
-            type: error.type || 'internal'
+            type: error.type || 'internal_server_error'
         });
     }
 });

@@ -63,10 +63,10 @@ export const securityHeaders = helmet({
 
 // Explicit Permissions Policy to suppress warnings and improve security
 export const permissionsPolicy = (req, res, next) => {
-    // Simplified policy to only core features to reduce browser warnings
+    // Explicitly disabling features that cause browser warnings (Privacy Sandbox)
     res.setHeader(
         'Permissions-Policy',
-        'geolocation=(), microphone=(), camera=(), payment=(self), fullscreen=(), display-capture=()'
+        'geolocation=(), microphone=(), camera=(), payment=(self), fullscreen=(), display-capture=(), browsing-topics=(), run-ad-auction=(), join-ad-interest-group=(), private-state-token-redemption=(), private-state-token-issuance=(), private-aggregation=(), attribution-reporting=()'
     );
     next();
 };

@@ -29,15 +29,15 @@
 ### 🆕 Version History
 
 <details open>
-<summary><b>v2.6 - Production Stability & Core Logic Fixes (Jan 20, 2026)</b></summary>
+<summary><b>v2.7 - TechCare Official v2.7 Enterprise Synchronization & Browser Optimization</b></summary>
 <br>
 
 *   🚀 **Recent Stability Updates**
-    *   **Fix (Payment):** Resolved `ZERO_DECIMAL_CURRENCIES` ReferenceError causing 500 on create-payment-intent.
-    *   **Fix (Loyalty):** Corrected DB queries to use `loyalty_accounts` table instead of non-existent columns in `customers`.
-    *   **Optimization (Auth):** Increased initialization timeout to 30s to handle Vercel cold starts/high latency.
-    *   **Security:** Simplified `Permissions-Policy` header to eliminate browser warnings.
-    *   **Robustness:** Added self-healing for missing Stripe customers in database.
+    *   **Env Synchronization:** Successfully synced production credentials across Vercel and Netlify via CLI.
+    *   **Fix (Loyalty):** Resolved ambiguous join error (400) in Supabase queries.
+    *   **Optimization (Security):** Explicitly disabled Privacy Sandbox features in `Permissions-Policy` to silence browser warnings.
+    *   **Enhanced Logging:** Added deep tracing for Stripe Payment Intent failures and Auth initialization steps.
+    *   **Database Migration:** Applied missing loyalty system tables to the production database.
 </details>
 
 <details>

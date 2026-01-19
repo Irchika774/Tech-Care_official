@@ -113,7 +113,7 @@ const LoyaltyPoints = ({ userId, compact = false }) => {
                     .select(`
                         id,
                         total_bookings,
-                        loyalty_accounts(id, current_points, current_tier)
+                        loyalty_accounts!customer_id(id, current_points, current_tier)
                     `)
                     .eq('user_id', userId)
                     .single();
