@@ -9,8 +9,11 @@ dotenv.config({ path: resolve(__dirname, '../../.env') });
 
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+console.log('[SUPABASE] URL:', supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : 'NOT SET');
+console.log('[SUPABASE] Service Key:', supabaseServiceKey ? 'SET' : 'NOT SET');
 
 let supabaseAdmin = null;
 

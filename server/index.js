@@ -9,40 +9,6 @@ const __dirname = dirname(__filename);
 
 dotenv.config({ path: resolve(__dirname, '../.env') });
 
-import { validateEnv } from './lib/validateEnv.js';
-validateEnv();
-
-import { supabaseAdmin } from './lib/supabase.js';
-import {
-    requestLogger,
-    securityErrorHandler,
-    permissionsPolicy,
-    securityHeaders,
-    corsOptions,
-    apiLimiter,
-    authLimiter
-} from './middleware/security.js';
-
-// Import Routes
-import apiRoutes from './routes/index.js';
-import servicesRoutes from './routes/services.js';
-import paymentRoutes from './routes/payment.js';
-import authRoutes from './routes/auth.js';
-import supabaseAuthRoutes from './routes/supabaseAuth.js';
-import adminRoutes from './routes/admin.js';
-import customerRoutes from './routes/customers.js';
-import technicianRoutes from './routes/technicians.js';
-import gigRoutes from './routes/gigs.js';
-import bookingRoutes from './routes/bookings.js';
-import notificationRoutes from './routes/notifications.js';
-import searchRoutes from './routes/search.js';
-import reviewRoutes from './routes/reviews.js';
-import loyaltyRoutes from './routes/loyalty.js';
-import emailRoutes from './routes/emails.js';
-import jobRoutes from './routes/jobs.js';
-import blogRoutes from './routes/blog.js';
-import commonRoutes from './routes/common.js';
-
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -54,23 +20,6 @@ const allowedOrigins = [
     'https://techcareofficial.netlify.app',
     'https://techcare-flax.vercel.app'
 ];
-
-const corsConfig = {
-    origin: function (origin, callback) {
-        if (!origin) return callback(null, true);
-        if (allowedOrigins.includes(origin) || origin.endsWith('.netlify.app') || origin.endsWith('.vercel.app')) {
-            callback(null, true);
-        } else {
-            console.warn(`CORS blocked origin: ${origin}`);
-            callback(null, true);
-        }
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'sentry-trace', 'baggage'],
-    optionsSuccessStatus: 200,
-    preflightContinue: false
-};
 
 app.use((req, res, next) => {
     const origin = req.headers.origin;
@@ -87,57 +36,31 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use(cors(corsConfig));
-app.options('*', cors(corsConfig));
+app.use(cors({
+    origin: true,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'sentry-trace', 'baggage'],
+    optionsSuccessStatus: 200
+}));
 
-app.use(securityHeaders);
-app.use(permissionsPolicy);
 app.use(express.json({ limit: '10mb' }));
-app.use(requestLogger);
 
-// API Routes
-app.use('/api/technicians', apiLimiter, technicianRoutes);
-app.use('/api/gigs', apiLimiter, gigRoutes);
-app.use('/api/customers', apiLimiter, customerRoutes);
-app.use('/api/admin', apiLimiter, adminRoutes);
-app.use('/api/auth', authLimiter, authRoutes);
-app.use('/api/supabase-auth', authLimiter, supabaseAuthRoutes);
-app.use('/api/payment', apiLimiter, paymentRoutes);
-app.use('/api/bookings', apiLimiter, bookingRoutes);
-app.use('/api/notifications', apiLimiter, notificationRoutes);
-app.use('/api/search', apiLimiter, searchRoutes);
-app.use('/api/reviews', apiLimiter, reviewRoutes);
-app.use('/api/loyalty', apiLimiter, loyaltyRoutes);
-app.use('/api/emails', apiLimiter, emailRoutes);
-app.use('/api/jobs', apiLimiter, jobRoutes);
-app.use('/api/services', apiLimiter, servicesRoutes);
-app.use('/api/blog', apiLimiter, blogRoutes);
-app.use('/api/common', apiLimiter, commonRoutes);
-app.use('/api', apiLimiter, apiRoutes);
-
-// Health Check
-app.get('/api/health', async (req, res) => {
-    let dbStatus = 'disconnected';
-    const start = Date.now();
-    try {
-        if (supabaseAdmin) {
-            const { error } = await Promise.race([
-                supabaseAdmin.from('profiles').select('id').limit(1),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('DB Timeout')), 5000))
-            ]);
-            dbStatus = error ? 'error' : 'connected';
-        }
-    } catch (e) {
-        dbStatus = 'error';
-    }
-
+app.get('/api/health', (req, res) => {
     res.json({
         status: 'running',
         timestamp: new Date().toISOString(),
-        supabase: dbStatus,
-        latency: `${Date.now() - start}ms`,
         port: PORT,
         uptime: process.uptime()
+    });
+});
+
+app.get('/api/debug-env', (req, res) => {
+    res.json({
+        SUPABASE_URL: process.env.SUPABASE_URL ? 'SET' : 'NOT SET',
+        VITE_SUPABASE_URL: process.env.VITE_SUPABASE_URL ? 'SET' : 'NOT SET',
+        SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SET' : 'NOT SET',
+        NODE_ENV: process.env.NODE_ENV
     });
 });
 
@@ -152,35 +75,136 @@ app.get('/', (req, res) => {
     });
 });
 
-// 404 Handler
-app.use((req, res) => {
-    res.status(404).json({
-        error: 'Route not found',
-        path: req.path
-    });
-});
+let routesLoaded = false;
+let loadingPromise = null;
 
-// Error Handling
-app.use(securityErrorHandler);
+async function loadRoutes() {
+    if (routesLoaded) return;
+    if (loadingPromise) return loadingPromise;
+    
+    loadingPromise = (async () => {
+        try {
+            const { 
+                requestLogger, 
+                securityErrorHandler, 
+                permissionsPolicy, 
+                securityHeaders,
+                apiLimiter,
+                authLimiter
+            } = await import('./middleware/security.js');
+            
+            app.use(securityHeaders);
+            app.use(permissionsPolicy);
+            app.use(requestLogger);
 
-app.use((err, req, res, next) => {
-    console.error('Server Error:', err.stack);
-    res.status(err.status || 500).json({
-        error: 'Internal server error',
-        message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
-    });
-});
+            const [
+                apiRoutes,
+                servicesRoutes,
+                paymentRoutes,
+                authRoutes,
+                supabaseAuthRoutes,
+                adminRoutes,
+                customerRoutes,
+                technicianRoutes,
+                gigRoutes,
+                bookingRoutes,
+                notificationRoutes,
+                searchRoutes,
+                reviewRoutes,
+                loyaltyRoutes,
+                emailRoutes,
+                jobRoutes,
+                blogRoutes,
+                commonRoutes
+            ] = await Promise.all([
+                import('./routes/index.js'),
+                import('./routes/services.js'),
+                import('./routes/payment.js'),
+                import('./routes/auth.js'),
+                import('./routes/supabaseAuth.js'),
+                import('./routes/admin.js'),
+                import('./routes/customers.js'),
+                import('./routes/technicians.js'),
+                import('./routes/gigs.js'),
+                import('./routes/bookings.js'),
+                import('./routes/notifications.js'),
+                import('./routes/search.js'),
+                import('./routes/reviews.js'),
+                import('./routes/loyalty.js'),
+                import('./routes/emails.js'),
+                import('./routes/jobs.js'),
+                import('./routes/blog.js'),
+                import('./routes/common.js')
+            ]);
 
-// Only start the server if we're not in a Vercel environment (where it exports the app)
+            app.use('/api/technicians', apiLimiter, technicianRoutes.default);
+            app.use('/api/gigs', apiLimiter, gigRoutes.default);
+            app.use('/api/customers', apiLimiter, customerRoutes.default);
+            app.use('/api/admin', apiLimiter, adminRoutes.default);
+            app.use('/api/auth', authLimiter, authRoutes.default);
+            app.use('/api/supabase-auth', authLimiter, supabaseAuthRoutes.default);
+            app.use('/api/payment', apiLimiter, paymentRoutes.default);
+            app.use('/api/bookings', apiLimiter, bookingRoutes.default);
+            app.use('/api/notifications', apiLimiter, notificationRoutes.default);
+            app.use('/api/search', apiLimiter, searchRoutes.default);
+            app.use('/api/reviews', apiLimiter, reviewRoutes.default);
+            app.use('/api/loyalty', apiLimiter, loyaltyRoutes.default);
+            app.use('/api/emails', apiLimiter, emailRoutes.default);
+            app.use('/api/jobs', apiLimiter, jobRoutes.default);
+            app.use('/api/services', apiLimiter, servicesRoutes.default);
+            app.use('/api/blog', apiLimiter, blogRoutes.default);
+            app.use('/api/common', apiLimiter, commonRoutes.default);
+            app.use('/api', apiLimiter, apiRoutes.default);
+
+            app.use((req, res) => {
+                res.status(404).json({
+                    error: 'Route not found',
+                    path: req.path
+                });
+            });
+
+            app.use(securityErrorHandler);
+
+            app.use((err, req, res, next) => {
+                console.error('Server Error:', err.stack);
+                res.status(err.status || 500).json({
+                    error: 'Internal server error',
+                    message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+                });
+            });
+
+            routesLoaded = true;
+            console.log('✅ All routes loaded successfully');
+        } catch (error) {
+            console.error('❌ Failed to load routes:', error.message, error.stack);
+            throw error;
+        }
+    })();
+    
+    return loadingPromise;
+}
+
+const handler = async (req, res) => {
+    try {
+        await loadRoutes();
+        app(req, res);
+    } catch (error) {
+        console.error('Handler error:', error);
+        res.status(500).json({ error: 'Server initialization failed', message: error.message });
+    }
+};
+
 if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
-    app.listen(PORT, () => {
-        console.log(`🚀 TechCare Server running on port ${PORT}`);
-        console.log(`📍 API: http://localhost:${PORT}`);
-        console.log(`🏥 Health: http://localhost:${PORT}/api/health`);
+    loadRoutes().then(() => {
+        app.listen(PORT, () => {
+            console.log(`🚀 TechCare Server running on port ${PORT}`);
+            console.log(`📍 API: http://localhost:${PORT}`);
+            console.log(`🏥 Health: http://localhost:${PORT}/api/health`);
+        });
     });
 }
 
-export default app;
+export default handler;
 
 process.on('SIGINT', () => {
     console.log('\n🛑 Shutting down gracefully...');
