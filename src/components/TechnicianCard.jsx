@@ -11,17 +11,23 @@ const TechnicianCard = ({ technician }) => {
     setIsFavorite(!isFavorite);
   };
 
+  const [imageError, setImageError] = useState(false);
+  const imageUrl = (imageError || !technician.image)
+    ? `https://api.dicebear.com/9.x/micah/svg?seed=${technician.name || 'Technician'}&backgroundColor=18181b`
+    : technician.image;
+
   return (
-    <div 
+    <div
       className="bg-card-light dark:bg-card-dark rounded-lg shadow-md overflow-hidden group hover:shadow-xl transition-all duration-300"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className="relative overflow-hidden">
-        <img 
-          alt={technician.name} 
+        <img
+          alt={technician.name}
           className={`w-full h-48 object-cover transition-transform duration-300 ${isHovered ? 'scale-110' : 'scale-100'}`}
-          src={technician.image}
+          src={imageUrl}
+          onError={() => setImageError(true)}
         />
         <button
           onClick={handleFavorite}
@@ -43,7 +49,7 @@ const TechnicianCard = ({ technician }) => {
         <h4 className="text-xl font-semibold mb-3">{technician.name}</h4>
         <div className="flex flex-wrap gap-2 mb-4">
           {technician.services.map((service, index) => (
-            <span 
+            <span
               key={index}
               className="bg-indigo-100 dark:bg-indigo-900 text-primary dark:text-indigo-300 px-3 py-1 rounded-full text-xs font-medium"
             >
@@ -61,7 +67,7 @@ const TechnicianCard = ({ technician }) => {
             <button className="text-primary font-semibold py-2 px-3 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900 transition text-sm">
               Details
             </button>
-            <button 
+            <button
               onClick={() => navigate('/schedule')}
               className="bg-primary text-white font-semibold py-2 px-4 rounded-lg hover:bg-opacity-90 transition text-sm flex items-center space-x-1"
             >

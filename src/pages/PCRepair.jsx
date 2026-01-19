@@ -347,7 +347,7 @@ const PCRepair = () => {
             <div className="flex flex-col md:flex-row h-full">
               <div className="w-full md:w-1/2 h-[400px] md:h-auto overflow-hidden">
                 <img
-                  src={selectedTechnician.profileImage || selectedTechnician.profile_image || selectedTechnician.image}
+                  src={selectedTechnician.profileImage || selectedTechnician.profile_image || selectedTechnician.image || `https://api.dicebear.com/9.x/micah/svg?seed=${selectedTechnician.name || 'Technician'}&backgroundColor=18181b`}
                   className="w-full h-full object-cover"
                   alt={selectedTechnician.name}
                 />
@@ -406,8 +406,8 @@ const PCRepair = () => {
 const TechnicianCard = ({ technician, convertPrice, isFavorite, onToggleFavorite, onViewDetails, onSchedule }) => {
   const [imageError, setImageError] = useState(false);
   const imageUrl = imageError
-    ? 'https://images.unsplash.com/photo-1587829741301-dc798b83defb?w=400&h=300&fit=crop'
-    : (technician.profile_image || technician.profileImage || technician.image || 'https://images.unsplash.com/photo-1587829741301-dc798b83defb?w=400&h=300&fit=crop');
+    ? `https://api.dicebear.com/9.x/micah/svg?seed=${technician.name || 'Technician'}&backgroundColor=18181b`
+    : (technician.profile_image || technician.profileImage || technician.image || `https://api.dicebear.com/9.x/micah/svg?seed=${technician.name || 'Technician'}&backgroundColor=18181b`);
 
   return (
     <div className="bg-black p-8 group relative overflow-hidden flex flex-col transition-all hover:bg-white/[0.03]">

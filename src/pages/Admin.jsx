@@ -37,7 +37,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const Admin = () => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('dashboard');
 
@@ -397,6 +397,9 @@ const Admin = () => {
         description: "User updated successfully"
       });
       await fetchUsers();
+      if (userId === user?.id || userId === user?._id) {
+        await refreshUser();
+      }
       return true;
     } catch (error) {
       console.error('[ADMIN] Error updating user:', error);
@@ -806,7 +809,7 @@ const Admin = () => {
                     #{index + 1}
                   </div>
                   <Avatar className="h-10 w-10 border-2 border-zinc-600">
-                    <AvatarImage src={tech.profileImage} />
+                    <AvatarImage src={tech.profileImage || `https://api.dicebear.com/9.x/micah/svg?seed=${tech.name || 'Technician'}&backgroundColor=18181b`} />
                     <AvatarFallback className="bg-zinc-700 text-white font-['Outfit']">{tech.name?.substring(0, 2).toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
@@ -872,7 +875,7 @@ const Admin = () => {
                     <TableCell className="font-['Inter'] font-medium text-white">
                       <div className="flex items-center gap-3">
                         <Avatar className="border-2 border-zinc-600">
-                          <AvatarImage src={user.profileImage} />
+                          <AvatarImage src={user.profileImage || `https://api.dicebear.com/9.x/micah/svg?seed=${user.name || 'User'}&backgroundColor=18181b`} />
                           <AvatarFallback className="bg-zinc-700 text-white">{user.name?.substring(0, 2).toUpperCase()}</AvatarFallback>
                         </Avatar>
                         {user.name}
@@ -970,7 +973,7 @@ const Admin = () => {
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                       <Avatar className="h-12 w-12 border-2 border-zinc-600">
-                        <AvatarImage src={tech.profileImage} />
+                        <AvatarImage src={tech.profileImage || `https://api.dicebear.com/9.x/micah/svg?seed=${tech.name || 'Technician'}&backgroundColor=18181b`} />
                         <AvatarFallback className="bg-zinc-700 text-white font-['Outfit'] font-bold">{tech.name?.substring(0, 2).toUpperCase()}</AvatarFallback>
                       </Avatar>
                       <div>
@@ -1125,6 +1128,7 @@ const Admin = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Avatar className="border-2 border-zinc-600">
+                      <AvatarImage src={`https://api.dicebear.com/9.x/micah/svg?seed=${review.customerName || 'User'}&backgroundColor=18181b`} />
                       <AvatarFallback className="bg-zinc-700 text-white">{review.customerName?.substring(0, 2).toUpperCase() || 'U'}</AvatarFallback>
                     </Avatar>
                     <div>
@@ -1293,7 +1297,7 @@ const Admin = () => {
           <CardContent className="space-y-4">
             <div className="flex items-center gap-4">
               <Avatar className="h-16 w-16 border-2 border-zinc-600">
-                <AvatarImage src={user?.profileImage} />
+                <AvatarImage src={user?.profileImage || `https://api.dicebear.com/9.x/micah/svg?seed=${user?.name || 'Admin'}&backgroundColor=18181b`} />
                 <AvatarFallback className="bg-zinc-700 text-white font-['Outfit'] font-bold text-xl">{user?.name?.substring(0, 2).toUpperCase() || 'AD'}</AvatarFallback>
               </Avatar>
               <div>

@@ -30,7 +30,7 @@ import realtimeService from '../utils/realtimeService';
 
 const TechnicianDashboard = () => {
   const navigate = useNavigate();
-  const { user, session } = useAuth();
+  const { user, session, refreshUser } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('overview');
   const [searchParams, setSearchParams] = useSearchParams();
@@ -683,6 +683,7 @@ const TechnicianDashboard = () => {
         title: "Profile Updated",
         description: "Your shop details have been saved successfully.",
       });
+      await refreshUser();
     } catch (error) {
       toast({
         title: "Update Failed",

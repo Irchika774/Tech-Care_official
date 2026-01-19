@@ -62,11 +62,12 @@ import {
   ACTIVE_BOOKING_STATUSES,
   isActiveBookingStatus
 } from '../lib/constants';
+import { ImageUpload } from '../components/ImageUpload';
 
 function CustomerDashboard() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user, session, logout } = useAuth(); // Get session directly from context
+  const { user, session, logout, refreshUser } = useAuth(); // Get session directly from context
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'overview');
   const [loading, setLoading] = useState(true);
@@ -84,6 +85,14 @@ function CustomerDashboard() {
   const [editingDevice, setEditingDevice] = useState(null);
   const [initialBookingData, setInitialBookingData] = useState(null);
   const [newDevice, setNewDevice] = useState({ brand: '', model: '', type: 'smartphone', serial_number: '' });
+  const [profileImage, setProfileImage] = useState('');
+
+  // Update profile image state when data loads
+  useEffect(() => {
+    if (data?.customer?.profileImage) {
+      setProfileImage(data.customer.profileImage);
+    }
+  }, [data]);
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -452,7 +461,7 @@ function CustomerDashboard() {
             <div className="flex items-center gap-6">
               <div className="relative">
                 <Avatar className="h-20 w-20 md:h-24 md:w-24 border-4 border-zinc-800 ring-2 ring-zinc-700 shadow-2xl">
-                  <AvatarImage src={customer?.profileImage} />
+                  <AvatarImage src={customer?.profileImage || `https://api.dicebear.com/9.x/micah/svg?seed=${customer?.email || 'User'}&backgroundColor=18181b`} />
                   <AvatarFallback className="bg-zinc-800 text-3xl font-bold">
                     {customer?.name?.charAt(0) || 'U'}
                   </AvatarFallback>
@@ -932,7 +941,8 @@ function CustomerDashboard() {
                           name: formData.get('name'),
                           phone: formData.get('phone'),
                           address: formData.get('address'),
-                          bio: formData.get('bio')
+                          bio: formData.get('bio'),
+                          profile_image: profileImage
                         };
 
                         try {
@@ -948,6 +958,7 @@ function CustomerDashboard() {
 
                           if (response.ok) {
                             fetchData();
+                            await refreshUser();
                             toast({
                               title: "Profile Updated",
                               description: "Your profile has been updated successfully.",
@@ -989,6 +1000,18 @@ function CustomerDashboard() {
                           placeholder="+94 77 123 4567"
                         />
                       </div>
+                      <div className="space-y-4 mb-6">
+                        <label className="text-sm font-medium text-zinc-400 block">Profile Photo</label>
+                        <div className="flex justify-center">
+                          <ImageUpload
+                            value={profileImage}
+                            onChange={setProfileImage}
+                            variant="avatar"
+                            bucket="profiles"
+                          />
+                        </div>
+                      </div>
+
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-zinc-400">Address</label>
                         <Input

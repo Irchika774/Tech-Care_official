@@ -328,9 +328,11 @@ const Header = () => {
                           className="h-7 w-7 rounded-full object-cover border border-white/20"
                         />
                       ) : (
-                        <div className="h-7 w-7 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white text-xs font-bold">
-                          {(user.name || user.email || 'U').charAt(0).toUpperCase()}
-                        </div>
+                        <img
+                          src={`https://api.dicebear.com/9.x/micah/svg?seed=${user.email || user.name || 'User'}&backgroundColor=18181b`}
+                          alt={user.name || 'User'}
+                          className="h-7 w-7 rounded-full object-cover border border-white/20 bg-zinc-800"
+                        />
                       )}
                       <ChevronDown className="h-3 w-3 hidden sm:block" />
                     </button>
