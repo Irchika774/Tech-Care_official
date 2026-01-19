@@ -1,0 +1,52 @@
+# Error Report: Google Map Not Loading in PC Services
+
+## Project Name
+TechCare – PC & Laptop Repair Platform
+
+## Module
+PC Services → Show Map Feature
+
+## Error Title
+Google Map Fails to Load on Clicking "Show Map" Button
+
+## Environment
+- Platform: Web Application
+- Browser: Google Chrome (Desktop)
+- Operating System: Windows 11
+- Hosting: Netlify
+- Page: PC Repair Service Page
+
+## Description
+When the user clicks the **"Show Map"** button in the PC Services section, the Google Map does not load correctly. Instead of displaying the map with technician locations, an error message is shown.
+
+## Error Message
+> Sorry! Something went wrong.  
+> This page didn't load Google Maps correctly. See the JavaScript console for technical details.
+
+## Steps to Reproduce
+1. Open the TechCare website.
+2. Navigate to **Services → PC Repair**.
+3. Click on the **"Show Map"** button.
+4. Observe the map section.
+
+## Expected Result
+- Google Map should load successfully.
+- Technician locations should be displayed on the map.
+
+## Actual Result
+- Google Map does not load.
+- Error message is displayed instead of the map.
+
+## Impact
+- Users cannot view technician locations.
+- Location-based service selection is affected.
+- Reduces overall user experience.
+
+## Possible Cause
+- Google Maps JavaScript API key is missing or invalid.
+- Billing is not enabled for the Google Maps API project.
+- API key restrictions do not allow the deployed domain.
+- JavaScript error in map initialization code.
+
+## Severity
+High
