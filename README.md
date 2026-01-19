@@ -6,7 +6,7 @@
 
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-success?style=for-the-badge)](https://github.com)
 [![Last Updated](https://img.shields.io/badge/Last%20Updated-Jan%2015,%202026-blue?style=for-the-badge)](https://github.com/Wenura17125/Tech-Care_official/commits/main)
-[![Version](https://img.shields.io/badge/Version-2.1-blue?style=for-the-badge)](https://github.com)
+[![Version](https://img.shields.io/badge/Version-2.3-blue?style=for-the-badge)](https://github.com)
 [![License](https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge)](LICENSE)
 [![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=for-the-badge&logo=github-actions)](https://github.com/Wenura17125/Tech-Care_official/actions)
 [![Node](https://img.shields.io/badge/Node-20.x-green?style=for-the-badge&logo=node.js)](https://nodejs.org)
@@ -29,7 +29,17 @@
 ### 🆕 Version History
 
 <details open>
-<summary><b>v2.2 - Payment & Infrastructure (Current)</b></summary>
+<summary><b>v2.3 - Map Migration & Polish (Jan 2026)</b></summary>
+<br>
+
+*   ✅ **Map Migration**: Switched from Google Maps to OpenStreetMap (Leaflet) for improved accessibility and zero API key requirements.
+*   ✅ **Technician Images**: Fixed image loading issues with robust fallbacks and DB schema alignment.
+*   ✅ **Performance**: Increased backend timeouts for better reliability on cold starts.
+*   ✅ **Deployment**: Verified production deployments on Vercel and Netlify.
+</details>
+
+<details>
+<summary><b>v2.2 - Payment & Infrastructure (Jan 2026)</b></summary>
 <br>
 
 *   ✅ **Stripe MCP**: Full multi-currency payment support with saved cards.
@@ -96,7 +106,7 @@
 **TechCare** is a modern, enterprise-grade full-stack web application that revolutionizes the device repair industry in Sri Lanka. It connects customers with verified technicians through an intelligent matching system, featuring:
 
 - 🤖 **AI-Powered Diagnostics** - Smart issue detection and cost estimation
-- 🗺️ **Location-Based Services** - Find nearby technicians with Google Maps integration
+- 🗺️ **Location-Based Services** - Find nearby technicians with OpenStreetMap integration
 - 💳 **Secure Payments** - Stripe-powered transaction processing
 - ⚡ **Real-time Updates** - Live booking status and notifications
 - 🏆 **Loyalty Program** - Reward points and tier-based benefits
@@ -158,7 +168,7 @@ flowchart TB
         direction TB
         STRIPE["💳 Stripe<br/>Payment Processing"]
         RESEND["📧 Resend<br/>Email Service"]
-        GMAPS["🗺️ Google Maps<br/>Location Services"]
+        OSM["🗺️ OpenStreetMap<br/>Location Services"]
         CLOUD["☁️ Cloudinary<br/>Image Hosting"]
     end
 
@@ -642,9 +652,6 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 # Stripe (Payments)
 VITE_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
-
-# Google Maps
-VITE_GOOGLE_MAPS_API_KEY=your_google_maps_key
 ```
 
 **Backend (`server/.env`)**
@@ -660,9 +667,6 @@ SUPABASE_SERVICE_ROLE_KEY=your_super_secret_service_role_key
 # Stripe (Payments)
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
-
-# Google Maps (Backend)
-GOOGLE_MAPS_API_KEY=your_google_maps_api_key
 
 # Email Service (Resend)
 RESEND_API_KEY=re_...
@@ -768,7 +772,7 @@ pie title Technology Distribution
 | | Realtime | Live updates |
 | **Services** | Stripe | Payment processing (MCP) |
 | | Resend | Email delivery |
-| | Google Maps | Location services |
+| | OpenStreetMap (Leaflet) | Location services |
 | | Cloudinary | Image hosting |
 | **DevOps** | Netlify | Frontend hosting |
 | | Vercel | Backend hosting |
