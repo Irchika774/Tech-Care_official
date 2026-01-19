@@ -50,37 +50,11 @@ const PORT = process.env.PORT || 5000;
 // Global Middleware
 // Global Middleware
 app.use(cors({
-    origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
-
-        const allowedOrigins = [
-            'http://localhost:5173',
-            'http://localhost:5174',
-            'http://localhost:3000',
-            'https://techcareofficial.netlify.app',
-            'https://techcare-flax.vercel.app',
-            'https://techcare-official-new.netlify.app'
-        ];
-
-        const isAllowed = allowedOrigins.includes(origin) ||
-            origin.endsWith('.netlify.app') ||
-            origin.endsWith('.vercel.app') ||
-            origin.includes('localhost');
-
-        if (isAllowed) {
-            callback(null, true);
-        } else {
-            console.warn(`Blocked request from origin: ${origin}`);
-            // For stability, we can default to allow, or return error. 
-            // Given the issues, failing open for known domains is better.
-            callback(null, true);
-        }
-    },
+    origin: 'https://techcare-official-new.netlify.app', // Explicitly allow only the production frontend
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'sentry-trace', 'baggage'],
-    optionsSuccessStatus: 200
+    optionsSuccessStatus: 200 // specific success status for legacy browsers/smartTVs
 }));
 
 // Enable pre-flight for all routes with the same options
