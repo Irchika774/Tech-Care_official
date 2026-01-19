@@ -111,7 +111,7 @@ const LoyaltyPoints = ({ userId, compact = false }) => {
                 const { data: profile } = await supabase
                     .from('customers')
                     .select('loyalty_points, loyalty_tier, total_bookings')
-                    .eq('id', userId)
+                    .eq('user_id', userId)
                     .single();
 
                 if (profile) {

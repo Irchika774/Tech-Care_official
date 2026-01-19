@@ -5,8 +5,8 @@
 ### _Connecting Customers with Expert Technicians_
 
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-success?style=for-the-badge)](https://github.com)
-[![Last Updated](https://img.shields.io/badge/Last%20Updated-Jan%2015,%202026-blue?style=for-the-badge)](https://github.com/Wenura17125/Tech-Care_official/commits/main)
-[![Version](https://img.shields.io/badge/Version-2.3-blue?style=for-the-badge)](https://github.com)
+[![Last Updated](https://img.shields.io/badge/Last%20Updated-Jan%2019,%202026-blue?style=for-the-badge)](https://github.com/Wenura17125/Tech-Care_official/commits/main)
+[![Version](https://img.shields.io/badge/Version-2.5-blue?style=for-the-badge)](https://github.com)
 [![License](https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge)](LICENSE)
 [![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=for-the-badge&logo=github-actions)](https://github.com/Wenura17125/Tech-Care_official/actions)
 [![Node](https://img.shields.io/badge/Node-20.x-green?style=for-the-badge&logo=node.js)](https://nodejs.org)
@@ -29,6 +29,17 @@
 ### 🆕 Version History
 
 <details open>
+<summary><b>v2.5 - Payment & Cancellation Stability (Jan 19, 2026)</b></summary>
+<br>
+
+*   ✅ **Auto-Healing Payments**: Backend now automatically recovers from "Stripe Customer Missing" errors by re-creating missing customers on the fly, preventing 500 errors.
+*   ✅ **Fixed Booking Cancellation**: Resolved 404 error in customer dashboard by routing requests through the correct centralized API service.
+*   ✅ **Reload Persistence**: Enhanced `BookingGuard` and `Payment` page to support browser refreshes without losing context or being blocked.
+*   ✅ **Security Header Optimization**: Updated `Permissions-Policy` to support modern payment APIs and suppress browser warnings.
+*   ✅ **Loyalty Query Fix**: Resolved database 400 errors by correcting ID column mapping in the loyalty system.
+</details>
+
+<details>
 <summary><b>v2.4 - Profile & Stability Improvements (Jan 19, 2026)</b></summary>
 <br>
 

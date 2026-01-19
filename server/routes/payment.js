@@ -28,49 +28,62 @@ router.post('/create-payment-intent', supabaseAuth, async (req, res) => {
         const requesterId = req.user.customerId || req.user.id;
         const finalCustomerId = customerId || requesterId;
 
-        // 1. Get or Create Stripe Customer
-        let stripeCustomerId = null;
+        // Helper to get or create Stripe Customer
+        const getOrCreateStripeCustomer = async (userId, userEmail, userName, currentStripeId = null) => {
+            // If we have a current ID passed, try to use it (or check if we need to fetch from DB if not passed)
+            // Ideally, we just check the DB profile if currentStripeId is null
 
-        // Fetch current user profile to check for existing stripe_customer_id
-        const { data: profile, error: profileError } = await supabaseAdmin
-            .from('profiles')
-            .select('stripe_customer_id, email, name')
-            .eq('id', req.user.id)
-            .single();
+            let targetStripeId = currentStripeId;
 
-        if (profileError) {
-            console.error('Error fetching profile for payment:', profileError);
-            // Proceed without customer attachment if profile fails (fallback)
-        } else {
-            stripeCustomerId = profile.stripe_customer_id;
+            if (!targetStripeId) {
+                const { data: profile, error: profileError } = await supabaseAdmin
+                    .from('profiles')
+                    .select('stripe_customer_id, email, name')
+                    .eq('id', userId)
+                    .single();
 
-            if (!stripeCustomerId) {
-                // Create new Stripe Customer
+                if (!profileError && profile) {
+                    targetStripeId = profile.stripe_customer_id;
+                    // Update fallback info if missing from args
+                    if (!userEmail) userEmail = profile.email;
+                    if (!userName) userName = profile.name;
+                }
+            }
+
+            // If still no ID, create one
+            if (!targetStripeId) {
                 try {
                     const customer = await stripe.customers.create({
-                        email: profile.email || req.user.email,
-                        name: profile.name || req.user.user_metadata?.name || 'Valued Customer',
+                        email: userEmail,
+                        name: userName || 'Valued Customer',
                         metadata: {
-                            supabase_user_id: req.user.id
+                            supabase_user_id: userId
                         }
                     });
 
-                    stripeCustomerId = customer.id;
+                    targetStripeId = customer.id;
 
-                    // Update Supabase Profile with new Stripe Customer ID
+                    // Update Supabase Profile
                     await supabaseAdmin
                         .from('profiles')
-                        .update({ stripe_customer_id: stripeCustomerId })
-                        .eq('id', req.user.id);
+                        .update({ stripe_customer_id: targetStripeId })
+                        .eq('id', userId);
 
-                    console.log(`Created new Stripe Customer ${stripeCustomerId} for user ${req.user.id}`);
+                    console.log(`Created new Stripe Customer ${targetStripeId} for user ${userId}`);
                 } catch (stripeError) {
                     console.error('Error creating Stripe customer:', stripeError);
-                    // Continue without attaching customer? Or fail? 
-                    // Better to fail if we want to guarantee linkage, but for robustness we can log and continue.
+                    return null;
                 }
             }
-        }
+            return targetStripeId;
+        };
+
+        // 1. Initial attempt to get customer
+        let stripeCustomerId = await getOrCreateStripeCustomer(
+            req.user.id,
+            req.user.email,
+            req.user.user_metadata?.name
+        );
 
         if (!amount || amount <= 0) {
             return res.status(400).json({ error: 'Invalid amount' });
@@ -80,30 +93,68 @@ router.post('/create-payment-intent', supabaseAuth, async (req, res) => {
         const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(currencyLower);
         const stripeAmount = isZeroDecimal ? Math.round(amount) : Math.round(amount * 100);
 
-        const paymentIntentParams = {
-            amount: stripeAmount,
-            currency: currencyLower,
-            metadata: {
-                booking_id: bookingId || '',
-                customer_id: finalCustomerId || '',
-                ...metadata
-            },
-            automatic_payment_methods: {
-                enabled: true,
-            },
+        const buildPaymentIntentParams = (custId) => {
+            const params = {
+                amount: stripeAmount,
+                currency: currencyLower,
+                metadata: {
+                    booking_id: bookingId || '',
+                    customer_id: finalCustomerId || '',
+                    ...metadata
+                },
+                automatic_payment_methods: {
+                    enabled: true,
+                },
+            };
+
+            if (custId) {
+                params.customer = custId;
+                if (setupFutureUsage) {
+                    params.setup_future_usage = 'off_session';
+                }
+            }
+            return params;
         };
 
-        // Attach Customer if available
-        if (stripeCustomerId) {
-            paymentIntentParams.customer = stripeCustomerId;
+        let paymentIntent;
+        try {
+            paymentIntent = await stripe.paymentIntents.create(buildPaymentIntentParams(stripeCustomerId));
+        } catch (error) {
+            // Handle "Customer not found" error
+            // This happens if the DB has an ID but Stripe doesn't (e.g. test mode reset)
+            if (error.code === 'resource_missing' && error.param === 'customer') {
+                console.warn(`Stripe customer ${stripeCustomerId} missing, creating new one...`);
 
-            // setup_future_usage: 'off_session' allows charging the card later without user action
-            if (setupFutureUsage) {
-                paymentIntentParams.setup_future_usage = 'off_session';
+                // Force create new customer by passing null as current ID, but we also need to wipe it from DB first potentially
+                // or just trust getOrCreateStripeCustomer logic if we can force it.
+                // Actually getOrCreateStripeCustomer reads from DB. We should clear the DB first or pass a flag?
+                // Simpler: Just create directly here to avoid re-fetch logic causing loop
+
+                try {
+                    const newCustomer = await stripe.customers.create({
+                        email: req.user.email,
+                        name: req.user.user_metadata?.name || 'Valued Customer',
+                        metadata: { supabase_user_id: req.user.id }
+                    });
+
+                    stripeCustomerId = newCustomer.id;
+
+                    // Update Supabase Profile
+                    await supabaseAdmin
+                        .from('profiles')
+                        .update({ stripe_customer_id: stripeCustomerId })
+                        .eq('id', req.user.id);
+
+                    // Retry Payment Intent
+                    paymentIntent = await stripe.paymentIntents.create(buildPaymentIntentParams(stripeCustomerId));
+                } catch (retryError) {
+                    console.error('Retry failed:', retryError);
+                    throw retryError;
+                }
+            } else {
+                throw error;
             }
         }
-
-        const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams);
 
         res.json({
             clientSecret: paymentIntent.client_secret,

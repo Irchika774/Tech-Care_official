@@ -65,7 +65,7 @@ export const securityHeaders = helmet({
 export const permissionsPolicy = (req, res, next) => {
     res.setHeader(
         'Permissions-Policy',
-        'geolocation=(), microphone=(), camera=(), payment=(), usb=()'
+        'geolocation=(), microphone=(), camera=(), payment=*'
     );
     next();
 };

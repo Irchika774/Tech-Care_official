@@ -46,6 +46,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { bookingsAPI } from '../lib/api';
 import SEO from '../components/SEO';
 import CurrencyDisplay from '../components/CurrencyDisplay';
 import EmptyState from '../components/EmptyState';
@@ -395,17 +396,7 @@ function CustomerDashboard() {
     }
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch(`${API_URL}/api/bookings/${bookingId}`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${session?.access_token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ status: BOOKING_STATUS.CANCELLED })
-      });
-
-      if (!response.ok) throw new Error('Failed to cancel booking');
+      await bookingsAPI.cancel(bookingId);
 
       toast({
         title: "Booking Cancelled",
@@ -417,9 +408,10 @@ function CustomerDashboard() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to cancel booking. Please try again.",
+        description: err.response?.data?.error || "Failed to cancel booking. Please try again.",
       });
     }
+
   };
 
   const DashboardSkeleton = () => (
