@@ -518,6 +518,7 @@ const Payment = () => {
                                         clientSecret,
                                         mode: 'payment',
                                         currency: 'lkr',
+                                        amount: Math.round(bookingDetails.total * 100), // Stripe expects amount in smallest currency unit
                                         appearance: {
                                             theme: 'stripe',
                                             variables: {
