@@ -5,7 +5,7 @@ import { supabaseAuth } from '../middleware/supabaseAuth.js';
 
 const router = express.Router();
 
-const stripe = process.env.STRIPE_SECRET_KEY && process.env.STRIPE_SECRET_KEY !== 'sk_test_your_stripe_secret_key_here'
+const stripe = process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.includes('PLACEHOLDER')
     ? new Stripe(process.env.STRIPE_SECRET_KEY)
     : null;
 
