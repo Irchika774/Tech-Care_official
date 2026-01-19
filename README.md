@@ -5,8 +5,8 @@
 ### _Connecting Customers with Expert Technicians_
 
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-success?style=for-the-badge)](https://github.com)
-[![Last Updated](https://img.shields.io/badge/Last%20Updated-Jan%2019,%202026-blue?style=for-the-badge)](https://github.com/Wenura17125/Tech-Care_official/commits/main)
-[![Version](https://img.shields.io/badge/Version-2.5-blue?style=for-the-badge)](https://github.com)
+[![Last Updated](https://img.shields.io/badge/Last%20Updated-Jan%2020,%202026-blue?style=for-the-badge)](https://github.com/Wenura17125/Tech-Care_official/commits/main)
+[![Version](https://img.shields.io/badge/Version-2.8-blue?style=for-the-badge)](https://github.com)
 [![License](https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge)](LICENSE)
 [![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=for-the-badge&logo=github-actions)](https://github.com/Wenura17125/Tech-Care_official/actions)
 [![Node](https://img.shields.io/badge/Node-20.x-green?style=for-the-badge&logo=node.js)](https://nodejs.org)
@@ -29,6 +29,16 @@
 ### 🆕 Version History
 
 <details open>
+<summary><b>v2.8 - Enhanced Scheduling & Payments (Jan 20, 2026)</b></summary>
+<br>
+
+*   ✅ **Advanced Scheduling**: Implemented smart time-slot selection with technician assignment.
+*   ✅ **Payment Integration Refactor**: Optimized Stripe Elements integration (`payment_method_types: ['card']`) for better reliability.
+*   ✅ **Success Flows**: Added dedicated success pages and modals for better user feedback.
+*   ✅ **Performance**: Fixed build issues and optimized duplicate imports in key pages.
+</details>
+
+<details>
 <summary><b>v2.7 - TechCare Official v2.7 Enterprise Synchronization & Browser Optimization</b></summary>
 <br>
 
@@ -328,7 +338,7 @@ sequenceDiagram
     participant U as 👤 User
     participant F as 🖥️ Frontend
     participant S as 🗄️ Supabase Auth
-    participant DB as �️ Database
+    participant DB as 🗄️ Database
 
     rect rgb(40, 40, 60)
         Note over U,DB: Login Flow
@@ -342,69 +352,67 @@ sequenceDiagram
     end
 ```
 
-### 💳 Payment Flow (Stripe MCP)
+### 💳 Payment Flow (Stripe Elements)
 
 ```mermaid
 sequenceDiagram
     autonumber
     participant U as 👤 Customer
-    participant F as 🖥️ Frontend
+    participant F as 🖥️ Frontend (Elements)
     participant B as ⚙️ Backend API
     participant ST as 💳 Stripe
     participant DB as 🗄️ Database
 
-    Note over U,DB: Payment for Booking
-    U->>F: Click "Pay Now"
+    Note over U,DB: Secure Payment Initialization
+    U->>F: Selects Service & Proceeds to Pay
     F->>B: POST /create-payment-intent (amount, currency)
-    B->>DB: Get/Create Stripe Customer ID
-    B->>ST: Create PaymentIntent (with Customer ID)
+    B->>DB: Retrieve Customer ID
+    B->>ST: Create PaymentIntent (amount, customer, 'card')
     ST-->>B: client_secret
-    B-->>F: client_secret received
+    B-->>F: Return client_secret
     
-    U->>F: Enter Card Details & Confirm
-    F->>ST: confirmPayment(client_secret, card)
-    ST-->>F: Payment Success/Failure
-    
-    par Async Webhook
-        ST->>B: Webhook: payment_intent.succeeded
-        B->>DB: Update Booking (PAID) & Create Payment Record
-    and Client Completion
-        F->>B: POST /confirm-payment (Verify & Record)
-        B->>DB: Verify Payment Status
+    F->>F: Mount <PaymentElement /> using client_secret
+    U->>F: Enters Card Details & Clicks Pay
+    F->>ST: stripe.confirmPayment()
+    ST-->>F: Payment Succeeded
+
+    par Server Sync
+        F->>B: POST /confirm-payment (bookingId, intentId)
+        B->>ST: Verify PaymentIntent Status
+        B->>DB: Update Booking (PAID) & Create Transaction Record
         B-->>F: Confirmation Success
-        F->>U: Show Success Message
+    and User Feedback
+        F->>U: Navigate to Schedule/Success Page
     end
 ```
 
-### 📅 Booking Flow
+### 📅 Booking & Scheduling Flow
 
 ```mermaid
 stateDiagram-v2
     [*] --> BrowseServices: User visits services page
     
     BrowseServices --> SelectService: Choose repair type
-    SelectService --> EnterDetails: Add device info
-    EnterDetails --> ChooseTechnician: Optional selection
-    ChooseTechnician --> SelectDateTime: Pick appointment slot
-    SelectDateTime --> ReviewBooking: Confirm details
+    SelectService --> EnterDetails: Add device info (Brand/Model)
+    EnterDetails --> SelectTechnician: (Optional) Choose Technician
     
-    ReviewBooking --> Payment: Proceed to pay
-    Payment --> PaymentSuccess: Payment successful
-    Payment --> PaymentFailed: Payment failed
+    SelectTechnician --> Payment: Proceed to Pay
+    
+    Payment --> PaymentSuccess: Payment Verified
+    Payment --> PaymentFailed: Card Declined
     PaymentFailed --> Payment: Retry
     
-    PaymentSuccess --> BookingConfirmed: Create booking
-    BookingConfirmed --> NotifyTechnician: Send notification
-    NotifyTechnician --> TechnicianAccepts: Wait for response
+    PaymentSuccess --> ChooseSchedule: Select Date & Time Slot
+    ChooseSchedule --> BookingConfirmed: Confirm Appointment
     
-    TechnicianAccepts --> InProgress: Start repair
-    InProgress --> Completed: Finish repair
-    Completed --> LeaveReview: Optional
-    LeaveReview --> AwardPoints: Loyalty points
+    BookingConfirmed --> NotifyTechnician: Alert Technician
+    NotifyTechnician --> TechnicianAction: Wait for Acceptance
+    
+    TechnicianAction --> InProgress: Start Repair
+    InProgress --> Completed: Finish Job
+    Completed --> LeaveReview: User Reviews Service
+    LeaveReview --> AwardPoints: Add Loyalty Points
     AwardPoints --> [*]
-    
-    TechnicianAccepts --> Rejected: Technician unavailable
-    Rejected --> ChooseTechnician: Select different technician
 ```
 
 ### 🤖 AI Diagnostics Flow
@@ -617,9 +625,9 @@ flowchart LR
 | `/api/loyalty/redeem` | POST | ✅ | Redeem reward |
 | `/api/loyalty/history` | GET | ✅ | Get points history |
 | **Payments** |
-| `/api/payment/create-intent` | POST | ✅ | Create payment intent |
-| `/api/payment/confirm` | POST | ✅ | Confirm payment |
-| `/api/payment/refund` | POST | ✅ | Process refund |
+| `/api/payment/create-payment-intent` | POST | ✅ | Create payment intent |
+| `/api/payment/confirm-payment` | POST | ✅ | Confirm and finalize booking |
+| `/api/payment/history` | GET | ✅ | Get transaction history |
 
 ---
 
@@ -631,6 +639,7 @@ flowchart LR
 - **npm** v10.x or higher
 - **Git** for version control
 - **Supabase Account** for database & auth
+- **Stripe Account** for payments
 
 ### ⚡ One-Click Start (Recommended)
 
@@ -744,7 +753,9 @@ Tech-Care_official/
 │   │   ├── Technicians.jsx       # Technician listing
 │   │   ├── CustomerDashboard.jsx # Customer portal
 │   │   ├── TechnicianDashboard.jsx # Tech portal
-│   │   └── Admin.jsx             # Admin panel
+│   │   ├── Admin.jsx             # Admin panel
+│   │   ├── Payment.jsx           # Stripe Payment Page
+│   │   └── Schedule.jsx          # Advanced Scheduling
 │   ├── 📁 context/               # State management
 │   │   ├── AuthContext.jsx       # Authentication
 │   │   ├── ThemeContext.jsx      # Dark/light mode
@@ -1150,7 +1161,7 @@ If you find TechCare helpful or interesting, please consider:
 
 ---
 
-**Last Updated**: January 15, 2026 | **Version**: 2.1 | **Status**: ✅ Production Ready | **CI/CD**: ✅ Auto-Deploy
+**Last Updated**: January 20, 2026 | **Version**: 2.8 | **Status**: ✅ Production Ready | **CI/CD**: ✅ Auto-Deploy
 
 [![Made with React](https://img.shields.io/badge/Made%20with-React-61DAFB?style=flat-square&logo=react)](https://reactjs.org)
 [![Powered by Supabase](https://img.shields.io/badge/Powered%20by-Supabase-3ECF8E?style=flat-square&logo=supabase)](https://supabase.io)
