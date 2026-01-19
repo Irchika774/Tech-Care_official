@@ -49,16 +49,18 @@ const PORT = process.env.PORT || 5000;
 // Connect to MongoDB
 // Global Middleware
 // Global Middleware
-app.use(cors({
+const corsConfig = {
     origin: 'https://techcare-official-new.netlify.app', // Explicitly allow only the production frontend
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'sentry-trace', 'baggage'],
     optionsSuccessStatus: 200 // specific success status for legacy browsers/smartTVs
-}));
+};
+
+app.use(cors(corsConfig));
 
 // Enable pre-flight for all routes with the same options
-app.options('*', cors());
+app.options('*', cors(corsConfig));
 
 app.use(securityHeaders);
 app.use(permissionsPolicy);
