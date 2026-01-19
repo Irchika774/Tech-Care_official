@@ -46,34 +46,49 @@ import commonRoutes from './routes/common.js';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Connect to MongoDB
-// Global Middleware
-// Global Middleware
+const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:3000',
+    'https://techcare-official-new.netlify.app',
+    'https://techcareofficial.netlify.app',
+    'https://techcare-flax.vercel.app'
+];
+
 const corsConfig = {
-    origin: 'https://techcare-official-new.netlify.app', // Explicitly allow only the production frontend
+    origin: function (origin, callback) {
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin) || origin.endsWith('.netlify.app') || origin.endsWith('.vercel.app')) {
+            callback(null, true);
+        } else {
+            console.warn(`CORS blocked origin: ${origin}`);
+            callback(null, true);
+        }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'sentry-trace', 'baggage'],
-    optionsSuccessStatus: 200 // specific success status for legacy browsers/smartTVs
+    optionsSuccessStatus: 200,
+    preflightContinue: false
 };
 
-app.use(cors(corsConfig));
-
-// Enable pre-flight for all routes with the same options
-// Must be BEFORE other middleware
-app.options('*', cors(corsConfig));
-
-// Fallback: Manual OPTIONS handler to ensure 200 OK for preflight if CORS middleware misses it
 app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    if (origin && (allowedOrigins.includes(origin) || origin.endsWith('.netlify.app') || origin.endsWith('.vercel.app'))) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+    }
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, sentry-trace, baggage');
+    
     if (req.method === 'OPTIONS') {
-        res.header('Access-Control-Allow-Origin', 'https://techcare-official-new.netlify.app');
-        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, sentry-trace, baggage');
-        res.header('Access-Control-Allow-Credentials', 'true');
-        return res.sendStatus(200);
+        return res.status(200).end();
     }
     next();
 });
+
+app.use(cors(corsConfig));
+app.options('*', cors(corsConfig));
 
 app.use(securityHeaders);
 app.use(permissionsPolicy);
