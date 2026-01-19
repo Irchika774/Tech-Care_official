@@ -9,6 +9,21 @@ const __dirname = dirname(__filename);
 
 dotenv.config({ path: resolve(__dirname, '../.env') });
 
+// Sanitize Environment Variables (remove quotes and whitespace)
+const sanitizeEnv = (key) => {
+    if (process.env[key]) {
+        let value = process.env[key];
+        // Remove surrounding quotes if present
+        if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+            value = value.slice(1, -1);
+        }
+        // Remove trailing newlines/carriage returns and whitespace
+        process.env[key] = value.trim();
+    }
+};
+
+['STRIPE_SECRET_KEY', 'STRIPE_PUBLISHABLE_KEY', 'STRIPE_WEBHOOK_SECRET', 'SUPABASE_URL', 'VITE_SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'NODE_ENV', 'JWT_SECRET'].forEach(sanitizeEnv);
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -29,7 +44,7 @@ app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, sentry-trace, baggage');
-    
+
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
@@ -82,18 +97,18 @@ let loadingPromise = null;
 async function loadRoutes() {
     if (routesLoaded) return;
     if (loadingPromise) return loadingPromise;
-    
+
     loadingPromise = (async () => {
         try {
-            const { 
-                requestLogger, 
-                securityErrorHandler, 
-                permissionsPolicy, 
+            const {
+                requestLogger,
+                securityErrorHandler,
+                permissionsPolicy,
                 securityHeaders,
                 apiLimiter,
                 authLimiter
             } = await import('./middleware/security.js');
-            
+
             app.use(securityHeaders);
             app.use(permissionsPolicy);
             app.use(requestLogger);
@@ -181,7 +196,7 @@ async function loadRoutes() {
             throw error;
         }
     })();
-    
+
     return loadingPromise;
 }
 
