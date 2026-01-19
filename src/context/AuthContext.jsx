@@ -124,13 +124,13 @@ export const AuthProvider = ({ children }) => {
         isMounted.current = true;
 
         const initializeAuth = async () => {
-            // Reduced timeout to 5s to prevent long waits on slow connections
+            // Timeout increased to 10s to allow for slower network conditions/cold starts
             const timeoutId = setTimeout(() => {
                 if (isMounted && loading) {
                     console.warn('[AUTH] Initialization hanging, showing UI with best-effort data');
                     setLoading(false);
                 }
-            }, 5000);
+            }, 10000);
 
             try {
                 // Get session immediately

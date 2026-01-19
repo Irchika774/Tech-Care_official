@@ -75,9 +75,9 @@ export const DEVICE_TYPES = {
  * @constant {Object}
  */
 export const API_TIMEOUTS = {
-    DEFAULT: 12000,
-    AUTH: 5000,
-    PROFILE: 12000,
+    DEFAULT: 25000,
+    AUTH: 10000,
+    PROFILE: 25000,
     REALTIME: 30000
 };
 

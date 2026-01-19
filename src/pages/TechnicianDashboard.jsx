@@ -430,7 +430,7 @@ const TechnicianDashboard = () => {
 
       // Add a timeout to prevent infinite loading
       const timeoutPromise = new Promise((_, reject) => {
-        timeoutId = setTimeout(() => reject(new Error('Request timed out')), 10000);
+        timeoutId = setTimeout(() => reject(new Error('Request timed out')), 30000);
       });
 
       const fetchDataPromise = (async () => {
