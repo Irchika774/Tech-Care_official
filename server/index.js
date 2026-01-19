@@ -60,7 +60,20 @@ const corsConfig = {
 app.use(cors(corsConfig));
 
 // Enable pre-flight for all routes with the same options
+// Must be BEFORE other middleware
 app.options('*', cors(corsConfig));
+
+// Fallback: Manual OPTIONS handler to ensure 200 OK for preflight if CORS middleware misses it
+app.use((req, res, next) => {
+    if (req.method === 'OPTIONS') {
+        res.header('Access-Control-Allow-Origin', 'https://techcare-official-new.netlify.app');
+        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, sentry-trace, baggage');
+        res.header('Access-Control-Allow-Credentials', 'true');
+        return res.sendStatus(200);
+    }
+    next();
+});
 
 app.use(securityHeaders);
 app.use(permissionsPolicy);
