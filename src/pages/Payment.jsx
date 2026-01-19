@@ -76,11 +76,7 @@ const CheckoutForm = ({ bookingDetails, clientSecret, paymentIntentId, onSuccess
                 <PaymentElement
                     onReady={() => setIsReady(true)}
                     options={{
-                        layout: 'tabs',
-                        wallets: {
-                            applePay: 'auto',
-                            googlePay: 'auto'
-                        }
+                        layout: 'tabs'
                     }}
                 />
             </div>
