@@ -107,38 +107,64 @@ const LoyaltyPoints = ({ userId, compact = false }) => {
 
         const fetchLoyaltyData = async () => {
             try {
-                // Try to fetch from profiles or customers table
-                const { data: customerData, error } = await supabase
+                // 1. Fetch Customer ID
+                const { data: customerData, error: customerError } = await supabase
                     .from('customers')
-                    .select(`
-                        id,
-                        total_bookings,
-                        loyalty_accounts!customer_id(id, current_points, current_tier)
-                    `)
+                    .select('id, total_bookings')
                     .eq('user_id', userId)
                     .single();
 
-                if (error) {
-                    // If it's a 406 or profile not fully initialized, handle gracefully
-                    // console.log('Loyalty record not found yet, using defaults');
+                if (customerError) {
+                    if (customerError.code !== 'PGRST116') { // Ignore "not found" if just created
+                        console.error('Error fetching customer:', customerError);
+                    }
+                    // If customer not found, or error, set default loyalty and stop loading
+                    setLoyalty(prev => ({
+                        ...prev,
+                        id: null,
+                        points: 0,
+                        tier: 'bronze',
+                        pointsToNextTier: tiers['silver'].minPoints - 0,
+                        nextTierName: tiers['silver'].name
+                    }));
+                    setLoading(false);
                     return;
                 }
 
                 if (customerData) {
-                    const account = customerData.loyalty_accounts?.[0] || customerData.loyalty_accounts;
-                    const points = account?.current_points || 0;
-                    const tier = account?.current_tier || 'bronze';
-                    const nextTier = getNextTier(tier);
+                    // 2. Fetch Loyalty Account using Customer ID
+                    const { data: loyaltyData, error: loyaltyError } = await supabase
+                        .from('loyalty_accounts')
+                        .select('id, current_points, current_tier')
+                        .eq('customer_id', customerData.id)
+                        .maybeSingle(); // Use maybeSingle to avoid 406 on empty
 
-                    setLoyalty({
-                        id: account?.id, // Store account ID for updates
-                        points: points,
-                        tier: tier,
-                        totalEarned: points, // Simplified for now
-                        totalRedeemed: 0,
-                        pointsToNextTier: nextTier ? (tiers[nextTier].minPoints - points) : 0,
-                        nextTierName: nextTier ? tiers[nextTier].name : null
-                    });
+                    if (!loyaltyError && loyaltyData) {
+                        const points = loyaltyData.current_points || 0;
+                        const tier = loyaltyData.current_tier || 'bronze';
+                        const nextTier = getNextTier(tier);
+
+                        setLoyalty(prev => ({
+                            ...prev,
+                            id: loyaltyData.id,
+                            points: points,
+                            tier: tier,
+                            totalEarned: points, // Simplified for now, assuming totalEarned is current points
+                            pointsToNextTier: nextTier ? (tiers[nextTier].minPoints - points) : 0,
+                            nextTierName: nextTier ? tiers[nextTier].name : null
+                        }));
+                    } else {
+                        // If no loyalty account found for the customer, initialize with defaults
+                        setLoyalty(prev => ({
+                            ...prev,
+                            id: null, // No loyalty account ID yet
+                            points: 0,
+                            tier: 'bronze',
+                            totalEarned: 0,
+                            pointsToNextTier: tiers['silver'].minPoints - 0,
+                            nextTierName: tiers['silver'].name
+                        }));
+                    }
                 }
             } catch (error) {
                 console.error('Error fetching loyalty data:', error);
