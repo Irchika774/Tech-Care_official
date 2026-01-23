@@ -4,6 +4,27 @@ import { supabaseAuth } from '../middleware/supabaseAuth.js';
 
 const router = express.Router();
 
+// Helper to format booking data for frontend consistency
+const formatBooking = (b) => {
+    if (!b) return null;
+    return {
+        ...b,
+        id: b.id, // Ensure ID is present
+        createdAt: b.created_at,
+        scheduledDate: b.scheduled_date,
+        estimatedCost: b.estimated_cost,
+        device: {
+            brand: b.device_brand,
+            model: b.device_model,
+            type: b.device_type
+        },
+        issue: {
+            description: b.issue_description,
+            type: b.issue_type
+        }
+    };
+};
+
 const verifyTechnician = (req, res, next) => {
     if (!req.user || req.user.role !== 'technician') {
         return res.status(403).json({ error: 'Access denied. Technician role required.' });
@@ -122,7 +143,6 @@ router.get('/dashboard', supabaseAuth, verifyTechnician, async (req, res) => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        // Run independent queries in parallel
         const [
             activeJobsRes,
             activeBidsRes,
@@ -135,7 +155,7 @@ router.get('/dashboard', supabaseAuth, verifyTechnician, async (req, res) => {
                 .from('bookings')
                 .select('*, customer:customers(id, name, email, phone)')
                 .eq('technician_id', technician.id)
-                .in('status', ['confirmed', 'scheduled', 'in_progress', 'diagnosing', 'waiting_for_parts'])
+                .in('status', ['pending', 'pending_payment', 'confirmed', 'scheduled', 'in_progress', 'diagnosing', 'waiting_for_parts'])
                 .order('scheduled_date', { ascending: true })
                 .limit(10),
             supabaseAdmin
@@ -170,25 +190,11 @@ router.get('/dashboard', supabaseAuth, verifyTechnician, async (req, res) => {
                 .limit(10)
         ]);
 
-        const formatBooking = (b) => {
-            if (!b) return null;
-            return {
-                ...b,
-                device: {
-                    brand: b.device_brand,
-                    model: b.device_model,
-                    type: b.device_type
-                },
-                issue: {
-                    description: b.issue_description,
-                    type: b.issue_type
-                }
-            };
-        };
 
         const activeJobs = (activeJobsRes.data || []).map(formatBooking);
         const activeBids = (activeBidsRes.data || []).map(b => ({
             ...b,
+            createdAt: b.created_at,
             booking: formatBooking(b.booking)
         }));
         const todayBookings = todayBookingsRes.data || [];
@@ -257,12 +263,12 @@ router.get('/jobs', supabaseAuth, verifyTechnician, async (req, res) => {
         }
 
         // Fetch available jobs for technicians:
-        // 1. Jobs with status pending/bidding/confirmed that don't have a technician assigned
-        // 2. OR jobs where payment is completed and needs assignment
+        // 1. Jobs with status pending/bidding where NO technician is assigned (Public Marketplace)
+        // 2. We exclude private requests (where technician_id is already set)
         const { data: jobs, error } = await supabaseAdmin
             .from('bookings')
             .select('*, customer:customers(id, name, email, phone)')
-            .or('technician_id.is.null,status.eq.pending')
+            .is('technician_id', null)
             .in('status', ['pending', 'bidding', 'confirmed', 'pending_payment'])
             .order('created_at', { ascending: false })
             .limit(50);
@@ -290,7 +296,9 @@ router.get('/jobs', supabaseAuth, verifyTechnician, async (req, res) => {
             return false;
         });
 
-        res.json({ jobs: availableJobs });
+        const formattedJobs = availableJobs.map(formatBooking);
+
+        res.json({ jobs: formattedJobs });
     } catch (error) {
         console.error('Jobs fetch error:', error);
         res.status(500).json({ error: 'Failed to fetch jobs' });

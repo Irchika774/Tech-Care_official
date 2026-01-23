@@ -29,6 +29,16 @@
 ### 🆕 Version History
 
 <details open>
+<summary><b>v2.9 - Technician Marketplace & Data Standardization (Jan 23, 2026)</b></summary>
+<br>
+
+*   ✅ **Technician Marketplace**: Resolved job visibility issues and optimized the Find Jobs workflow.
+*   ✅ **Data Synchronization**: Standardized API response mapping (camelCase) and unified booking objects across the stack.
+*   ✅ **Dashboard UX**: Added automatic marketplace refreshing and fixed dashboard navigation bugs.
+*   ✅ **Security**: Hardened private request endpoints to prevent unauthorized technician access.
+</details>
+
+<details>
 <summary><b>v2.8 - Enhanced Scheduling & Payments (Jan 20, 2026)</b></summary>
 <br>
 

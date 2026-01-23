@@ -597,6 +597,12 @@ const TechnicianDashboard = () => {
     };
   }, [user?.id, authError]);
 
+  useEffect(() => {
+    if (activeTab === 'marketplace') {
+      fetchAvailableJobs();
+    }
+  }, [activeTab]);
+
   const handleStatusUpdate = async (jobId, newStatus) => {
     try {
       const { data: { session: currentSession } } = await supabase.auth.getSession();
@@ -1083,7 +1089,7 @@ const TechnicianDashboard = () => {
                   </div>
                 ) : (
                   activeJobs.map(job => (
-                    <div key={job._id} className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-xl border border-zinc-700">
+                    <div key={job.id} className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-xl border border-zinc-700">
                       <CheckCircle className="h-5 w-5 text-emerald-500" />
                       <div className="flex-1">
                         <div className="font-['Inter'] font-medium text-white">{job.device?.brand} {job.device?.model}</div>
@@ -1139,7 +1145,7 @@ const TechnicianDashboard = () => {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {availableJobs.map((job) => (
-                      <Card key={job._id || job.id} className="bg-zinc-900 border-zinc-800 hover:border-zinc-700 transition-all group">
+                      <Card key={job.id} className="bg-zinc-900 border-zinc-800 hover:border-zinc-700 transition-all group">
                         <CardHeader>
                           <div className="flex justify-between items-start mb-2">
                             <Badge variant="outline" className="border-zinc-700 text-zinc-400">{job.device?.type || 'Device'}</Badge>
@@ -1271,7 +1277,7 @@ const TechnicianDashboard = () => {
                     <p>No active bids. Start bidding on jobs to grow your business!</p>
                     <Button
                       variant="link"
-                      onClick={() => navigate('/bidding')}
+                      onClick={() => setActiveTab('marketplace')}
                       className="mt-2 text-white hover:text-zinc-300"
                     >
                       Find Jobs <ArrowRight className="ml-1 h-3 w-3" />
@@ -1279,7 +1285,7 @@ const TechnicianDashboard = () => {
                   </div>
                 ) : (
                   activeBids.map((bid) => (
-                    <div key={bid._id} className="flex justify-between items-center p-4 bg-zinc-800/50 rounded-xl border border-zinc-700">
+                    <div key={bid.id} className="flex justify-between items-center p-4 bg-zinc-800/50 rounded-xl border border-zinc-700">
                       <div className="flex-1">
                         <h4 className="font-['Outfit'] font-semibold text-white">{bid.booking?.device?.brand} {bid.booking?.device?.model}</h4>
                         <div className="flex items-center gap-4 mt-1 text-sm text-zinc-400">
@@ -1298,7 +1304,7 @@ const TechnicianDashboard = () => {
                           variant="ghost"
                           size="sm"
                           className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
-                          onClick={() => handleWithdrawBid(bid._id || bid.id)}
+                          onClick={() => handleWithdrawBid(bid.id)}
                         >
                           Withdraw
                         </Button>
@@ -1414,7 +1420,7 @@ const TechnicianDashboard = () => {
                   ) : (
                     <div className="space-y-1">
                       {recentTransactions.map((tx) => (
-                        <div key={tx._id} className="flex justify-between items-center p-3 hover:bg-white/5 rounded-lg transition-colors">
+                        <div key={tx.id} className="flex justify-between items-center p-3 hover:bg-white/5 rounded-lg transition-colors">
                           <div className="flex items-center gap-3">
                             <div className="p-2 bg-emerald-500/10 rounded-full">
                               <ArrowRight className="h-4 w-4 text-emerald-500 rotate-[-45deg]" />
