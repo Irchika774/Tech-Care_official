@@ -1,0 +1,25 @@
+# Error Report: Technician Registration Button Visible in Admin Dashboard
+
+**Project Name:** Tech Care  
+**Module:** Admin Dashboard  
+**Component:** User Registration  
+**Error Type:** Authorization / UI Error  
+**Severity:** Medium  
+
+## Description
+The **“Register as a Technician”** button is visible in the Admin Dashboard. This button should not appear for admin users.
+
+## Steps to Reproduce
+1. Log in to the system as an admin  
+2. Navigate to the Admin Dashboard  
+3. Observe the available action buttons  
+
+## Expected Result
+The **“Register as a Technician”** button should be hidden or disabled for admin users.
+
+## Actual Result
+The **“Register as a Technician”** button is displayed in the Admin Dashboard.
+
+## Impact
+- Causes confusion for admin users  
+- Indicates improper role-based access control
