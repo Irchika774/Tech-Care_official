@@ -5,8 +5,8 @@
 ### _Connecting Customers with Expert Technicians_
 
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-success?style=for-the-badge)](https://github.com)
-[![Last Updated](https://img.shields.io/badge/Last%20Updated-Jan%2020,%202026-blue?style=for-the-badge)](https://github.com/Wenura17125/Tech-Care_official/commits/main)
-[![Version](https://img.shields.io/badge/Version-2.8-blue?style=for-the-badge)](https://github.com)
+[![Last Updated](https://img.shields.io/badge/Last%20Updated-Jan%2027,%202026-blue?style=for-the-badge)](https://github.com/Wenura17125/Tech-Care_official/commits/main)
+[![Version](https://img.shields.io/badge/Version-3.0-blue?style=for-the-badge)](https://github.com)
 [![License](https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge)](LICENSE)
 [![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=for-the-badge&logo=github-actions)](https://github.com/Wenura17125/Tech-Care_official/actions)
 [![Node](https://img.shields.io/badge/Node-20.x-green?style=for-the-badge&logo=node.js)](https://nodejs.org)
@@ -29,6 +29,19 @@
 ### 🆕 Version History
 
 <details open>
+<summary><b>v3.0 - Dashboard Enhancement & Real-Time Tracking (Jan 27, 2026)</b></summary>
+<br>
+
+*   ✅ **Feature Cleanup**: Removed AI Diagnostics, Blog, Partner With Us, How It Works pages from navigation.
+*   ✅ **Navigation Overhaul**: Streamlined header with 7 focused items, removed "More" dropdown.
+*   ✅ **Real-Time Service Areas**: Added live technician activity tracking with Supabase subscriptions.
+*   ✅ **Technician Status Colors**: Active (🟢 green), Inactive (🔴 red), Busy (🟡 yellow) with 30-day auto-inactive logic.
+*   ✅ **User Dropdown Fixed**: Added Dashboard link, fixed Profile navigation to /profile.
+*   ✅ **Settings Complete**: Fully functional settings page with notifications, appearance, privacy, security.
+*   ✅ **Footer Updated**: Replaced removed links with Service Areas, Compare Technicians, Find Technicians, FAQ.
+</details>
+
+<details>
 <summary><b>v2.9 - Technician Marketplace & Data Standardization (Jan 23, 2026)</b></summary>
 <br>
 
@@ -158,8 +171,8 @@
 
 **TechCare** is a modern, enterprise-grade full-stack web application that revolutionizes the device repair industry in Sri Lanka. It connects customers with verified technicians through an intelligent matching system, featuring:
 
-- 🤖 **AI-Powered Diagnostics** - Smart issue detection and cost estimation
-- 🗺️ **Location-Based Services** - Find nearby technicians with OpenStreetMap integration
+- 🗺️ **Real-Time Service Areas** - Live technician activity tracking with active/inactive status
+- 📍 **Location-Based Services** - Find nearby technicians with OpenStreetMap integration
 - 💳 **Secure Payments** - Stripe-powered transaction processing
 - ⚡ **Real-time Updates** - Live booking status and notifications
 - 🏆 **Loyalty Program** - Reward points and tier-based benefits
@@ -1171,7 +1184,7 @@ If you find TechCare helpful or interesting, please consider:
 
 ---
 
-**Last Updated**: January 20, 2026 | **Version**: 2.8 | **Status**: ✅ Production Ready | **CI/CD**: ✅ Auto-Deploy
+**Last Updated**: January 27, 2026 | **Version**: 3.0 | **Status**: ✅ Production Ready | **CI/CD**: ✅ Auto-Deploy
 
 [![Made with React](https://img.shields.io/badge/Made%20with-React-61DAFB?style=flat-square&logo=react)](https://reactjs.org)
 [![Powered by Supabase](https://img.shields.io/badge/Powered%20by-Supabase-3ECF8E?style=flat-square&logo=supabase)](https://supabase.io)
