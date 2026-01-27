@@ -24,8 +24,12 @@ import {
   Shield,
   Star,
   Briefcase,
-  GitCompare,
-  Gavel
+  AlertCircle,
+  Activity,
+  Calendar,
+  Zap,
+  Gavel,
+  GitCompare
 } from 'lucide-react';
 import TechCareLogo from './TechCareLogo';
 import { Button } from './ui/button';
