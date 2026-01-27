@@ -216,6 +216,7 @@
 
 **TechCare** is a modern, enterprise-grade full-stack web application that revolutionizes the device repair industry in Sri Lanka. It connects customers with verified technicians through an intelligent matching system, featuring:
 
+- 📄 **Digital Invoices** - Instant PDF receipt generation and downloads for all repairs
 - 🗺️ **Real-Time Service Areas** - Live technician activity tracking with active/inactive status
 - 📍 **Location-Based Services** - Find nearby technicians with OpenStreetMap integration
 - 💳 **Secure Payments** - Stripe-powered transaction processing
