@@ -6,7 +6,7 @@ import {
   MoreVertical, CheckCircle, XCircle, Clock, DollarSign, Filter, ChevronRight,
   ArrowUpRight, ArrowDownRight, Briefcase, Mail, Phone, MapPin, Trash2, Edit, Eye,
   TrendingUp, Activity, Download, RefreshCw, UserPlus, AlertCircle, BarChart3,
-  FileText, Shield, Zap, Sparkles, ArrowRight, ShieldCheck
+  FileText, Shield, Zap, Sparkles, ArrowRight, ShieldCheck, MessageSquare
 } from 'lucide-react';
 
 import { Button } from "@/components/ui/button";
