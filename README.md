@@ -454,6 +454,61 @@ flowchart TB
 | **Manage Users** | ❌ | ❌ | ❌ | ✅ |
 | **System Settings** | ❌ | ❌ | ❌ | ✅ |
 
+### Use Case Diagram
+
+```mermaid
+usecaseDiagram
+    actor Guest as "👤 Guest"
+    actor Customer as "🛒 Customer"
+    actor Technician as "🔧 Technician"
+    actor Admin as "👑 Admin"
+
+    package "TechCare System" {
+        usecase "View Services" as UC1
+        usecase "Search Technicians" as UC2
+        usecase "AI Diagnostics" as UC3
+        usecase "Register/Login" as UC4
+        
+        usecase "Book Repair" as UC5
+        usecase "Track Status" as UC6
+        usecase "Write Review" as UC7
+        usecase "Manage Profile" as UC8
+        
+        usecase "View Jobs" as UC9
+        usecase "Accept/Reject Job" as UC10
+        usecase "Update Job Status" as UC11
+        usecase "View Earnings" as UC12
+        
+        usecase "Manage Users" as UC13
+        usecase "Verify Technicians" as UC14
+        usecase "System Settings" as UC15
+    }
+
+    Guest --> UC1
+    Guest --> UC2
+    Guest --> UC3
+    Guest --> UC4
+
+    Customer --> UC1
+    Customer --> UC2
+    Customer --> UC3
+    Customer --> UC5
+    Customer --> UC6
+    Customer --> UC7
+    Customer --> UC8
+
+    Technician --> UC8
+    Technician --> UC9
+    Technician --> UC10
+    Technician --> UC11
+    Technician --> UC12
+
+    Admin --> UC13
+    Admin --> UC14
+    Admin --> UC15
+    Admin --> UC8
+```
+
 ---
 
 ## 🔌 API Endpoints
