@@ -369,6 +369,49 @@ flowchart TD
     style AI_PROCESS fill:#8b5cf6,stroke:#7c3aed,color:#fff
 ```
 
+### 👥 System Use Case Diagram
+
+```mermaid
+graph TD
+    classDef actor fill:#f9f,stroke:#333,stroke-width:2px;
+    classDef usecase fill:#fff,stroke:#333,stroke-width:2px,rx:20,ry:20;
+
+    Customer((👤 Customer)):::actor
+    Technician((🛠️ Technician)):::actor
+    Admin((👤 Admin)):::actor
+
+    subgraph Platform["🛡️ TechCare Platform"]
+        UC1([Browse Services]):::usecase
+        UC2([AI Diagnostics]):::usecase
+        UC3([Book Repair]):::usecase
+        UC4([Make Payment]):::usecase
+        UC5([Real-time Chat]):::usecase
+        UC6([Profile Management]):::usecase
+        UC7([Accept Jobs]):::usecase
+        UC8([Update Job Status]):::usecase
+        UC9([View Earnings]):::usecase
+        UC10([Verify Technicians]):::usecase
+        UC11([Platform Analytics]):::usecase
+    end
+
+    Customer --> UC1
+    Customer --> UC2
+    Customer --> UC3
+    Customer --> UC4
+    Customer --> UC5
+    Customer --> UC6
+
+    Technician --> UC7
+    Technician --> UC8
+    Technician --> UC9
+    Technician --> UC5
+    Technician --> UC6
+
+    Admin --> UC10
+    Admin --> UC11
+    Admin --> UC6
+```
+
 ---
 
 ## 👥 User Roles & Permissions
@@ -1040,6 +1083,13 @@ If you find TechCare helpful or interesting, please consider:
 ---
 
 ## 📅 Version History
+
+### v1.1.1 - Final Production Polish (Jan 28, 2026)
+**Stability & Documentation Improvements:**
+- **Admin Panel**: Fixed technician verification logic and updated legacy `_id` to Supabase `id` for reliable data management.
+- **Build System**: Resolved critical import regression in `Profile.jsx` ensuring successful production builds.
+- **Documentation**: Added comprehensive Mermaid Use Case diagrams and updated ER/Sequence diagrams for better architecture visibility.
+- **Deployment**: Synchronized all codebases across Netlify (Frontend) and Vercel (Backend API).
 
 ### v1.1.0 - Critical Stability Update (Jan 2026)
 **Major Fixes & Improvements:**
