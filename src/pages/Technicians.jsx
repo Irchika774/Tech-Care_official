@@ -94,7 +94,9 @@ const Technicians = () => {
 
       clearTimeout(timeoutId);
 
-      const supabaseTechs = supabaseResult.status === 'fulfilled' ? supabaseResult.value.data : [];
+      const supabaseTechs = supabaseResult.status === 'fulfilled'
+        ? (supabaseResult.value.data || []).map(t => ({ ...t, verified: t.is_verified }))
+        : [];
       if (supabaseResult.status === 'rejected') {
         console.warn('Supabase fetch failed:', supabaseResult.reason);
       }

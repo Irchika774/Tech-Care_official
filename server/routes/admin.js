@@ -164,29 +164,44 @@ router.put('/technicians/:id', supabaseAuth, adminCheck, async (req, res) => {
     }
 });
 
+// Verify technician
 router.patch('/technicians/:id/verify', supabaseAuth, adminCheck, logAuditTrail('ADMIN_VERIFY_TECH'), async (req, res) => {
     try {
+        const { verified } = req.body;
+        // If verified is provided, use it, otherwise default to true (legacy behavior)
+        const isVerified = verified !== undefined ? verified : true;
+
         const { data: technician, error } = await supabaseAdmin
             .from('technicians')
-            .update({ is_verified: true, updated_at: new Date().toISOString() })
+            .update({ is_verified: isVerified, updated_at: new Date().toISOString() })
             .eq('id', req.params.id)
             .select()
             .single();
 
         if (error) throw error;
 
-        // Notify technician about verification
+        // Notify technician about verification status change
         if (technician?.user_id) {
-            await supabaseAdmin.from('notifications').insert([{
-                user_id: technician.user_id, // Use Auth ID
-                title: 'Account Verified! 🎉',
-                message: 'Congratulations! Your technician account has been verified. You can now receive more jobs.',
-                type: 'account_verified',
-                data: { technician_id: technician.id }
-            }]);
+            if (isVerified) {
+                await supabaseAdmin.from('notifications').insert([{
+                    user_id: technician.user_id,
+                    title: 'Account Verified! 🎉',
+                    message: 'Congratulations! Your technician account has been verified. You can now receive more jobs.',
+                    type: 'account_verified',
+                    data: { technician_id: technician.id }
+                }]);
+            } else {
+                await supabaseAdmin.from('notifications').insert([{
+                    user_id: technician.user_id,
+                    title: 'Verification Revoked',
+                    message: 'Your technician account verification has been revoked. Please contact support.',
+                    type: 'account_verification_revoked',
+                    data: { technician_id: technician.id }
+                }]);
+            }
         }
 
-        res.json({ technician, message: 'Technician verified successfully' });
+        res.json({ technician, message: `Technician ${isVerified ? 'verified' : 'unverified'} successfully` });
     } catch (err) {
         res.status(400).json({ message: err.message });
     }

@@ -31,6 +31,15 @@
 
 
 <details open>
+<summary><b>v3.8 - Verification System Stability (Jan 28, 2026)</b></summary>
+<br>
+
+*   ✅ **Verification Logic Fix**: Resolved critical bug where technician verification status was not correctly synchronized between backend and frontend dashboards.
+*   ✅ **Revoke Capability**: Added administrative ability to revoke technician verification, complete with automated notifications.
+*   ✅ **Public Listings**: "Verified" badge now correctly appears on public technician listings based on real-time status.
+</details>
+
+<details>
 <summary><b>v3.7.3 - Admin UX & Navigation Refinement (Jan 27, 2026)</b></summary>
 <br>
 

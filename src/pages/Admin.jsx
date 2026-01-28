@@ -82,26 +82,7 @@ const Admin = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [techFilter, setTechFilter] = useState('all');
 
-  const handleToggleVerification = async (techId, currentStatus) => {
-    try {
-      await axios.patch(`${API_URL}/api/admin/technicians/${techId}/verify`,
-        { verified: !currentStatus },
-        { headers: await getAuthHeader() }
-      );
-      toast({
-        title: !currentStatus ? "Technician Verified" : "Verification Removed",
-        description: `Technician status has been updated.`
-      });
-      fetchTechnicians();
-    } catch (error) {
-      console.error('Error toggling verification:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to update status"
-      });
-    }
-  };
+
 
   // Real-time data states
   const [users, setUsers] = useState([]);
@@ -280,7 +261,9 @@ const Admin = () => {
       const response = await axios.get(`${API_URL}/api/technicians/all`, {
         headers: await getAuthHeader()
       });
-      setTechnicians(Array.isArray(response.data) ? response.data : []);
+      setTechnicians(Array.isArray(response.data)
+        ? response.data.map(t => ({ ...t, verified: t.is_verified }))
+        : []);
     } catch (error) {
       console.error('[ADMIN] Error fetching technicians:', error);
       try {
@@ -491,6 +474,34 @@ const Admin = () => {
       });
     }
   };
+
+  // Handle Toggle Verification
+  const handleToggleVerification = async (techId, currentStatus) => {
+    try {
+      // Toggle status: if currently verified (true), set to false, and vice versa
+      const newStatus = !currentStatus;
+
+      await axios.patch(`${API_URL}/api/admin/technicians/${techId}/verify`,
+        { verified: newStatus },
+        { headers: await getAuthHeader() }
+      );
+
+      toast({
+        title: "Success",
+        description: `Technician ${newStatus ? 'verified' : 'unverified'} successfully`
+      });
+      await fetchTechnicians();
+    } catch (error) {
+      console.error('[ADMIN] Error updating verification:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update verification status"
+      });
+    }
+  };
+
+  // Handle Delete Technician
 
   // Handle Update Appointment Status
   const handleUpdateAppointmentStatus = async (appointmentId, newStatus) => {
