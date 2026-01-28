@@ -50,7 +50,7 @@ const Admin = () => {
 
   const handleToggleVerification = async (techId, currentStatus) => {
     try {
-      await axios.put(`${API_URL}/api/admin/users/${techId}`,
+      await axios.patch(`${API_URL}/api/admin/technicians/${techId}/verify`,
         { verified: !currentStatus },
         { headers: await getAuthHeader() }
       );
@@ -742,7 +742,7 @@ const Admin = () => {
               </TableHeader>
               <TableBody>
                 {users.map((user) => (
-                  <TableRow key={user._id} className="border-zinc-800 hover:bg-zinc-800/50">
+                  <TableRow key={user.id} className="border-zinc-800 hover:bg-zinc-800/50">
                     <TableCell className="font-['Inter'] font-medium text-white">
                       <div className="flex items-center gap-3">
                         <Avatar className="border-2 border-zinc-600">
@@ -767,7 +767,7 @@ const Admin = () => {
                           variant="ghost"
                           size="icon"
                           className="text-red-500 hover:text-red-400 hover:bg-zinc-800"
-                          onClick={() => handleDeleteUser(user._id)}
+                          onClick={() => handleDeleteUser(user.id)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -839,7 +839,7 @@ const Admin = () => {
             </div>
           ) : (
             filteredTechnicians.map((tech) => (
-              <Card key={tech._id} className="bg-zinc-900 border-zinc-800 hover:border-zinc-600 transition-all shadow-xl">
+              <Card key={tech.id} className="bg-zinc-900 border-zinc-800 hover:border-zinc-600 transition-all shadow-xl">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
@@ -889,7 +889,7 @@ const Admin = () => {
                     variant="outline"
                     size="sm"
                     className="flex-1 border-zinc-700 text-white hover:bg-zinc-800"
-                    onClick={() => handleToggleVerification(tech._id, tech.verified)}
+                    onClick={() => handleToggleVerification(tech.id, tech.verified)}
                   >
                     {tech.verified ? 'Revoke' : 'Verify'}
                   </Button>
@@ -897,7 +897,7 @@ const Admin = () => {
                     variant="ghost"
                     size="icon"
                     className="text-red-500 hover:text-red-400 hover:bg-zinc-800"
-                    onClick={() => handleDeleteTechnician(tech._id)}
+                    onClick={() => handleDeleteTechnician(tech.id)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
