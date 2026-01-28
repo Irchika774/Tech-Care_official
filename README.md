@@ -5,15 +5,12 @@
 ### _Connecting Customers with Expert Technicians_
 
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-success?style=for-the-badge)](https://github.com)
-[![Last Updated](https://img.shields.io/badge/Last%20Updated-Jan%2027,%202026-blue?style=for-the-badge)](https://github.com/Wenura17125/Tech-Care_official/commits/main)
-[![Version](https://img.shields.io/badge/Version-3.7.3-emerald?style=for-the-badge)](https://github.com)
+[![Version](https://img.shields.io/badge/Version-2.0-blue?style=for-the-badge)](https://github.com)
 [![License](https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge)](LICENSE)
-[![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=for-the-badge&logo=github-actions)](https://github.com/Wenura17125/Tech-Care_official/actions)
-[![Node](https://img.shields.io/badge/Node-20.x-green?style=for-the-badge&logo=node.js)](https://nodejs.org)
+[![Node](https://img.shields.io/badge/Node-24.x-green?style=for-the-badge&logo=node.js)](https://nodejs.org)
 [![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react)](https://reactjs.org)
 [![Supabase](https://img.shields.io/badge/Supabase-Database-3ECF8E?style=for-the-badge&logo=supabase)](https://supabase.io)
 [![Stripe](https://img.shields.io/badge/Stripe-Payments-635BFF?style=for-the-badge&logo=stripe)](https://stripe.com)
-[![Netlify](https://img.shields.io/badge/Netlify-Auto%20Deploy-00C7B7?style=for-the-badge&logo=netlify)](https://techcare-official-new.netlify.app)
 
 [🚀 Quick Start](#-quick-start) • [📐 Architecture](#-system-architecture) • [✨ Features](#-features) • [🔄 User Flows](#-user-flow-diagrams) • [📚 API Reference](#-api-endpoints) • [🤝 Contributing](#-contributing)
 
@@ -21,255 +18,10 @@
 
 ### 🌐 Live Demo
 
-| Component | URL | Status | host |
-|:----------|:----|:-------|:-----|
-| **🖥️ Frontend** | [techcare-official-new.netlify.app](https://techcare-official-new.netlify.app/) | ![Netlify](https://img.shields.io/badge/Online-00C7B7?style=flat&logo=netlify&logoColor=white) | **Netlify** |
-| **⚙️ Backend API** | [server-seven-ecru.vercel.app](https://server-seven-ecru.vercel.app) | ![Vercel](https://img.shields.io/badge/Online-000000?style=flat&logo=vercel&logoColor=white) | **Vercel** |
-
-### 🆕 Version History
-
-
-
-<details open>
-<summary><b>v3.8 - Comprehensive System Polish & Verification Fixes (Jan 28, 2026)</b></summary>
-<br>
-
-*   ✅ **Technician Verification Logic**: 
-    - Resolved critical mismatch between backend `is_verified` and frontend `verified` properties.
-    - Added **Revoke Verification** capability for Admins with automated "Revoked" notifications.
-    - Public technician listings now accurately reflect real-time verification status.
-*   ✅ **Device Management Fix**:
-    - Fixed "Failed to Add Device" error by handling nullable `purchase_date` and `warranty_expiry` fields in Supabase.
-    - Database schema successfully migrated to allow optional date fields for legacy device entries.
-*   ✅ **Technician Dashboard Stability**:
-    - Fixed **Active Jobs Filter** to correctly include `confirmed`, `scheduled`, `diagnosing`, and `waiting_for_parts` statuses.
-    - Resolved **Dashboard Reset Bug** where metrics would flash and disappear due to race conditions in `fetchDashboardData`.
-*   ✅ **Admin Panel Enhancements**:
-    - Fixed **Manage Reviews** navigation button to correctly trigger tab switching.
-    - Improved error handling for **Gig Approvals** to display precise backend error messages.
-    - Removed redundant floating action buttons and cleaned up the "Language" selector (removed "Spanish" option).
-*   ✅ **UI/UX Refinements**:
-    - **Schedule Page**: Wrapped technician list in `ScrollArea` for better usability on smaller screens.
-    - **Customer Dashboard**: Added "Book New Repair" quick action and fixed Booking Cards to display Technician Name instead of ID.
-    - **Technician List**: Improved filter logic to handle both string-based and object-based `services` data structures.
-*   ✅ **Documentation**:
-    - Added **Entity Relationship Diagram (ERD)** including `USER_DEVICES` and `NOTIFICATIONS`.
-    - Added **System Use Cases Diagram** illustrating core actor interactions.
-    - Added **Technician Job Lifecycle Sequence Diagram** visualizing the end-to-end repair flow.
-</details>
-
-<details>
-<summary><b>v3.7.3 - Admin UX & Navigation Refinement (Jan 27, 2026)</b></summary>
-<br>
-
-*   ✅ **Navigation Cleanup**: Removed redundant management links from the global header for Admin users to ensure a streamlined UX.
-*   ✅ **Dashboard Synchronization**: Fixed the "unclickable" tabs issue in `Admin.jsx` by properly synchronizing the tab state with URL parameters.
-*   ✅ **Consistency**: Verified all dashboards are now deep-linkable and support standard browser navigation.
-</details>
-
-<details>
-<summary><b>v3.7.2 - Dashboard Restoration & Stability (Jan 27, 2026)</b></summary>
-<br>
-
-*   ✅ **Navigation Fixes**: Resolved `ReferenceError: Zap/MessageSquare is not defined` in Header and Admin dashboards.
-*   ✅ **State Safety**: Fixed naming conflicts in `TechnicianDashboard.jsx` preventing `activeBids` reference errors.
-*   ✅ **Global Sync**: v3.7.2 synchronized across GitHub, Vercel, and Netlify for production stability.
-</details>
-
-<details>
-<summary><b>v3.7 - Enterprise-Grade Admin Suite (Jan 27, 2026)</b></summary>
-<br>
-
-*   ✅ **Deep Audit & Safety**: Exhaustive audit of Admin flows, implementing robust ID safety checks (`id || _id`) and `safeFormatDate` across all 11 management modules.
-*   ✅ **Clean Architecture**: Completely removed AI Diagnostics and all legacy modules from the codebase, navigation, and system diagrams.
-*   ✅ **UI Consistency**: Refined the `ServiceManagement` and `Admin` dashboards with a unified dark-glass aesthetic and optimized table layouts.
-</details>
-
-<details>
-<summary><b>v3.6 - Admin Navigation & Financial Clarity (Jan 27, 2026)</b></summary>
-<br>
-
-*   ✅ **Navigation Overhaul**: Restructured header with dynamic "More" dropdown for secondary management tasks.
-*   ✅ **Financial Precision**: Fixed revenue calculation logic to include `estimated_cost` and ensure number conversions.
-</details>
-
-<details>
-<summary><b>v3.4 - Comprehensive Technician Audit & New Features (Jan 27, 2026)</b></summary>
-<br>
-
-*   ✅ **Overview Upgrade**: Replaced placeholder content with real-time **Active Jobs Summary**, **Pending Requests Count**, and **Inventory Alerts**.
-*   ✅ **Invoice Generation**: Added ability for Technicians to generate and download PDF invoices for completed jobs.
-*   ✅ **Marketplace Intelligence**: Fixed job filtering to exclude already-bid items and auto-refresh listings.
-*   ✅ **UX Polish**: Fixed duplicate "Details" buttons and enhanced mobile navigation flow.
-</details>
-
-<details>
-<summary><b>v3.3 - Technician Experience Overhaul (Jan 27, 2026)</b></summary>
-<br>
-
-*   ✅ **Role-Based Navigation**: Cleaned up header links, removing guest items for logged-in technicians.
-*   ✅ **Direct Job Requests**: Added dedicated UI for technicians to accept/decline direct job assignments.
-*   ✅ **Streamlined Dashboard**: Removed redundant tabs (Preferences, Security are now in Settings).
-*   ✅ **Code Cleanup**: Removed unused legacy pages (Blog, Partner, HowItWorks) to reduce bundle size.
-</details>
-
-<details>
-<summary><b>v3.2 - Technician Empowerment Upgrade (Jan 27, 2026)</b></summary>
-<br>
-
-*   ✅ **Technician Dashboard**: Major code audit and stability improvements.
-*   ✅ **Real-Time Notifications**: Integrated centralized notification system for instant job alerts.
-*   ✅ **Mobile Experience**: Optimized tab navigation with horizontal scrolling for better usability on small screens.
-*   ✅ **Earnings & Pricing**: Fixed state management for hourly rates and enhanced analytics chart safety.
-*   ✅ **Code Hygiene**: Removed production console logs and improved error handling for data fetching.
-</details>
-
-<details>
-<summary><b>v3.1 - Dashboard Perfection & Feature Expansion (Jan 27, 2026)</b></summary>
-<br>
-
-*   ✅ **Warranty Vault**: Added purchase date and warranty tracking to user devices with expiry alerts.
-*   ✅ **Digital Invoices**: Integrated PDF invoice generation and download for repair history.
-*   ✅ **Notification Center**: Enhanced notification system with categories, read status, and real-time updates.
-*   ✅ **Smart Booking**: Added issue description field and improved device selection flow.
-*   ✅ **Code Optimization**: Removed unused legacy components (Blog, Partners, etc.) and sanitized production logs.
-*   ✅ **UX Polish**: Fixed dashboard navigation, history pagination, and device management flows.
-</details>
-
-<details>
-<summary><b>v3.0 - Dashboard Enhancement & Real-Time Tracking (Jan 27, 2026)</b></summary>
-<br>
-
-*   ✅ **Feature Cleanup**: Removed AI Diagnostics, Blog, Partner With Us, How It Works pages from navigation.
-*   ✅ **Navigation Overhaul**: Streamlined header with 7 focused items, removed "More" dropdown.
-*   ✅ **Real-Time Service Areas**: Added live technician activity tracking with Supabase subscriptions.
-*   ✅ **Technician Status Colors**: Active (🟢 green), Inactive (🔴 red), Busy (🟡 yellow) with 30-day auto-inactive logic.
-*   ✅ **User Dropdown Fixed**: Added Dashboard link, fixed Profile navigation to /profile.
-*   ✅ **Settings Complete**: Fully functional settings page with notifications, appearance, privacy, security.
-*   ✅ **Footer Updated**: Replaced removed links with Service Areas, Compare Technicians, Find Technicians, FAQ.
-</details>
-
-<details>
-<summary><b>v2.9 - Technician Marketplace & Data Standardization (Jan 23, 2026)</b></summary>
-<br>
-
-*   ✅ **Technician Marketplace**: Resolved job visibility issues and optimized the Find Jobs workflow.
-*   ✅ **Data Synchronization**: Standardized API response mapping (camelCase) and unified booking objects across the stack.
-*   ✅ **Dashboard UX**: Added automatic marketplace refreshing and fixed dashboard navigation bugs.
-*   ✅ **Security**: Hardened private request endpoints to prevent unauthorized technician access.
-</details>
-
-<details>
-<summary><b>v2.8 - Enhanced Scheduling & Payments (Jan 20, 2026)</b></summary>
-<br>
-
-*   ✅ **Advanced Scheduling**: Implemented smart time-slot selection with technician assignment.
-*   ✅ **Payment Integration Refactor**: Optimized Stripe Elements integration (`payment_method_types: ['card']`) for better reliability.
-*   ✅ **Success Flows**: Added dedicated success pages and modals for better user feedback.
-*   ✅ **Performance**: Fixed build issues and optimized duplicate imports in key pages.
-</details>
-
-<details>
-<summary><b>v2.7 - TechCare Official v2.7 Enterprise Synchronization & Browser Optimization</b></summary>
-<br>
-
-*   🚀 **Recent Stability Updates**
-    *   **Env Synchronization:** Successfully synced production credentials across Vercel and Netlify via CLI.
-    *   **Fix (Loyalty):** Resolved ambiguous join error (400) in Supabase queries.
-    *   **Optimization (Security):** Explicitly disabled Privacy Sandbox features in `Permissions-Policy` to silence browser warnings.
-    *   **Enhanced Logging:** Added deep tracing for Stripe Payment Intent failures and Auth initialization steps.
-    *   **Database Migration:** Applied missing loyalty system tables to the production database.
-</details>
-
-<details>
-<summary><b>v2.5 - Payment & Cancellation Stability (Jan 19, 2026)</b></summary>
-<br>
-
-*   ✅ **Auto-Healing Payments**: Backend now automatically recovers from "Stripe Customer Missing" errors by re-creating missing customers on the fly, preventing 500 errors.
-*   ✅ **Fixed Booking Cancellation**: Resolved 404 error in customer dashboard by routing requests through the correct centralized API service.
-*   ✅ **Reload Persistence**: Enhanced `BookingGuard` and `Payment` page to support browser refreshes without losing context or being blocked.
-*   ✅ **Security Header Optimization**: Updated `Permissions-Policy` to support modern payment APIs and suppress browser warnings.
-*   ✅ **Loyalty Query Fix**: Resolved database 400 errors by correcting ID column mapping in the loyalty system.
-</details>
-
-<details>
-<summary><b>v2.4 - Profile & Stability Improvements (Jan 19, 2026)</b></summary>
-<br>
-
-*   ✅ **Unified Profile Handling**: Consistent profile image display with dynamic `DiceBear` fallbacks and robust upload integration across Customer, Technician, and Admin dashboards.
-*   ✅ **Stability Improvements**: Increased API and Auth timeouts (up to 30s) to robustly handle serverless cold starts and slow network connections.
-*   ✅ **Dashboard Optimization**: Enhanced Technician Dashboard to use background data fetching, preventing UI freezes and timeouts.
-*   ✅ **Bug Fixes**: Resolved intermittent "Profile fetch timed out" and "Request timed out" errors during initialization.
-</details>
-
-<details>
-<summary><b>v2.3 - Map Migration & Polish (Jan 15, 2026)</b></summary>
-<br>
-
-*   ✅ **Map Migration**: Switched from Google Maps to OpenStreetMap (Leaflet) for improved accessibility and zero API key requirements.
-*   ✅ **Technician Images**: Fixed image loading issues with robust fallbacks and DB schema alignment.
-*   ✅ **Performance**: Increased backend timeouts for better reliability on cold starts.
-*   ✅ **Deployment**: Verified production deployments on Vercel and Netlify.
-</details>
-
-<details>
-<summary><b>v2.2 - Payment & Infrastructure (Jan 2026)</b></summary>
-<br>
-
-*   ✅ **Stripe MCP**: Full multi-currency payment support with saved cards.
-*   ✅ **Supabase Migration**: Complete transition from MongoDB to Supabase (PostgreSQL).
-*   ✅ **Automated CI/CD**: GitHub Actions pipeline for auto-deploying to Vercel and Netlify.
-*   ✅ **Admin Access**: Fixed role-based access control for backend booking APIs.
-</details>
-
-<details>
-<summary><b>v2.1 - Stability Patch (Jan 2026)</b></summary>
-<br>
-
-*   ✅ **API Stability**: Fixed schema mismatches in Reviews API reducing server errors.
-*   ✅ **UI/UX Polish**: Eliminated visual gaps on dark-themed pages (Careers, Partner, etc.).
-*   ✅ **Error Handling**: Improved authentication flow robustness and reduced console noise.
-*   ✅ **Deployment**: Verified production deployments on Vercel and Netlify.
-</details>
-
-<details>
-<summary><b>v2.0 - Core Platform Overhaul (Dec 2025)</b></summary>
-<br>
-
-*   🚀 **Frontend Remake**: Migrated from simple HTML/JS to React 18 + Vite.
-*   🎨 **New Design System**: Implemented dark-mode first UI with TailwindCSS & Radix UI.
-*   🔐 **Enhanced Auth**: Integrated Supabase Auth for secure, session-based login.
-*   📱 **Mobile Responsive**: Fully optimized layouts for all device sizes.
-</details>
-
-<details>
-<summary><b>v1.5 - Backend Integration (Nov 2025)</b></summary>
-<br>
-
-*   ⚙️ **Node.js Server**: Introduced Express.js backend for dynamic data handling.
-*   🗄️ **MongoDB Database**: Moved from local storage/JSON to MongoDB (Legacy).
-*   🔌 **REST API**: Created initial endpoints for bookings and technicians.
-*   🔒 **Basic Auth**: JWT-based authentication system.
-</details>
-
-<details>
-<summary><b>v1.0 - Initial Static Release (Oct 2025)</b></summary>
-<br>
-
-*   🌐 **Static Website**: Launched landing page with Services and About/Contact sections.
-*   🖼️ **UI Foundations**: Basic CSS styling and responsive grid layout.
-*   📝 **Forms**: Simple HTML forms for contact and career inquiries.
-*   🗺️ **Maps**: Basic Google Maps embed for store location.
-</details>
-
-<details>
-<summary><b>v0.5 - Beta / MVP (Sept 2025)</b></summary>
-<br>
-
-*   🧪 **Prototype**: Proof-of-concept wireframes and basic navigation.
-*   🚧 **Services List**: Static list of repair services.
-*   👥 **Team**: Initial team page and project setup.
-</details>
+| Component | URL | Status |
+|-----------|-----|--------|
+| **🖥️ Frontend** | [techcareofficial.netlify.app](https://techcare-official-new.netlify.app/) | ![Netlify](https://img.shields.io/badge/Netlify-Online-00C7B7?logo=netlify) |
+| **⚙️ Backend API** | [techcare-flax.vercel.app](https://techcare-flax.vercel.app) | ![Vercel](https://img.shields.io/badge/Vercel-Online-000?logo=vercel) |
 
 ---
 
@@ -279,9 +31,8 @@
 
 **TechCare** is a modern, enterprise-grade full-stack web application that revolutionizes the device repair industry in Sri Lanka. It connects customers with verified technicians through an intelligent matching system, featuring:
 
-- 📄 **Digital Invoices** - Instant PDF receipt generation and downloads for all repairs
-- 🗺️ **Real-Time Service Areas** - Live technician activity tracking with active/inactive status
-- 📍 **Location-Based Services** - Find nearby technicians with OpenStreetMap integration
+- 🤖 **AI-Powered Diagnostics** - Smart issue detection and cost estimation
+- 🗺️ **Location-Based Services** - Find nearby technicians with Google Maps integration
 - 💳 **Secure Payments** - Stripe-powered transaction processing
 - ⚡ **Real-time Updates** - Live booking status and notifications
 - 🏆 **Loyalty Program** - Reward points and tier-based benefits
@@ -303,14 +54,14 @@ flowchart TB
     subgraph Frontend["🎨 FRONTEND (React + Vite)"]
         direction TB
         subgraph Pages["📄 Pages"]
-            PUB["Public Pages<br/>• Home • Services<br/>• Technicians"]
+            PUB["Public Pages<br/>• Home • Services<br/>• Technicians • AI Diagnostics"]
             CUST["Customer Dashboard<br/>• Bookings • Profile<br/>• History • Loyalty"]
             TECH["Technician Dashboard<br/>• Jobs • Earnings<br/>• Schedule • Reviews"]
-            ADM["Admin Dashboard<br/>• Users • Service Areas<br/>• Support Desk • Settings"]
+            ADM["Admin Dashboard<br/>• Users • Analytics<br/>• Settings • Payments"]
         end
         subgraph Components["🧩 Components"]
             UI["UI Components<br/>• Header • Footer<br/>• Cards • Modals"]
-            FEAT["Feature Components<br/>• Maps • Charts<br/>• Invoices"]
+            FEAT["Feature Components<br/>• AI Diagnostics • Maps<br/>• Charts • Invoices"]
         end
         subgraph State["🔄 State Management"]
             CTX["Context Providers<br/>• AuthContext<br/>• ThemeContext<br/>• NotificationContext"]
@@ -343,7 +94,7 @@ flowchart TB
         direction TB
         STRIPE["💳 Stripe<br/>Payment Processing"]
         RESEND["📧 Resend<br/>Email Service"]
-        OSM["🗺️ OpenStreetMap<br/>Location Services"]
+        GMAPS["🗺️ Google Maps<br/>Location Services"]
         CLOUD["☁️ Cloudinary<br/>Image Hosting"]
     end
 
@@ -380,6 +131,7 @@ graph LR
         J --> J1[Home]
         J --> J2[Services]
         J --> J3[Technicians]
+        J --> J4[AI Diagnostics]
         
         K --> K1[Customer Dashboard]
         K --> K2[Technician Dashboard]
@@ -407,7 +159,7 @@ erDiagram
         string email
         string name
         enum role "user|technician|admin"
-        string stripe_customer_id
+        string avatar_url
         timestamp created_at
     }
     
@@ -419,14 +171,21 @@ erDiagram
         uuid profile_id FK
         string phone
         string address
+        jsonb preferences
     }
     
     TECHNICIANS ||--o{ BOOKINGS : "receives"
+    TECHNICIANS ||--o{ REVIEWS : "gets"
     TECHNICIANS {
         uuid id PK
         uuid profile_id FK
         string business_name
+        string[] services
+        string[] districts
+        float rating
+        int total_reviews
         boolean verified
+        jsonb location
     }
     
     BOOKINGS ||--o{ PAYMENTS : "has"
@@ -434,100 +193,39 @@ erDiagram
         uuid id PK
         uuid customer_id FK
         uuid technician_id FK
-        enum status "pending|confirmed|completed"
-        enum payment_status "pending|paid"
+        string device_type
+        string issue_description
+        enum status "pending|confirmed|in_progress|completed|cancelled"
+        datetime scheduled_date
+        decimal amount
     }
     
-    PAYMENTS {
+    REVIEWS {
         uuid id PK
-        uuid booking_id FK
         uuid customer_id FK
-        decimal amount
-        string currency
-        string stripe_payment_intent_id
-        string status
+        uuid technician_id FK
+        uuid booking_id FK
+        int rating
+        string comment
+        timestamp created_at
     }
     
     LOYALTY_ACCOUNTS ||--o{ LOYALTY_TRANSACTIONS : "records"
     LOYALTY_ACCOUNTS {
         uuid id PK
         uuid customer_id FK
-        int current_points
-        enum current_tier
+        int points
+        enum tier "bronze|silver|gold|platinum"
     }
-
-    PROFILES ||--o{ USER_DEVICES : "owns"
-    USER_DEVICES {
-        uuid id PK
-        uuid user_id FK
-        string brand
-        string model
-        string type
-        date purchase_date
-        date warranty_expiry
-    }
-
-    TECHNICIANS ||--o{ GIGS : "offers"
-    GIGS {
-        uuid id PK
-        uuid technician_id FK
-        string title
-        decimal price
-        string description
-    }
-
-    PROFILES ||--o{ NOTIFICATIONS : "receives"
+    
     NOTIFICATIONS {
         uuid id PK
         uuid user_id FK
         string title
         string message
         boolean read
+        timestamp created_at
     }
-```
-
-### 🧠 System Use Cases
-
-```mermaid
-graph TD
-    subgraph Actors
-        C[👤 Customer]
-        T[🔧 Technician]
-        A[👑 Admin]
-    end
-
-    subgraph "TechCare Platform"
-        UC1(Browse Services)
-        UC2(Book Repair)
-        UC3(Track Repair Status)
-        UC4(Manage Devices - Vault)
-        UC5(Write Reviews)
-        
-        UC6(Accept/Reject Jobs)
-        UC7(Update Repair Progress)
-        UC8(Manage Earnings & Payouts)
-        UC9(Generate Digital Invoices)
-        
-        UC10(Manage Users & Content)
-        UC11(Verify Technician Accounts)
-        UC12(View System Analytics)
-    end
-
-    C --> UC1
-    C --> UC2
-    C --> UC3
-    C --> UC4
-    C --> UC5
-
-    T --> UC1
-    T --> UC6
-    T --> UC7
-    T --> UC8
-    T --> UC9
-
-    A --> UC10
-    A --> UC11
-    A --> UC12
 ```
 
 ---
@@ -541,104 +239,134 @@ sequenceDiagram
     autonumber
     participant U as 👤 User
     participant F as 🖥️ Frontend
-    participant S as 🗄️ Supabase Auth
-    participant DB as 🗄️ Database
+    participant A as 🔑 Auth API
+    participant S as 🗄️ Supabase
+    participant E as 📧 Email Service
 
     rect rgb(40, 40, 60)
-        Note over U,DB: Login Flow
+        Note over U,E: Registration Flow
+        U->>F: Fill registration form
+        F->>A: POST /api/auth/register
+        A->>S: Create user account
+        S->>E: Send verification email
+        E-->>U: Verification link
+        U->>F: Click verification link
+        F->>S: Verify email token
+        S-->>F: Email confirmed
+        F->>U: Redirect to login
+    end
+
+    rect rgb(60, 40, 40)
+        Note over U,E: Login Flow
         U->>F: Enter credentials
-        F->>S: signInWithPassword(email, pass)
-        S-->>F: Session (JWT Access Token)
-        F->>F: Store Session in Context
-        F->>DB: Fetch User Profile (using JWT)
-        DB-->>F: Profile Data (Role, Usage)
-        F->>U: Redirect to Role-Based Dashboard
+        F->>A: POST /api/auth/login
+        A->>S: Authenticate user
+        S-->>A: User session + JWT
+        A-->>F: Auth token + user data
+        F->>F: Store in AuthContext
+        F->>U: Redirect to dashboard
+    end
+
+    rect rgb(40, 60, 40)
+        Note over U,E: Password Reset Flow
+        U->>F: Click "Forgot Password"
+        F->>A: POST /api/auth/forgot-password
+        A->>S: Generate reset token
+        S->>E: Send reset email
+        E-->>U: Reset link
+        U->>F: Enter new password
+        F->>A: POST /api/auth/reset-password
+        A->>S: Update password
+        S-->>F: Password updated
+        F->>U: Redirect to login
     end
 ```
 
-### 💳 Payment Flow (Stripe Elements)
-
-```mermaid
-sequenceDiagram
-    autonumber
-    participant U as 👤 Customer
-    participant F as 🖥️ Frontend (Elements)
-    participant B as ⚙️ Backend API
-    participant ST as 💳 Stripe
-    participant DB as 🗄️ Database
-
-    Note over U,DB: Secure Payment Initialization
-    U->>F: Selects Service & Proceeds to Pay
-    F->>B: POST /create-payment-intent (amount, currency)
-    B->>DB: Retrieve Customer ID
-    B->>ST: Create PaymentIntent (amount, customer, 'card')
-    ST-->>B: client_secret
-    B-->>F: Return client_secret
-    
-    F->>F: Mount <PaymentElement /> using client_secret
-    U->>F: Enters Card Details & Clicks Pay
-    F->>ST: stripe.confirmPayment()
-    ST-->>F: Payment Succeeded
-
-    par Server Sync
-        F->>B: POST /confirm-payment (bookingId, intentId)
-        B->>ST: Verify PaymentIntent Status
-        B->>DB: Update Booking (PAID) & Create Transaction Record
-        B-->>F: Confirmation Success
-    and User Feedback
-        F->>U: Navigate to Schedule/Success Page
-    end
-```
-
-### 🔧 Technician Job Lifecycle
-
-```mermaid
-sequenceDiagram
-    autonumber
-    participant C as Customer
-    participant S as System
-    participant T as Technician
-
-    C->>S: Places Order (Status: Pending)
-    S->>T: Notification (New Job available)
-    
-    T->>S: Accepts Job
-    S->>S: Update Booking Status (Confirmed)
-    S->>C: Notification (Technician Assigned)
-    
-    T->>S: Updates Status (Diagnosing/In Progress)
-    S->>C: Real-time Update
-    
-    T->>S: Completes Job (Enters Cost & Notes)
-    S->>C: Invoice Generated
-    C->>S: Leaves Review
-```
-
-
-### 🔧 Service Management Flow
+### 📅 Booking Flow
 
 ```mermaid
 stateDiagram-v2
     [*] --> BrowseServices: User visits services page
     
     BrowseServices --> SelectService: Choose repair type
-    SelectService --> EnterDetails: Add device info (Brand/Model)
-    EnterDetails --> SelectTechnician: (Optional) Choose Technician
+    SelectService --> EnterDetails: Add device info
+    EnterDetails --> ChooseTechnician: Optional selection
+    ChooseTechnician --> SelectDateTime: Pick appointment slot
+    SelectDateTime --> ReviewBooking: Confirm details
     
-    SelectTechnician --> Payment: Proceed to Pay
+    ReviewBooking --> Payment: Proceed to pay
+    Payment --> PaymentSuccess: Payment successful
+    Payment --> PaymentFailed: Payment failed
+    PaymentFailed --> Payment: Retry
     
-    Payment --> PaymentSuccess: Payment Verified
-    PaymentSuccess --> ChooseSchedule: Select Date & Time Slot
-    ChooseSchedule --> BookingConfirmed: Confirm Appointment
+    PaymentSuccess --> BookingConfirmed: Create booking
+    BookingConfirmed --> NotifyTechnician: Send notification
+    NotifyTechnician --> TechnicianAccepts: Wait for response
     
-    BookingConfirmed --> NotifyTechnician: Alert Technician
-    NotifyTechnician --> TechnicianAction: Wait for Acceptance
-    
-    TechnicianAction --> InProgress: Start Repair
-    InProgress --> Completed: Finish Job
-    Completed --> LeaveReview: User Reviews Service
-    LeaveReview --> AwardPoints: Add Loyalty Points
+    TechnicianAccepts --> InProgress: Start repair
+    InProgress --> Completed: Finish repair
+    Completed --> LeaveReview: Optional
+    LeaveReview --> AwardPoints: Loyalty points
     AwardPoints --> [*]
+    
+    TechnicianAccepts --> Rejected: Technician unavailable
+    Rejected --> ChooseTechnician: Select different technician
+```
+
+### 🤖 AI Diagnostics Flow
+
+```mermaid
+flowchart TD
+    START([🚀 Start Diagnostics]) --> SELECT_DEVICE
+    
+    subgraph Input["📱 Device Selection"]
+        SELECT_DEVICE[Select Device Type] --> DEVICE_MOBILE{Mobile?}
+        DEVICE_MOBILE -->|Yes| MOBILE_BRAND[Select Brand]
+        DEVICE_MOBILE -->|No| DEVICE_PC{PC/Laptop?}
+        DEVICE_PC -->|Yes| PC_TYPE[Select Type]
+        DEVICE_PC -->|No| OTHER[Other Device]
+    end
+    
+    MOBILE_BRAND --> SYMPTOMS
+    PC_TYPE --> SYMPTOMS
+    OTHER --> SYMPTOMS
+    
+    subgraph Analysis["🔍 Symptom Analysis"]
+        SYMPTOMS[Select Symptoms] --> MULTI_SELECT{Multiple Issues?}
+        MULTI_SELECT -->|Yes| ADD_MORE[Add More Symptoms]
+        ADD_MORE --> MULTI_SELECT
+        MULTI_SELECT -->|No| ADDITIONAL[Additional Details]
+        ADDITIONAL --> AI_PROCESS
+    end
+    
+    subgraph AI["🤖 AI Processing"]
+        AI_PROCESS[Process with AI] --> MATCH[Match Patterns]
+        MATCH --> CALCULATE[Calculate Estimates]
+        CALCULATE --> GENERATE[Generate Report]
+    end
+    
+    GENERATE --> RESULT
+    
+    subgraph Output["📊 Results"]
+        RESULT[Display Diagnosis] --> SHOW_ISSUE[Issue Identified]
+        RESULT --> SHOW_COST[Cost Estimate]
+        RESULT --> SHOW_TIME[Repair Time]
+        RESULT --> SHOW_TIPS[Care Tips]
+    end
+    
+    SHOW_ISSUE --> ACTION
+    SHOW_COST --> ACTION
+    SHOW_TIME --> ACTION
+    SHOW_TIPS --> ACTION
+    
+    ACTION{User Action} -->|Book Now| BOOKING([📅 Go to Booking])
+    ACTION -->|Start Over| START
+    ACTION -->|Close| END([✅ End])
+
+    style START fill:#22c55e,stroke:#16a34a,color:#fff
+    style END fill:#22c55e,stroke:#16a34a,color:#fff
+    style BOOKING fill:#3b82f6,stroke:#2563eb,color:#fff
+    style AI_PROCESS fill:#8b5cf6,stroke:#7c3aed,color:#fff
 ```
 
 ---
@@ -655,6 +383,7 @@ flowchart TB
         subgraph GuestRole["👤 GUEST"]
             G1["View Services"]
             G2["Browse Technicians"]
+            G3["Use AI Diagnostics"]
             G4["View Reviews"]
             G5["Register/Login"]
         end
@@ -711,6 +440,11 @@ flowchart TB
 |---------|:--------:|:-----------:|:-------------:|:--------:|
 | **View Services** | ✅ | ✅ | ✅ | ✅ |
 | **Browse Technicians** | ✅ | ✅ | ✅ | ✅ |
+| **AI Diagnostics** | ✅ | ✅ | ✅ | ✅ |
+| **Book Repairs** | ❌ | ✅ | ❌ | ✅ |
+| **Customer Dashboard** | ❌ | ✅ | ❌ | ✅ |
+| **Track Bookings** | ❌ | ✅ | ❌ | ✅ |
+| **Write Reviews** | ❌ | ✅ | ❌ | ✅ |
 | **Loyalty Points** | ❌ | ✅ | ❌ | ✅ |
 | **Technician Dashboard** | ❌ | ❌ | ✅ | ✅ |
 | **Accept Jobs** | ❌ | ❌ | ✅ | ❌ |
@@ -719,6 +453,61 @@ flowchart TB
 | **Admin Dashboard** | ❌ | ❌ | ❌ | ✅ |
 | **Manage Users** | ❌ | ❌ | ❌ | ✅ |
 | **System Settings** | ❌ | ❌ | ❌ | ✅ |
+
+### Use Case Diagram
+
+```mermaid
+usecaseDiagram
+    actor Guest as "👤 Guest"
+    actor Customer as "🛒 Customer"
+    actor Technician as "🔧 Technician"
+    actor Admin as "👑 Admin"
+
+    package "TechCare System" {
+        usecase "View Services" as UC1
+        usecase "Search Technicians" as UC2
+        usecase "AI Diagnostics" as UC3
+        usecase "Register/Login" as UC4
+        
+        usecase "Book Repair" as UC5
+        usecase "Track Status" as UC6
+        usecase "Write Review" as UC7
+        usecase "Manage Profile" as UC8
+        
+        usecase "View Jobs" as UC9
+        usecase "Accept/Reject Job" as UC10
+        usecase "Update Job Status" as UC11
+        usecase "View Earnings" as UC12
+        
+        usecase "Manage Users" as UC13
+        usecase "Verify Technicians" as UC14
+        usecase "System Settings" as UC15
+    }
+
+    Guest --> UC1
+    Guest --> UC2
+    Guest --> UC3
+    Guest --> UC4
+
+    Customer --> UC1
+    Customer --> UC2
+    Customer --> UC3
+    Customer --> UC5
+    Customer --> UC6
+    Customer --> UC7
+    Customer --> UC8
+
+    Technician --> UC8
+    Technician --> UC9
+    Technician --> UC10
+    Technician --> UC11
+    Technician --> UC12
+
+    Admin --> UC13
+    Admin --> UC14
+    Admin --> UC15
+    Admin --> UC8
+```
 
 ---
 
@@ -789,9 +578,9 @@ flowchart LR
 | `/api/loyalty/redeem` | POST | ✅ | Redeem reward |
 | `/api/loyalty/history` | GET | ✅ | Get points history |
 | **Payments** |
-| `/api/payment/create-payment-intent` | POST | ✅ | Create payment intent |
-| `/api/payment/confirm-payment` | POST | ✅ | Confirm and finalize booking |
-| `/api/payment/history` | GET | ✅ | Get transaction history |
+| `/api/payment/create-intent` | POST | ✅ | Create payment intent |
+| `/api/payment/confirm` | POST | ✅ | Confirm payment |
+| `/api/payment/refund` | POST | ✅ | Process refund |
 
 ---
 
@@ -802,8 +591,6 @@ flowchart LR
 - **Node.js** v20.x or higher
 - **npm** v10.x or higher
 - **Git** for version control
-- **Supabase Account** for database & auth
-- **Stripe Account** for payments
 
 ### ⚡ One-Click Start (Recommended)
 
@@ -847,35 +634,21 @@ cd ..
 
 ### Environment Variables
 
-**Frontend (`.env`)**
+**Root `.env`**
 ```env
-# API Configuration
 VITE_API_URL=http://localhost:5000
-
-# Supabase (Required)
-VITE_SUPABASE_URL=your_supabase_project_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-
-# Stripe (Payments)
+VITE_GOOGLE_MAPS_API_KEY=your_google_maps_key
 VITE_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
 ```
 
-**Backend (`server/.env`)**
+**Server `.env`**
 ```env
-# Server
 PORT=5000
-NODE_ENV=development
-
-# Supabase (Required)
-VITE_SUPABASE_URL=your_supabase_project_url
-SUPABASE_SERVICE_ROLE_KEY=your_super_secret_service_role_key
-
-# Stripe (Payments)
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-
-# Email Service (Resend)
-RESEND_API_KEY=re_...
+SUPABASE_URL=your_supabase_url
+SUPABASE_SERVICE_KEY=your_supabase_service_key
+JWT_SECRET=your_jwt_secret
+STRIPE_SECRET_KEY=your_stripe_secret_key
+RESEND_API_KEY=your_resend_api_key
 ```
 
 ### Start Development Servers
@@ -900,8 +673,7 @@ Tech-Care_official/
 ├── 📁 scripts/                   # Automation scripts
 │   ├── start-techcare.bat        # Full stack launcher
 │   ├── verify-setup.bat          # Environment checker
-│   ├── verify-all.bat            # Deep verification
-│   └── migrate.js                # Database migrations
+│   └── verify-all.bat            # Deep verification
 ├── 📁 src/                       # Frontend source
 │   ├── 📁 components/            # React components
 │   │   ├── 📁 ui/                # Base UI components
@@ -917,9 +689,7 @@ Tech-Care_official/
 │   │   ├── Technicians.jsx       # Technician listing
 │   │   ├── CustomerDashboard.jsx # Customer portal
 │   │   ├── TechnicianDashboard.jsx # Tech portal
-│   │   ├── Admin.jsx             # Admin panel
-│   │   ├── Payment.jsx           # Stripe Payment Page
-│   │   └── Schedule.jsx          # Advanced Scheduling
+│   │   └── Admin.jsx             # Admin panel
 │   ├── 📁 context/               # State management
 │   │   ├── AuthContext.jsx       # Authentication
 │   │   ├── ThemeContext.jsx      # Dark/light mode
@@ -973,18 +743,18 @@ pie title Technology Distribution
 | | Lucide React | Icon library |
 | **Backend** | Node.js | Runtime environment |
 | | Express.js | Web framework |
-| | Stripe SDK | Payment processing |
+| | JWT | Token authentication |
 | | Helmet | Security headers |
 | **Database** | Supabase (PostgreSQL) | Primary database |
-| | Row Level Security | Data protection & Auth |
+| | Row Level Security | Data protection |
 | | Realtime | Live updates |
-| **Services** | Stripe | Payment processing (MCP) |
+| **Services** | Stripe | Payment processing |
 | | Resend | Email delivery |
-| | OpenStreetMap (Leaflet) | Location services |
+| | Google Maps | Location services |
 | | Cloudinary | Image hosting |
 | **DevOps** | Netlify | Frontend hosting |
 | | Vercel | Backend hosting |
-| | GitHub Actions | CI/CD Pipeline |
+| | GitHub | Version control |
 
 ---
 
@@ -1080,78 +850,6 @@ graph TD
 
 ---
 
-## 🔄 CI/CD Pipeline
-
-TechCare uses **GitHub Actions** for continuous integration and automatic deployment to **Netlify**.
-
-### Pipeline Architecture
-
-```mermaid
-flowchart LR
-    subgraph Trigger["🎯 Trigger"]
-        PUSH["Push to main"]
-        PR["Pull Request"]
-    end
-    
-    subgraph Build["🔨 Build Stage"]
-        CHECKOUT["📥 Checkout"]
-        SETUP["📦 Setup Node 20"]
-        INSTALL["📚 npm install"]
-        COMPILE["🔨 npm run build"]
-    end
-    
-    subgraph Deploy["🚀 Deploy Stage"]
-        PREVIEW["🔍 PR Preview"]
-        PROD["🚀 Production"]
-    end
-    
-    subgraph Hosting["☁️ Hosting"]
-        NETLIFY["Netlify CDN"]
-    end
-    
-    PUSH --> CHECKOUT --> SETUP --> INSTALL --> COMPILE --> PROD --> NETLIFY
-    PR --> CHECKOUT
-    COMPILE --> PREVIEW --> NETLIFY
-    
-    style Trigger fill:#22c55e,stroke:#16a34a,color:#fff
-    style Build fill:#3b82f6,stroke:#2563eb,color:#fff
-    style Deploy fill:#8b5cf6,stroke:#7c3aed,color:#fff
-    style Hosting fill:#00c7b7,stroke:#009688,color:#fff
-```
-
-### Deployment Workflow
-
-| Event | Action | Environment |
-|-------|--------|-------------|
-| **Push to `main`** | Build → Deploy | 🚀 Production |
-| **Pull Request** | Build → Preview | 🔍 Preview URL |
-| **Manual Trigger** | Build → Deploy | 🚀 Production |
-
-### Quick Deploy Commands
-
-```bash
-# Option 1: Auto-sync script (Windows)
-scripts\auto-sync.bat
-
-# Option 2: Manual git push
-git add . && git commit -m "Your message" && git push origin main
-
-# Option 3: Netlify CLI direct deploy
-npm run build && netlify deploy --prod --dir=dist
-```
-
-### GitHub Secrets Required
-
-| Secret | Purpose |
-|--------|---------|
-| `NETLIFY_AUTH_TOKEN` | Netlify deployment authentication |
-| `NETLIFY_SITE_ID` | Target site identifier |
-| `VITE_SUPABASE_URL` | Supabase project URL |
-| `VITE_SUPABASE_ANON_KEY` | Supabase anonymous key |
-| `VITE_API_URL` | Backend API endpoint |
-
----
-
 ## 🧪 Testing
 
 ### Run Tests
@@ -1217,52 +915,54 @@ TechCare includes a curated database of **100+ top-rated repair shops** across S
 
 ---
 
-### 🤝 Contributing
+## 🤝 Contributing
 
-This project was **built and is maintained by Wenura** ([@Wenura17125](https://github.com/Wenura17125)). We welcome contributions from the community to help make TechCare even better!
+> ⚠️ **IMPORTANT: Read Before Contributing**
 
-### ⚙️ Core Project Structure
+This project is **solely owned by Wenura** ([@Wenura17125](https://github.com/Wenura17125)). All code, documentation, and features were developed exclusively by Wenura.
 
-To maintain consistency and security, the following files are considered core to the project identity:
+### 🔒 Protected Files (DO NOT MODIFY)
+
+The following files are **strictly protected** and cannot be modified by contributors:
 
 | File | Status | Reason |
 |------|--------|--------|
-| `README.md` | ⚠️ **Review Required** | Project identity and documentation |
-| `LICENSE` | 🔒 **LOCKED** | Legal terms and licensing |
-| `CONTRIBUTORS.md` | ✨ **OPEN** | Add yourself here if you contribute! |
+| `README.md` | 🔒 **LOCKED** | Project identity and documentation |
+| `LICENSE` | 🔒 **LOCKED** | Legal terms and ownership |
+| `CONTRIBUTORS.md` | 🔒 **LOCKED** | Verified contributor list |
 | `CODEOWNERS` | 🔒 **LOCKED** | Access control configuration |
-| `/docs/*` | 📝 **Contributable** | Official documentation improvements welcome |
-| `package.json` | 🛠️ **Source Only** | Identity fields should remain consistent |
+| `/docs/*` | 🔒 **LOCKED** | Official documentation |
+| `package.json` (name, author, license) | 🔒 **LOCKED** | Project identity fields |
 
-**Pull requests modifying core identity fields in these files will require specific review.**
+**Any pull requests modifying these files will be automatically rejected.**
 
 ### ✅ Allowed Contributions
 
-We love contributions! You can help with:
+You may contribute to:
 - Bug fixes in source code (`/src/`, `/server/`)
-- New features (please open an issue first for discussion)
+- New features (with prior discussion)
 - Performance improvements
-- Test coverage and documentation
+- Test coverage
 
 ### 📋 Contribution Terms
 
 By submitting a contribution, you agree that:
 
-1. ✅ Your contributions improve the platform for everyone
-2. ✅ Your contributions are original and don't infringe third-party rights
-3. ✅ You will follow the project's style and quality standards
-4. ✅ Contributions are welcome from all developers globally
-5. ❌ You may NOT claim sole authorship of the platform
-6. ❌ You will respect the project's licensing and goal
+1. ✅ All contributions become the **exclusive property of Wenura**
+2. ✅ You waive all ownership claims to your contributions
+3. ✅ Your contributions are original and don't infringe third-party rights
+4. ✅ Contributions do NOT grant you project ownership
+5. ❌ You may NOT modify protected files
+6. ❌ You may NOT claim authorship of the project
 
 ### 🔄 How to Contribute
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/your-feature`)
-3. Make changes
+3. Make changes (to allowed files only)
 4. Commit changes (`git commit -m 'Add feature'`)
 5. Push to branch (`git push origin feature/your-feature`)
-6. Open a Pull Request for review by the maintainers
+6. Open a Pull Request for review by @Wenura17125
 
 ---
 
@@ -1279,10 +979,10 @@ This project is licensed under the **TechCare Proprietary License**.
 | ✅ View source code | Allowed |
 | ✅ Fork for learning | Allowed |
 | ✅ Personal use | Allowed |
-| ✅ Contributing improvements | Allowed |
 | ❌ Commercial use | **Prohibited** without permission |
 | ❌ Redistribution | **Prohibited** without permission |
-| ❌ Claiming sole authorship | **Prohibited** |
+| ❌ Claiming ownership | **Prohibited** |
+| ❌ Modifying protected files | **Prohibited** |
 
 See the [LICENSE](LICENSE) file for full terms and conditions.
 
@@ -1325,7 +1025,7 @@ If you find TechCare helpful or interesting, please consider:
 
 ---
 
-**Last Updated**: January 27, 2026 | **Version**: 3.0 | **Status**: ✅ Production Ready | **CI/CD**: ✅ Auto-Deploy
+**Last Updated**: January 3, 2026 | **Version**: 2.0 | **Status**: ✅ Production Ready
 
 [![Made with React](https://img.shields.io/badge/Made%20with-React-61DAFB?style=flat-square&logo=react)](https://reactjs.org)
 [![Powered by Supabase](https://img.shields.io/badge/Powered%20by-Supabase-3ECF8E?style=flat-square&logo=supabase)](https://supabase.io)
@@ -1336,3 +1036,30 @@ If you find TechCare helpful or interesting, please consider:
 *If you use this project or find it helpful, please give it a ⭐ - it helps others discover it too!*
 
 </div>
+
+---
+
+## 📅 Version History
+
+### v1.1.0 - Critical Stability Update (Jan 2026)
+**Major Fixes & Improvements:**
+- **Profile Management**: Fixed Profile Image upload persistence by integrating Supabase Storage correctly in `Profile.jsx` and `ImageUpload.jsx`. Resolved "Verification is failed" errors by ensuring correct profile data updates.
+- **Booking & Notifications**: 
+  - Implemented real-time new booking notifications for technicians.
+  - Fixed Job Visibility bug where new 'pending' jobs were hidden from Technician Dashboard.
+- **Payments & Earnings**:
+  - Validated Payment Flow and Stripe integration.
+  - Fixed Technician Earnings calculation by implementing proper Job Completion logic (`/complete` endpoint) with actual cost input.
+- **Chat & Communications**:
+  - enabled Supabase Realtime for `messages` table to fix live chat updates.
+  - Resolved generic "Redirection" issues in Technician Chat view.
+- **Reviews & Ratings**:
+  - Replaced mock data in `Reviews.jsx` with fully functional API integration (`GET`, `POST` reviews).
+  - Validated Star Rating system calculations and display.
+- **Database**:
+  - Added specific SQL migrations for `gigs` schema fixes and Realtime enablement.
+
+### v1.0.0 - Initial Release
+- Complete Customer, Technician, and Admin portals.
+- AI Diagnostics implementation.
+- Basic Booking and Payment flows.

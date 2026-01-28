@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
   Users, Wrench, Calendar, Star, Settings, LayoutDashboard, LogOut, Bell, Search, Plus,
   MoreVertical, CheckCircle, XCircle, Clock, DollarSign, Filter, ChevronRight,
   ArrowUpRight, ArrowDownRight, Briefcase, Mail, Phone, MapPin, Trash2, Edit, Eye,
   TrendingUp, Activity, Download, RefreshCw, UserPlus, AlertCircle, BarChart3,
-  FileText, Shield, Zap, Sparkles, ArrowRight, ShieldCheck, MessageSquare
+  FileText, Shield, Zap, Sparkles, ArrowRight
 } from 'lucide-react';
 
 import { Button } from "@/components/ui/button";
@@ -22,58 +22,24 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { SkeletonDashboard } from "@/components/ui/skeleton";
 import { useToast } from '../hooks/use-toast';
 
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import CurrencyDisplay from '../components/CurrencyDisplay';
 import SEO from '../components/SEO';
-import ServiceManagement from '../components/admin/ServiceManagement';
-import TransactionHistory from '../components/admin/TransactionHistory';
-import ServiceAreasManagement from '../components/admin/ServiceAreasManagement';
-import SupportManagement from '../components/admin/SupportManagement';
-import realtimeService from '../utils/realtimeService';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const Admin = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { user, logout, refreshUser } = useAuth();
+  const { user, logout } = useAuth();
   const { toast } = useToast();
-
-  // Get tab from URL if present
-  const queryParams = new URLSearchParams(location.search);
-  const initialTab = queryParams.get('tab') || 'dashboard';
-  const [activeTab, setActiveTab] = useState(initialTab);
-
-  // Sync tab with URL changes
-  useEffect(() => {
-    const currentQueryParams = new URLSearchParams(location.search);
-    const tab = currentQueryParams.get('tab') || 'dashboard';
-    if (tab !== activeTab) {
-      setActiveTab(tab);
-    }
-  }, [location.search, activeTab]);
-
-  const handleTabChange = (value) => {
-    navigate(`/admin?tab=${value}`, { replace: true });
-  };
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   const getAuthHeader = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     return { Authorization: `Bearer ${session?.access_token}` };
-  };
-
-  const safeFormatDate = (date) => {
-    if (!date) return 'N/A';
-    const d = new Date(date);
-    return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
   };
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState('');
@@ -82,48 +48,32 @@ const Admin = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [techFilter, setTechFilter] = useState('all');
 
-
-
-  // Real-time data states
-  const [users, setUsers] = useState([]);
-  const [pendingGigs, setPendingGigs] = useState([]);
-
-  const fetchPendingGigs = async () => {
+  const handleToggleVerification = async (techId, currentStatus) => {
     try {
-      const response = await axios.get(`${API_URL}/api/admin/gigs/pending`, {
-        headers: await getAuthHeader()
-      });
-      setPendingGigs(Array.isArray(response.data) ? response.data : []);
-    } catch (error) {
-      console.error('[ADMIN] Error fetching pending gigs:', error);
-      setPendingGigs([]);
-    }
-  };
-
-  const handleApproveGig = async (gigId, status, feedback) => {
-    try {
-      await axios.patch(`${API_URL}/api/admin/gigs/${gigId}/approve`,
-        { status, feedback },
+      await axios.put(`${API_URL}/api/admin/users/${techId}`,
+        { verified: !currentStatus },
         { headers: await getAuthHeader() }
       );
       toast({
-        title: status === 'approved' ? "Gig Approved" : "Gig Rejected",
-        description: `Service status updated successfully.`
+        title: !currentStatus ? "Technician Verified" : "Verification Removed",
+        description: `Technician status has been updated.`
       });
-      fetchPendingGigs();
+      fetchTechnicians();
     } catch (error) {
-      console.error('[ADMIN] Error updating gig status:', error);
+      console.error('Error toggling verification:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.response?.data?.message || error.message || "Failed to update gig status"
+        description: "Failed to update status"
       });
     }
   };
+
+  // Real-time data states
+  const [users, setUsers] = useState([]);
   const [technicians, setTechnicians] = useState([]);
   const [appointments, setAppointments] = useState([]);
   const [reviews, setReviews] = useState([]);
-  const [logs, setLogs] = useState([]);
   const [stats, setStats] = useState({
     totalUsers: 0,
     activeTechnicians: 0,
@@ -151,59 +101,17 @@ const Admin = () => {
     status: 'active'
   });
 
-  // Real-time subscription and initial data load
-  // Real-time subscription and initial data load
+  // Auto-refresh interval (30 seconds)
   useEffect(() => {
-    let unsubTechnicians;
-    let unsubBookings;
-    let unsubReviews;
-    let unsubGigs;
-    let unsubServices;
-
-    // Initial data load
-    fetchAllData();
-
-    // Fallback polling every 30 seconds
-    const interval = setInterval(refreshAllData, 30000);
-
-    // Subscribe to real-time updates using centralized service
-    // Note: Profiles/Customers specific subscriptions might be added to realtimeService if needed, 
-    // or we can rely on general refreshes from other triggers for now, or add custom channel here if absolutely necessary.
-    // For now, let's map what we have in realtimeService.
-
-    unsubTechnicians = realtimeService.subscribeToTechnicians((payload) => {
-      console.log('[Admin] Technician update:', payload.eventType);
-      fetchTechnicians();
-    });
-
-    unsubBookings = realtimeService.subscribeToBookings((payload) => {
-      console.log('[Admin] Booking update:', payload.eventType);
-      fetchAppointments();
-    });
-
-    unsubReviews = realtimeService.subscribeToReviews((payload) => {
-      console.log('[Admin] Review update:', payload.eventType);
-      fetchReviews();
-    });
-
-    unsubGigs = realtimeService.subscribeToGigs((payload) => {
-      console.log('[Admin] Gig update:', payload.eventType);
-      fetchPendingGigs();
-    });
-
-    unsubServices = realtimeService.subscribeToServices((payload) => {
-      console.log('[Admin] Service update:', payload.eventType);
+    const interval = setInterval(() => {
       refreshAllData();
-    });
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
-    return () => {
-      clearInterval(interval);
-      if (unsubTechnicians) unsubTechnicians();
-      if (unsubBookings) unsubBookings();
-      if (unsubReviews) unsubReviews();
-      if (unsubGigs) unsubGigs();
-      if (unsubServices) unsubServices();
-    };
+  // Initial data load
+  useEffect(() => {
+    fetchAllData();
   }, []);
 
   // Fetch all data
@@ -214,9 +122,7 @@ const Admin = () => {
         fetchUsers(),
         fetchTechnicians(),
         fetchAppointments(),
-        fetchReviews(),
-        fetchPendingGigs(),
-        fetchLogs()
+        fetchReviews()
       ]);
       calculateStats();
     } catch (error) {
@@ -248,10 +154,15 @@ const Admin = () => {
       const response = await axios.get(`${API_URL}/api/admin/users`, {
         headers: await getAuthHeader()
       });
-      setUsers(Array.isArray(response.data) ? response.data : []);
+      setUsers(response.data);
     } catch (error) {
       console.error('[ADMIN] Error fetching users:', error);
-      setUsers([]);
+      try {
+        const response = await axios.get(`${API_URL}/api/users`);
+        setUsers(response.data);
+      } catch (err) {
+        console.error('[ADMIN] Fallback fetch also failed:', err);
+      }
     }
   };
 
@@ -261,62 +172,28 @@ const Admin = () => {
       const response = await axios.get(`${API_URL}/api/technicians/all`, {
         headers: await getAuthHeader()
       });
-      setTechnicians(Array.isArray(response.data)
-        ? response.data.map(t => ({ ...t, verified: t.is_verified }))
-        : []);
+      setTechnicians(response.data);
     } catch (error) {
       console.error('[ADMIN] Error fetching technicians:', error);
       try {
         const response = await axios.get(`${API_URL}/api/technicians/nearby?lng=79.8612&lat=6.9271&dist=5000000`);
-        const fallbackData = Array.isArray(response.data) ? response.data : [];
-        setTechnicians(fallbackData.filter(t => t.role === 'technician'));
+        setTechnicians(response.data.filter(t => t.role === 'technician'));
       } catch (err) {
         console.error('[ADMIN] Fallback fetch also failed:', err);
-        setTechnicians([]);
       }
     }
   };
 
-  // Fetch Appointments (Bookings)
+  // Fetch Appointments
   const fetchAppointments = async () => {
     try {
-      // Try admin endpoint first
-      const response = await axios.get(`${API_URL}/api/admin/bookings`, {
+      const response = await axios.get(`${API_URL}/api/appointments`, {
         headers: await getAuthHeader()
       });
-      setAppointments(Array.isArray(response.data) ? response.data : []);
+      setAppointments(response.data);
     } catch (error) {
-      console.error('[ADMIN] Error fetching bookings from admin endpoint:', error);
-      try {
-        // Fallback to general bookings endpoint
-        const response = await axios.get(`${API_URL}/api/bookings`, {
-          headers: await getAuthHeader()
-        });
-        setAppointments(Array.isArray(response.data) ? response.data : []);
-      } catch (err) {
-        console.error('[ADMIN] Fallback bookings fetch also failed:', err);
-        // Direct Supabase fallback
-        try {
-          const { data: bookings, error: supabaseError } = await supabase
-            .from('bookings')
-            .select(`
-              *,
-              customer:customers(id, name, email),
-              technician:technicians(id, name, email)
-            `)
-            .order('created_at', { ascending: false })
-            .limit(100);
-
-          if (!supabaseError && bookings) {
-            setAppointments(bookings);
-          } else {
-            setAppointments([]);
-          }
-        } catch (supaErr) {
-          console.error('[ADMIN] Supabase fallback also failed:', supaErr);
-          setAppointments([]);
-        }
-      }
+      console.error('[ADMIN] Error fetching appointments:', error);
+      setAppointments([]);
     }
   };
 
@@ -326,22 +203,10 @@ const Admin = () => {
       const response = await axios.get(`${API_URL}/api/reviews`, {
         headers: await getAuthHeader()
       });
-      setReviews(Array.isArray(response.data) ? response.data : []);
+      setReviews(response.data);
     } catch (error) {
       console.error('[ADMIN] Error fetching reviews:', error);
       setReviews([]);
-    }
-  };
-
-  const fetchLogs = async () => {
-    try {
-      const response = await axios.get(`${API_URL}/api/admin/logs`, {
-        headers: await getAuthHeader()
-      });
-      setLogs(Array.isArray(response.data) ? response.data : []);
-    } catch (error) {
-      console.error('[ADMIN] Error fetching logs:', error);
-      setLogs([]);
     }
   };
 
@@ -354,14 +219,11 @@ const Admin = () => {
     const cancelledAppointments = appointments.filter(a => a.status === 'cancelled').length;
 
     const totalRevenue = appointments
-      .filter(a => a.status === 'completed' || a.status === 'paid')
-      .reduce((sum, a) => {
-        const val = Number(a.total_amount) || Number(a.amount) || Number(a.price) || Number(a.estimated_cost) || 0;
-        return sum + val;
-      }, 0);
+      .filter(a => a.status === 'completed')
+      .reduce((sum, a) => sum + (a.price || 0), 0);
 
     const avgRating = technicians.length > 0
-      ? technicians.reduce((sum, t) => sum + (Number(t.rating) || Number(t.average_rating) || 0), 0) / technicians.length
+      ? technicians.reduce((sum, t) => sum + (t.rating || 0), 0) / technicians.length
       : 0;
 
     const totalReviews = reviews.length;
@@ -414,9 +276,6 @@ const Admin = () => {
         description: "User updated successfully"
       });
       await fetchUsers();
-      if (userId === user?.id || userId === user?._id) {
-        await refreshUser();
-      }
       return true;
     } catch (error) {
       console.error('[ADMIN] Error updating user:', error);
@@ -475,38 +334,10 @@ const Admin = () => {
     }
   };
 
-  // Handle Toggle Verification
-  const handleToggleVerification = async (techId, currentStatus) => {
-    try {
-      // Toggle status: if currently verified (true), set to false, and vice versa
-      const newStatus = !currentStatus;
-
-      await axios.patch(`${API_URL}/api/admin/technicians/${techId}/verify`,
-        { verified: newStatus },
-        { headers: await getAuthHeader() }
-      );
-
-      toast({
-        title: "Success",
-        description: `Technician ${newStatus ? 'verified' : 'unverified'} successfully`
-      });
-      await fetchTechnicians();
-    } catch (error) {
-      console.error('[ADMIN] Error updating verification:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to update verification status"
-      });
-    }
-  };
-
-  // Handle Delete Technician
-
   // Handle Update Appointment Status
   const handleUpdateAppointmentStatus = async (appointmentId, newStatus) => {
     try {
-      await axios.put(`${API_URL}/api/admin/bookings/${appointmentId}`,
+      await axios.put(`${API_URL}/api/appointments/${appointmentId}`,
         { status: newStatus },
         { headers: await getAuthHeader() }
       );
@@ -528,7 +359,7 @@ const Admin = () => {
   // Handle Update Review Status
   const handleUpdateReviewStatus = async (reviewId, newStatus) => {
     try {
-      await axios.patch(`${API_URL}/api/reviews/${reviewId}`,
+      await axios.put(`${API_URL}/api/reviews/${reviewId}`,
         { status: newStatus },
         { headers: await getAuthHeader() }
       );
@@ -585,7 +416,7 @@ const Admin = () => {
     let success = false;
     if (modalType === 'user' || modalType === 'technician') {
       if (editingItem) {
-        success = await handleUpdateUser(editingItem.id || editingItem._id, formData);
+        success = await handleUpdateUser(editingItem._id, formData);
       } else {
         success = await handleCreateUser(formData);
       }
@@ -622,15 +453,10 @@ const Admin = () => {
   // Loading state
   if (isLoading && users.length === 0) {
     return (
-      <div className="min-h-screen bg-black text-white p-8">
-        <div className="max-w-7xl mx-auto space-y-6">
-          <div className="flex justify-between items-center mb-8">
-            <div className="space-y-2">
-              <div className="h-8 w-64 bg-zinc-800 animate-pulse rounded" />
-              <div className="h-4 w-48 bg-zinc-800 animate-pulse rounded" />
-            </div>
-          </div>
-          <SkeletonDashboard />
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+          <p className="mt-4 text-zinc-400 font-['Inter']">Loading admin dashboard...</p>
         </div>
       </div>
     );
@@ -711,7 +537,7 @@ const Admin = () => {
 
       {/* Secondary Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <Card className="bg-zinc-900/40 backdrop-blur-md border-zinc-800 shadow-xl">
+        <Card className="bg-zinc-900 border-zinc-800 shadow-xl">
           <CardContent className="p-6 flex items-center justify-between">
             <div>
               <p className="text-sm font-['Inter'] font-medium text-zinc-400">Completed Jobs</p>
@@ -721,7 +547,7 @@ const Admin = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-zinc-900/40 backdrop-blur-md border-zinc-800 shadow-xl">
+        <Card className="bg-zinc-900 border-zinc-800 shadow-xl">
           <CardContent className="p-6 flex items-center justify-between">
             <div>
               <p className="text-sm font-['Inter'] font-medium text-zinc-400">Avg Rating</p>
@@ -731,7 +557,7 @@ const Admin = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-zinc-900/40 backdrop-blur-md border-zinc-800 shadow-xl">
+        <Card className="bg-zinc-900 border-zinc-800 shadow-xl">
           <CardContent className="p-6 flex items-center justify-between">
             <div>
               <p className="text-sm font-['Inter'] font-medium text-zinc-400">Total Reviews</p>
@@ -741,7 +567,7 @@ const Admin = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-zinc-900/40 backdrop-blur-md border-zinc-800 shadow-xl">
+        <Card className="bg-zinc-900 border-zinc-800 shadow-xl">
           <CardContent className="p-6 flex items-center justify-between">
             <div>
               <p className="text-sm font-['Inter'] font-medium text-zinc-400">Cancellations</p>
@@ -754,7 +580,7 @@ const Admin = () => {
 
       {/* Quick Actions & Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="bg-zinc-900/40 backdrop-blur-md border-zinc-800 shadow-xl">
+        <Card className="bg-zinc-900 border-zinc-800 shadow-xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 font-['Outfit'] text-white">
               <Zap className="h-5 w-5 text-yellow-500" />
@@ -776,14 +602,14 @@ const Admin = () => {
               </span>
               <ChevronRight className="h-5 w-5" />
             </Button>
-            <Button onClick={() => handleTabChange('appointments')} variant="outline" className="w-full justify-between border-zinc-700 text-white hover:bg-zinc-800" size="lg">
+            <Button onClick={() => setActiveTab('appointments')} variant="outline" className="w-full justify-between border-zinc-700 text-white hover:bg-zinc-800" size="lg">
               <span className="flex items-center gap-2 font-['Inter']">
                 <Calendar className="h-5 w-5" />
                 View Appointments
               </span>
               <ChevronRight className="h-5 w-5" />
             </Button>
-            <Button onClick={() => handleTabChange('reviews')} variant="outline" className="w-full justify-between border-zinc-700 text-white hover:bg-zinc-800" size="lg">
+            <Button onClick={() => setActiveTab('reviews')} variant="outline" className="w-full justify-between border-zinc-700 text-white hover:bg-zinc-800" size="lg">
               <span className="flex items-center gap-2 font-['Inter']">
                 <Star className="h-5 w-5" />
                 Manage Reviews
@@ -793,7 +619,7 @@ const Admin = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-zinc-900/40 backdrop-blur-md border-zinc-800 shadow-xl">
+        <Card className="bg-zinc-900 border-zinc-800 shadow-xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 font-['Outfit'] text-white">
               <Activity className="h-5 w-5 text-emerald-500" />
@@ -817,7 +643,7 @@ const Admin = () => {
                       <div className="flex-1 space-y-1">
                         <p className="text-sm font-['Inter'] font-medium text-white">New Appointment</p>
                         <p className="text-xs text-zinc-400">
-                          {apt.customerName || apt.customer?.name || 'Customer'} • {safeFormatDate(apt.created_at || apt.createdAt)}
+                          {apt.customerName || 'Customer'} • {new Date(apt.createdAt).toLocaleDateString()}
                         </p>
                       </div>
                       <Badge variant={getStatusBadgeVariant(apt.status)}>
@@ -833,7 +659,7 @@ const Admin = () => {
       </div>
 
       {/* Top Technicians */}
-      <Card className="bg-zinc-900/40 backdrop-blur-md border-zinc-800 shadow-xl">
+      <Card className="bg-zinc-900 border-zinc-800 shadow-xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 font-['Outfit'] text-white">
             <TrendingUp className="h-5 w-5 text-blue-500" />
@@ -849,12 +675,12 @@ const Admin = () => {
               </div>
             ) : (
               technicians.slice(0, 5).map((tech, index) => (
-                <div key={tech.id || tech._id} className="flex items-center gap-4 p-3 rounded-xl bg-zinc-800/50 border border-zinc-700 hover:border-zinc-600 transition-colors">
+                <div key={tech._id} className="flex items-center gap-4 p-3 rounded-xl bg-zinc-800/50 border border-zinc-700 hover:border-zinc-600 transition-colors">
                   <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white text-black font-['Outfit'] font-bold">
                     #{index + 1}
                   </div>
                   <Avatar className="h-10 w-10 border-2 border-zinc-600">
-                    <AvatarImage src={tech.profileImage || `https://api.dicebear.com/9.x/micah/svg?seed=${tech.name || 'Technician'}&backgroundColor=18181b`} />
+                    <AvatarImage src={tech.profileImage} />
                     <AvatarFallback className="bg-zinc-700 text-white font-['Outfit']">{tech.name?.substring(0, 2).toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
@@ -868,7 +694,7 @@ const Admin = () => {
                       <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
                       <span className="font-['Inter'] font-semibold text-white">{tech.rating || 0}</span>
                     </div>
-                    <p className="text-xs text-zinc-400">{tech.reviewCount || tech.review_count || 0} reviews</p>
+                    <p className="text-xs text-zinc-400">{tech.reviewCount || 0} reviews</p>
                   </div>
                 </div>
               ))
@@ -892,7 +718,7 @@ const Admin = () => {
         </Button>
       </div>
 
-      <Card className="bg-zinc-900/40 backdrop-blur-md border-zinc-800 shadow-xl">
+      <Card className="bg-zinc-900 border-zinc-800 shadow-xl">
         <CardContent className="p-0">
           {users.length === 0 ? (
             <div className="text-center py-12">
@@ -916,11 +742,11 @@ const Admin = () => {
               </TableHeader>
               <TableBody>
                 {users.map((user) => (
-                  <TableRow key={user.id || user._id} className="border-zinc-800 hover:bg-zinc-800/50">
+                  <TableRow key={user._id} className="border-zinc-800 hover:bg-zinc-800/50">
                     <TableCell className="font-['Inter'] font-medium text-white">
                       <div className="flex items-center gap-3">
                         <Avatar className="border-2 border-zinc-600">
-                          <AvatarImage src={user.profileImage || `https://api.dicebear.com/9.x/micah/svg?seed=${user.name || 'User'}&backgroundColor=18181b`} />
+                          <AvatarImage src={user.profileImage} />
                           <AvatarFallback className="bg-zinc-700 text-white">{user.name?.substring(0, 2).toUpperCase()}</AvatarFallback>
                         </Avatar>
                         {user.name}
@@ -931,7 +757,7 @@ const Admin = () => {
                     <TableCell>
                       <Badge variant="outline" className="border-zinc-600 text-zinc-300">{user.role}</Badge>
                     </TableCell>
-                    <TableCell className="text-zinc-300">{safeFormatDate(user.created_at || user.createdAt)}</TableCell>
+                    <TableCell className="text-zinc-300">{new Date(user.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button variant="ghost" size="icon" onClick={() => handleOpenModal('user', user)} className="text-zinc-400 hover:text-white hover:bg-zinc-800">
@@ -941,7 +767,7 @@ const Admin = () => {
                           variant="ghost"
                           size="icon"
                           className="text-red-500 hover:text-red-400 hover:bg-zinc-800"
-                          onClick={() => handleDeleteUser(user.id || user._id)}
+                          onClick={() => handleDeleteUser(user._id)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -1013,12 +839,12 @@ const Admin = () => {
             </div>
           ) : (
             filteredTechnicians.map((tech) => (
-              <Card key={tech.id || tech._id} className="bg-zinc-900 border-zinc-800 hover:border-zinc-600 transition-all shadow-xl">
+              <Card key={tech._id} className="bg-zinc-900 border-zinc-800 hover:border-zinc-600 transition-all shadow-xl">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                       <Avatar className="h-12 w-12 border-2 border-zinc-600">
-                        <AvatarImage src={tech.profileImage || `https://api.dicebear.com/9.x/micah/svg?seed=${tech.name || 'Technician'}&backgroundColor=18181b`} />
+                        <AvatarImage src={tech.profileImage} />
                         <AvatarFallback className="bg-zinc-700 text-white font-['Outfit'] font-bold">{tech.name?.substring(0, 2).toUpperCase()}</AvatarFallback>
                       </Avatar>
                       <div>
@@ -1063,7 +889,7 @@ const Admin = () => {
                     variant="outline"
                     size="sm"
                     className="flex-1 border-zinc-700 text-white hover:bg-zinc-800"
-                    onClick={() => handleToggleVerification(tech.id || tech._id, tech.verified)}
+                    onClick={() => handleToggleVerification(tech._id, tech.verified)}
                   >
                     {tech.verified ? 'Revoke' : 'Verify'}
                   </Button>
@@ -1071,7 +897,7 @@ const Admin = () => {
                     variant="ghost"
                     size="icon"
                     className="text-red-500 hover:text-red-400 hover:bg-zinc-800"
-                    onClick={() => handleDeleteTechnician(tech.id || tech._id)}
+                    onClick={() => handleDeleteTechnician(tech._id)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -1093,7 +919,7 @@ const Admin = () => {
         </div>
       </div>
 
-      <Card className="bg-zinc-900/40 backdrop-blur-md border-zinc-800 shadow-xl">
+      <Card className="bg-zinc-900 border-zinc-800 shadow-xl">
         <CardContent className="p-0">
           {appointments.length === 0 ? (
             <div className="text-center py-12">
@@ -1113,18 +939,14 @@ const Admin = () => {
               </TableHeader>
               <TableBody>
                 {appointments.map((apt) => (
-                  <TableRow key={apt.id || apt._id} className="border-zinc-800 hover:bg-zinc-800/50">
-                    <TableCell className="font-['Inter'] text-white">
-                      {apt.customer?.name || apt.customerName || '-'}
-                    </TableCell>
-                    <TableCell className="font-['Inter'] text-zinc-300">
-                      {apt.technician?.name || apt.technicianName || 'Pending'}
-                    </TableCell>
-                    <TableCell className="text-zinc-300">{safeFormatDate(apt.scheduledDate || apt.created_at || apt.createdAt)}</TableCell>
+                  <TableRow key={apt._id} className="border-zinc-800 hover:bg-zinc-800/50">
+                    <TableCell className="font-['Inter'] text-white">{apt.customerName || '-'}</TableCell>
+                    <TableCell className="font-['Inter'] text-zinc-300">{apt.technicianName || 'Pending'}</TableCell>
+                    <TableCell className="text-zinc-300">{new Date(apt.scheduledDate || apt.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell>
                       <Select
                         value={apt.status}
-                        onValueChange={(value) => handleUpdateAppointmentStatus(apt.id || apt._id, value)}
+                        onValueChange={(value) => handleUpdateAppointmentStatus(apt._id, value)}
                       >
                         <SelectTrigger className="w-32 h-8 bg-zinc-800 border-zinc-700 text-white text-xs">
                           <SelectValue />
@@ -1139,7 +961,7 @@ const Admin = () => {
                       </Select>
                     </TableCell>
                     <TableCell className="text-right font-['Outfit'] font-semibold text-white">
-                      <CurrencyDisplay amount={apt.total_amount || apt.amount || apt.price || 0} decimals={0} />
+                      <CurrencyDisplay amount={apt.price || 0} decimals={0} />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -1168,12 +990,11 @@ const Admin = () => {
           </div>
         ) : (
           reviews.map((review) => (
-            <Card key={review.id || review._id} className="bg-zinc-900 border-zinc-800 shadow-xl">
+            <Card key={review._id} className="bg-zinc-900 border-zinc-800 shadow-xl">
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Avatar className="border-2 border-zinc-600">
-                      <AvatarImage src={`https://api.dicebear.com/9.x/micah/svg?seed=${review.customerName || 'User'}&backgroundColor=18181b`} />
                       <AvatarFallback className="bg-zinc-700 text-white">{review.customerName?.substring(0, 2).toUpperCase() || 'U'}</AvatarFallback>
                     </Avatar>
                     <div>
@@ -1193,7 +1014,7 @@ const Admin = () => {
               <CardContent>
                 <p className="text-sm text-zinc-300 font-['Inter'] line-clamp-3">{review.comment || 'No comment'}</p>
                 <p className="text-xs text-zinc-500 mt-2">
-                  For: {review.technicianName || review.technician?.name || 'Unknown'} • {safeFormatDate(review.created_at || review.createdAt)}
+                  For: {review.technicianName || 'Unknown'} • {new Date(review.createdAt).toLocaleDateString()}
                 </p>
               </CardContent>
               <CardFooter className="pt-0 gap-2">
@@ -1201,7 +1022,7 @@ const Admin = () => {
                   variant="outline"
                   size="sm"
                   className="flex-1 border-zinc-700 text-emerald-400 hover:bg-zinc-800"
-                  onClick={() => handleUpdateReviewStatus(review.id || review._id, 'approved')}
+                  onClick={() => handleUpdateReviewStatus(review._id, 'approved')}
                 >
                   <CheckCircle className="h-4 w-4 mr-1" />
                   Approve
@@ -1210,7 +1031,7 @@ const Admin = () => {
                   variant="outline"
                   size="sm"
                   className="flex-1 border-zinc-700 text-red-400 hover:bg-zinc-800"
-                  onClick={() => handleUpdateReviewStatus(review.id || review._id, 'rejected')}
+                  onClick={() => handleUpdateReviewStatus(review._id, 'rejected')}
                 >
                   <XCircle className="h-4 w-4 mr-1" />
                   Reject
@@ -1223,79 +1044,6 @@ const Admin = () => {
     </div>
   );
 
-  const renderLogs = () => (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-3xl font-['Outfit'] font-bold tracking-tight text-white">System Logs</h2>
-          <p className="text-zinc-400 font-['Inter']">Real-time audit of platform activities</p>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={fetchLogs}
-          className="border-zinc-700 text-white hover:bg-zinc-800 gap-2"
-        >
-          <RefreshCw className="h-4 w-4" />
-          Refresh
-        </Button>
-      </div>
-
-      <Card className="bg-zinc-900/40 backdrop-blur-md border-zinc-800 shadow-xl overflow-hidden">
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-zinc-800 hover:bg-transparent">
-                  <TableHead className="text-zinc-400">Type</TableHead>
-                  <TableHead className="text-zinc-400">Activity</TableHead>
-                  <TableHead className="text-zinc-400">Timestamp</TableHead>
-                  <TableHead className="text-zinc-400">Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {logs.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center py-24 text-zinc-500">
-                      <FileText className="h-12 w-12 mx-auto mb-4 opacity-20" />
-                      No logs available
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  logs.map((log) => (
-                    <TableRow key={log.id} className="border-zinc-800 hover:bg-zinc-800/30 transition-colors">
-                      <TableCell>
-                        <Badge className={`${log.type === 'USER_SIGNUP' ? 'bg-blue-500/10 text-blue-400' :
-                          log.type === 'BOOKING_UPDATE' ? 'bg-purple-500/10 text-purple-400' :
-                            'bg-emerald-500/10 text-emerald-400'
-                          } border-0 text-[10px] font-bold px-2 py-0.5`}>
-                          {log.type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-zinc-300 font-medium">{log.message}</TableCell>
-                      <TableCell className="text-zinc-500 text-xs">
-                        {new Date(log.timestamp || log.created_at).toLocaleString()}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div className={`h-2 w-2 rounded-full ${log.severity === 'success' ? 'bg-emerald-500' :
-                            log.severity === 'warning' ? 'bg-amber-500' :
-                              'bg-blue-500'
-                            }`} />
-                          <span className="text-xs capitalize text-zinc-400">{log.severity}</span>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-
   const renderSettings = () => (
     <div className="space-y-6">
       <div>
@@ -1304,7 +1052,7 @@ const Admin = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="bg-zinc-900/40 backdrop-blur-md border-zinc-800 shadow-xl">
+        <Card className="bg-zinc-900 border-zinc-800 shadow-xl">
           <CardHeader>
             <CardTitle className="font-['Outfit'] text-white">Notification Settings</CardTitle>
             <CardDescription className="text-zinc-400">Configure how you receive notifications</CardDescription>
@@ -1334,7 +1082,7 @@ const Admin = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-zinc-900/40 backdrop-blur-md border-zinc-800 shadow-xl">
+        <Card className="bg-zinc-900 border-zinc-800 shadow-xl">
           <CardHeader>
             <CardTitle className="font-['Outfit'] text-white">Account Information</CardTitle>
             <CardDescription className="text-zinc-400">Your admin account details</CardDescription>
@@ -1342,7 +1090,7 @@ const Admin = () => {
           <CardContent className="space-y-4">
             <div className="flex items-center gap-4">
               <Avatar className="h-16 w-16 border-2 border-zinc-600">
-                <AvatarImage src={user?.profileImage || `https://api.dicebear.com/9.x/micah/svg?seed=${user?.name || 'Admin'}&backgroundColor=18181b`} />
+                <AvatarImage src={user?.profileImage} />
                 <AvatarFallback className="bg-zinc-700 text-white font-['Outfit'] font-bold text-xl">{user?.name?.substring(0, 2).toUpperCase() || 'AD'}</AvatarFallback>
               </Avatar>
               <div>
@@ -1361,80 +1109,6 @@ const Admin = () => {
     </div>
   );
 
-  const renderServiceApprovals = () => (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-['Outfit'] font-bold tracking-tight text-white">Service Approvals</h2>
-        <Badge variant="outline" className="bg-amber-500/10 text-amber-400 border-amber-500/50">
-          {pendingGigs.length} Pending
-        </Badge>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {pendingGigs.length === 0 ? (
-          <div className="col-span-full text-center py-24 bg-zinc-900/50 rounded-3xl border border-zinc-800">
-            <Sparkles className="h-12 w-12 mx-auto mb-4 text-zinc-600" />
-            <p className="text-zinc-400">No services awaiting approval</p>
-          </div>
-        ) : (
-          pendingGigs.map((gig) => (
-            <Card key={gig.id} className="bg-zinc-900 border-zinc-800 overflow-hidden group">
-              <div className="aspect-video relative overflow-hidden bg-zinc-800">
-                {gig.image ? (
-                  <img src={gig.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                ) : (
-                  <div className="flex items-center justify-center h-full text-zinc-600">
-                    <Sparkles className="h-12 w-12" />
-                  </div>
-                )}
-                <div className="absolute top-4 left-4">
-                  <Badge className="bg-black/60 backdrop-blur-md text-white border-white/20">
-                    <CurrencyDisplay amount={gig.price} />
-                  </Badge>
-                </div>
-              </div>
-              <CardHeader className="pb-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="text-lg font-['Outfit'] text-white">{gig.title}</CardTitle>
-                    <p className="text-sm text-zinc-400 flex items-center gap-1 mt-1">
-                      by <span className="text-white font-medium">{gig.technician?.name}</span>
-                    </p>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="pb-4">
-                <p className="text-sm text-zinc-400 line-clamp-3 mb-4">{gig.description}</p>
-                <div className="flex items-center gap-4 text-xs text-zinc-500">
-                  <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {gig.duration} hrs</span>
-                  <span className="flex items-center gap-1"><Zap className="h-3 w-3" /> {gig.category || 'Service'}</span>
-                </div>
-              </CardContent>
-              <CardFooter className="pt-0 gap-2">
-                <Button
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
-                  onClick={() => handleApproveGig(gig.id, 'approved')}
-                >
-                  Approve
-                </Button>
-                <Button
-                  variant="outline"
-                  className="flex-1 border-zinc-700 text-red-400 hover:bg-red-500/10 hover:text-red-400"
-                  onClick={() => {
-                    const feedback = prompt('Enter rejection reason:');
-                    if (feedback) handleApproveGig(gig.id, 'rejected', feedback);
-                  }}
-                >
-                  Reject
-                </Button>
-              </CardFooter>
-            </Card>
-          ))
-        )}
-      </div>
-    </div>
-  );
-
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
@@ -1445,25 +1119,8 @@ const Admin = () => {
         return renderTechnicians();
       case 'appointments':
         return renderAppointments();
-      case 'services':
-        return (
-          <div className="space-y-12">
-            {renderServiceApprovals()}
-            <div className="border-t border-zinc-800 pt-12">
-              <ServiceManagement />
-            </div>
-          </div>
-        );
       case 'reviews':
         return renderReviews();
-      case 'areas':
-        return <ServiceAreasManagement />;
-      case 'support':
-        return <SupportManagement />;
-      case 'financials':
-        return <TransactionHistory />;
-      case 'logs':
-        return renderLogs();
       case 'settings':
         return renderSettings();
       default:
@@ -1514,43 +1171,31 @@ const Admin = () => {
 
       {/* Main Content */}
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 xs:grid-cols-3 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-9 gap-1 p-1 bg-zinc-900 border border-zinc-800 rounded-xl h-auto overflow-x-auto">
-            <TabsTrigger value="dashboard" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter'] text-xs whitespace-nowrap">
-              <LayoutDashboard className="h-3.5 w-3.5 mr-1" />
-              Overview
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-6 gap-2 p-1 bg-zinc-900 border border-zinc-800 rounded-xl h-auto">
+            <TabsTrigger value="dashboard" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">
+              <LayoutDashboard className="h-4 w-4 mr-2" />
+              Dashboard
             </TabsTrigger>
-            <TabsTrigger value="services" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter'] text-xs whitespace-nowrap">
-              <Zap className="h-3.5 w-3.5 mr-1" />
-              Services
+            <TabsTrigger value="users" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">
+              <Users className="h-4 w-4 mr-2" />
+              Users
             </TabsTrigger>
-            <TabsTrigger value="technicians" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter'] text-xs whitespace-nowrap">
-              <Users className="h-3.5 w-3.5 mr-1" />
+            <TabsTrigger value="technicians" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">
+              <Wrench className="h-4 w-4 mr-2" />
               Technicians
             </TabsTrigger>
-            <TabsTrigger value="areas" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter'] text-xs whitespace-nowrap">
-              <MapPin className="h-3.5 w-3.5 mr-1" />
-              Areas
+            <TabsTrigger value="appointments" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">
+              <Calendar className="h-4 w-4 mr-2" />
+              Appointments
             </TabsTrigger>
-            <TabsTrigger value="support" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter'] text-xs whitespace-nowrap">
-              <MessageSquare className="h-3.5 w-3.5 mr-1" />
-              Support
-            </TabsTrigger>
-            <TabsTrigger value="reviews" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter'] text-xs whitespace-nowrap">
-              <Star className="h-3.5 w-3.5 mr-1" />
+            <TabsTrigger value="reviews" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">
+              <Star className="h-4 w-4 mr-2" />
               Reviews
             </TabsTrigger>
-            <TabsTrigger value="financials" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter'] text-xs whitespace-nowrap">
-              <DollarSign className="h-3.5 w-3.5 mr-1" />
-              Financials
-            </TabsTrigger>
-            <TabsTrigger value="logs" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter'] text-xs whitespace-nowrap">
-              <Activity className="h-3.5 w-3.5 mr-1" />
-              Logs
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter'] text-xs whitespace-nowrap">
-              <Settings className="h-3.5 w-3.5 mr-1" />
-              Setup
+            <TabsTrigger value="settings" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">
+              <Settings className="h-4 w-4 mr-2" />
+              Settings
             </TabsTrigger>
           </TabsList>
 
@@ -1558,19 +1203,7 @@ const Admin = () => {
           <TabsContent value="users">{renderUsers()}</TabsContent>
           <TabsContent value="technicians">{renderTechnicians()}</TabsContent>
           <TabsContent value="appointments">{renderAppointments()}</TabsContent>
-          <TabsContent value="services">
-            <div className="space-y-12">
-              {renderServiceApprovals()}
-              <div className="border-t border-zinc-800 pt-12">
-                <ServiceManagement />
-              </div>
-            </div>
-          </TabsContent>
-          <TabsContent value="areas"><ServiceAreasManagement /></TabsContent>
-          <TabsContent value="financials"><TransactionHistory /></TabsContent>
-          <TabsContent value="support"><SupportManagement /></TabsContent>
           <TabsContent value="reviews">{renderReviews()}</TabsContent>
-          <TabsContent value="logs">{renderLogs()}</TabsContent>
           <TabsContent value="settings">{renderSettings()}</TabsContent>
         </Tabs>
       </div>
