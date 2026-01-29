@@ -93,7 +93,7 @@ const TechnicianDashboard = () => {
     return () => clearInterval(interval);
   }, [user?.id]); // Use user.id specifically for more stable dependency
 
-  if (loading) {
+  if (loading && !data) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
