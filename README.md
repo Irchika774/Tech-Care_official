@@ -5,7 +5,7 @@
 ### _Connecting Customers with Expert Technicians_
 
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-success?style=for-the-badge)](https://github.com)
-[![Version](https://img.shields.io/badge/Version-2.1.0-blue?style=for-the-badge)](https://github.com)
+[![Version](https://img.shields.io/badge/Version-2.2.0-blue?style=for-the-badge)](https://github.com)
 [![License](https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge)](LICENSE)
 [![Node](https://img.shields.io/badge/Node-24.x-green?style=for-the-badge&logo=node.js)](https://nodejs.org)
 [![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react)](https://reactjs.org)
@@ -64,7 +64,7 @@ flowchart TB
             FEAT["Feature Components<br/>• AI Diagnostics • Maps<br/>• Charts • Invoices"]
         end
         subgraph State["🔄 State Management"]
-            CTX["Context Providers<br/>• AuthContext<br/>• ThemeContext<br/>• NotificationContext"]
+            CTX["Context Providers<br/>• AuthContext (v2.2 Stable)<br/>• ThemeContext<br/>• NotificationContext"]
         end
     end
 
@@ -1078,7 +1078,7 @@ If you find TechCare helpful or interesting, please consider:
 
 ---
 
-**Last Updated**: January 29, 2026 | **Version**: 2.1.0 | **Status**: ✅ Production Ready
+**Last Updated**: January 29, 2026 | **Version**: 2.2.0 | **Status**: ✅ Production Ready
 
 [![Made with React](https://img.shields.io/badge/Made%20with-React-61DAFB?style=flat-square&logo=react)](https://reactjs.org)
 [![Powered by Supabase](https://img.shields.io/badge/Powered%20by-Supabase-3ECF8E?style=flat-square&logo=supabase)](https://supabase.io)
@@ -1093,6 +1093,13 @@ If you find TechCare helpful or interesting, please consider:
 ---
 
 ## 📅 Version History
+
+### v2.2.0 - Dashboard Stabilization & Auth Optimization (Current)
+**Critical Resilience Upgrades:**
+- **Zero-Flicker Dashboards**: Implemented Stale-While-Revalidate (SWR) patterns in `TechnicianDashboard.jsx`, `Admin.jsx`, and `CustomerDashboard.jsx` to prevent the UI from disappearing during background data refreshes.
+- **Auth Robustness**: Overhauled `AuthContext.jsx` initialization to handle rapid state changes and slow network conditions gracefully.
+- **Intelligent Loading**: Replaced full-screen loaders with background synchronization for all authenticated dashboards.
+- **Database Fallbacks**: Optimized Supabase client timeouts and added local storage caching for user profiles to ensure instant UI responsiveness.
 
 ### v2.1.0 - Global Production Stability (Jan 29, 2026)
 **Critical Fixes & Optimization:**

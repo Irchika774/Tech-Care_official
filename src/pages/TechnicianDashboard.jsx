@@ -35,12 +35,21 @@ const TechnicianDashboard = () => {
   });
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
+  const isFetchingRef = useRef(false);
+
   useEffect(() => {
-    const fetchDashboardData = async () => {
+    const fetchDashboardData = async (isInitial = false) => {
       if (!user) return;
+      if (isFetchingRef.current) return;
 
       try {
-        setLoading(true);
+        isFetchingRef.current = true;
+
+        // Only show full-screen loading on the very first load
+        if (isInitial && !data) {
+          setLoading(true);
+        }
+
         // Get the access token from Supabase session
         const { data: { session } } = await supabase.auth.getSession();
         const token = session?.access_token;
@@ -59,20 +68,25 @@ const TechnicianDashboard = () => {
 
         const result = await response.json();
         setData(result);
+        setError(null);
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
-        setError(err.message);
+        // Only show error if we don't have any data yet
+        if (!data) {
+          setError(err.message);
+        }
       } finally {
         setLoading(false);
+        isFetchingRef.current = false;
       }
     };
 
-    fetchDashboardData();
+    fetchDashboardData(true);
 
     // Refresh data every 30 seconds for real-time updates
-    const interval = setInterval(fetchDashboardData, 30000);
+    const interval = setInterval(() => fetchDashboardData(false), 30000);
     return () => clearInterval(interval);
-  }, [user]);
+  }, [user?.id]); // Use user.id specifically for more stable dependency
 
   if (loading) {
     return (

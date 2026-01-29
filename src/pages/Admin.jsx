@@ -109,15 +109,24 @@ const Admin = () => {
     return () => clearInterval(interval);
   }, []);
 
+  const isFetchingRef = useRef(false);
+
   // Initial data load
   useEffect(() => {
-    fetchAllData();
+    fetchAllData(true);
   }, []);
 
   // Fetch all data
-  const fetchAllData = useCallback(async () => {
+  const fetchAllData = useCallback(async (isInitial = false) => {
+    if (isFetchingRef.current) return;
+
     try {
-      setIsLoading(true);
+      isFetchingRef.current = true;
+      // Only show full-screen loader if we have no users yet and it's an initial call
+      if (isInitial && users.length === 0) {
+        setIsLoading(true);
+      }
+
       await Promise.all([
         fetchUsers(),
         fetchTechnicians(),
@@ -127,21 +136,26 @@ const Admin = () => {
       calculateStats();
     } catch (error) {
       console.error('[ADMIN] Error fetching data:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to load admin data"
-      });
+      // Only show error toast if it's the first load or explicit refresh
+      if (isInitial || isRefreshing) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load admin data"
+        });
+      }
     } finally {
       setIsLoading(false);
+      isFetchingRef.current = false;
     }
-  }, []);
+  }, [users.length, techFilter, isRefreshing, toast, calculateStats]);
 
   // Refresh all data
   const refreshAllData = async () => {
+    if (isRefreshing) return;
     setIsRefreshing(true);
-    await fetchAllData();
-    setTimeout(() => setIsRefreshing(false), 500);
+    await fetchAllData(false);
+    setIsRefreshing(false);
     toast({
       title: "Refreshed",
       description: "All data has been updated"

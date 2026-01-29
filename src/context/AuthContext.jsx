@@ -17,20 +17,22 @@ export const AuthProvider = ({ children }) => {
     const isFetchingProfile = useRef(false);
     const lastFetchedUserId = useRef(null);
     const lastFetchTime = useRef(0);
-    const initialLoadDone = useRef(false);
+    const initialLoadStarted = useRef(false);
+    const authInitialized = useRef(false);
 
-    const loadUserProfile = useCallback(async (authUser, forceRefresh = false) => {
+    const loadUserProfile = useCallback(async (authUser, forceRefresh = false, source = 'unknown') => {
         if (!authUser) return;
 
         const now = Date.now();
         const timeSinceLastFetch = now - lastFetchTime.current;
-        
-        if (!forceRefresh && lastFetchedUserId.current === authUser.id && timeSinceLastFetch < 30000) {
+
+        if (!forceRefresh && lastFetchedUserId.current === authUser.id && timeSinceLastFetch < 10000) {
+            console.log(`[DEBUG] loadUserProfile skipped (${source}): Recent fetch for ${authUser.id}`);
             return;
         }
 
         if (isFetchingProfile.current) {
-            console.log('[DEBUG] loadUserProfile skipped: Already fetching');
+            console.log(`[DEBUG] loadUserProfile skipped (${source}): Already fetching`);
             return;
         }
 
@@ -38,7 +40,7 @@ export const AuthProvider = ({ children }) => {
             isFetchingProfile.current = true;
             lastFetchedUserId.current = authUser.id;
             lastFetchTime.current = now;
-            console.log('[DEBUG] loadUserProfile started for:', authUser.id);
+            console.log(`[DEBUG] loadUserProfile started (${source}) for:`, authUser.id);
 
             const role = authUser.user_metadata?.role || 'user';
             const profilePromise = getProfile(authUser.id);
@@ -77,20 +79,25 @@ export const AuthProvider = ({ children }) => {
                         extendedProfile,
                         _id: authUser.id
                     };
-                    if (prev && prev._id === newUser._id && JSON.stringify(prev) === JSON.stringify(newUser)) {
+
+                    // Stabilize user object to prevent unnecessary re-renders
+                    if (prev && prev.id === newUser.id &&
+                        prev.role === newUser.role &&
+                        JSON.stringify(prev.extendedProfile) === JSON.stringify(newUser.extendedProfile)) {
                         return prev;
                     }
                     return newUser;
                 });
             }
-            console.log('[DEBUG] loadUserProfile finished successfully');
+            console.log(`[DEBUG] loadUserProfile finished successfully (${source})`);
         } catch (error) {
-            console.error('Error loading profile:', error);
-            const cached = localStorage.getItem(`user_profile_${authUser.id}`);
-            if (cached) {
-                try {
-                    const { profile: cachedProfile, extendedProfile: cachedExtended } = JSON.parse(cached);
-                    if (isMounted.current) {
+            console.error(`[AUTH] Profile load error (${source}):`, error);
+            // ... fallback logic remains similar but encapsulated ...
+            if (isMounted.current) {
+                const cached = localStorage.getItem(`user_profile_${authUser.id}`);
+                if (cached) {
+                    try {
+                        const { profile: cachedProfile, extendedProfile: cachedExtended } = JSON.parse(cached);
                         setProfile(cachedProfile);
                         setUser(prev => ({
                             ...authUser,
@@ -99,11 +106,9 @@ export const AuthProvider = ({ children }) => {
                             _id: authUser.id
                         }));
                         return;
-                    }
-                } catch (e) { /* ignore */ }
-            }
+                    } catch (e) { }
+                }
 
-            if (isMounted.current) {
                 const fallbackRole = authUser.user_metadata?.role || 'user';
                 setUser(prev => ({
                     ...authUser,
@@ -121,31 +126,30 @@ export const AuthProvider = ({ children }) => {
         isMounted.current = true;
 
         const initializeAuth = async () => {
+            if (initialLoadStarted.current) return;
+            initialLoadStarted.current = true;
+
             const perfTimer = setTimeout(() => {
                 if (isMounted.current && loading) {
-                    console.warn('[PERF] Auth initialization is taking longer than expected. check network.');
+                    console.warn('[PERF] Auth initialization is taking longer than expected.');
                 }
-            }, 8000);
+            }, 5000);
 
             try {
                 console.log('[DEBUG] initializeAuth started');
                 const { data: { session: currentSession }, error } = await supabase.auth.getSession();
 
-                if (error) {
-                    console.error('Session error:', error);
-                    if (isMounted) setLoading(false);
-                    return;
-                }
+                if (error) throw error;
 
-                if (currentSession && isMounted) {
-                    console.log('[DEBUG] Session found, user:', currentSession.user.id);
+                if (currentSession && isMounted.current) {
+                    console.log('[DEBUG] Session found on init:', currentSession.user.id);
                     setSession(currentSession);
 
                     const cached = localStorage.getItem(`user_profile_${currentSession.user.id}`);
                     if (cached) {
                         try {
                             const { profile: cachedProfile, extendedProfile: cachedExtended } = JSON.parse(cached);
-                            console.log('[DEBUG] Loaded profile from cache (Instant UI)');
+                            console.log('[DEBUG] Using cached profile for instant UI');
                             setProfile(cachedProfile);
                             setUser({
                                 ...currentSession.user,
@@ -153,27 +157,27 @@ export const AuthProvider = ({ children }) => {
                                 extendedProfile: cachedExtended,
                                 _id: currentSession.user.id
                             });
-                        } catch (e) { /* ignore invalid cache */ }
+                        } catch (e) { }
                     } else {
-                        const authUser = currentSession.user;
+                        // Set basic info if no cache
                         setUser({
-                            ...authUser,
-                            _id: authUser.id,
-                            role: authUser.user_metadata?.role || 'user',
-                            name: authUser.user_metadata?.name || authUser.email
+                            ...currentSession.user,
+                            _id: currentSession.user.id,
+                            role: currentSession.user.user_metadata?.role || 'user'
                         });
                     }
 
-                    loadUserProfile(currentSession.user);
+                    // Background fetch
+                    loadUserProfile(currentSession.user, false, 'init');
                 }
             } catch (error) {
-                console.error('Auth initialization error:', error.message);
+                console.error('[AUTH] Init error:', error.message);
             } finally {
                 clearTimeout(perfTimer);
                 if (isMounted.current) {
-                    console.log('[DEBUG] initializeAuth finished');
                     setLoading(false);
-                    initialLoadDone.current = true;
+                    authInitialized.current = true;
+                    console.log('[DEBUG] initializeAuth finished');
                 }
             }
         };
@@ -189,25 +193,34 @@ export const AuthProvider = ({ children }) => {
             }
 
             if (event === 'SIGNED_IN' && currentSession?.user) {
-                if (initialLoadDone.current && lastFetchedUserId.current === currentSession.user.id) {
-                    console.log('[DEBUG] Skipping duplicate SIGNED_IN event for same user');
+                console.log('[AUTH] SIGNED_IN event for:', currentSession.user.id);
+
+                // If we're already initialized and it's the same user, skip redundant fetch
+                if (authInitialized.current && lastFetchedUserId.current === currentSession.user.id) {
+                    console.debug('[AUTH] Skipping redundant signed_in event during/after init');
                     return;
                 }
-                
-                setUser(prev => prev || {
-                    ...currentSession.user,
-                    _id: currentSession.user.id,
-                    role: currentSession.user.user_metadata?.role || 'user',
-                    name: currentSession.user.user_metadata?.name || currentSession.user.email
-                });
-                await loadUserProfile(currentSession.user);
+
+                if (isMounted.current) {
+                    setUser(prev => {
+                        if (prev && prev.id === currentSession.user.id) return prev;
+                        return {
+                            ...currentSession.user,
+                            _id: currentSession.user.id,
+                            role: currentSession.user.user_metadata?.role || 'user',
+                            name: currentSession.user.user_metadata?.name || currentSession.user.email
+                        };
+                    });
+                    loadUserProfile(currentSession.user, false, 'event');
+                }
             } else if (event === 'SIGNED_OUT') {
                 setUser(null);
                 setProfile(null);
                 setSession(null);
                 lastFetchedUserId.current = null;
                 lastFetchTime.current = 0;
-                try { realtimeService.unsubscribeAll(); } catch (e) { console.error(e); }
+                localStorage.removeItem('user_profile_cache_v1'); // Clear any legacy cache
+                try { realtimeService.unsubscribeAll(); } catch (e) { }
             } else if (event === 'TOKEN_REFRESHED' && currentSession?.user) {
                 if (isMounted.current) {
                     setSession(currentSession);
@@ -215,7 +228,7 @@ export const AuthProvider = ({ children }) => {
                 console.log('[AUTH] Token refreshed');
                 realtimeService.refreshAllConnections();
             } else if (event === 'USER_UPDATED' && currentSession?.user) {
-                await loadUserProfile(currentSession.user, true);
+                await loadUserProfile(currentSession.user, true, 'update');
             }
         });
 

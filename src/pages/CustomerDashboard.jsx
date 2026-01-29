@@ -164,8 +164,13 @@ function CustomerDashboard() {
     }
   };
 
+  const isFetchingRef = useRef(false);
+
   const fetchData = async (isBackground = false) => {
+    if (isFetchingRef.current) return;
+
     try {
+      isFetchingRef.current = true;
       if (!isBackground && !data) setLoading(true); // Only show full screen loader if no data yet
 
       const { data: { session } } = await supabase.auth.getSession();
@@ -280,6 +285,7 @@ function CustomerDashboard() {
       });
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
   };
 
