@@ -169,9 +169,14 @@ function CustomerDashboard() {
   const fetchData = async (isBackground = false) => {
     if (isFetchingRef.current) return;
 
+    let loadingTimeout;
     try {
       isFetchingRef.current = true;
-      if (!isBackground && !data) setLoading(true); // Only show full screen loader if no data yet
+      if (!isBackground && !data) {
+        loadingTimeout = setTimeout(() => {
+          if (isFetchingRef.current) setLoading(true);
+        }, 300);
+      }
 
       const { data: { session } } = await supabase.auth.getSession();
 
@@ -284,6 +289,7 @@ function CustomerDashboard() {
         description: "Some information could not be loaded directly."
       });
     } finally {
+      if (loadingTimeout) clearTimeout(loadingTimeout);
       setLoading(false);
       isFetchingRef.current = false;
     }

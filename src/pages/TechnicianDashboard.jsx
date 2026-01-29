@@ -42,12 +42,12 @@ const TechnicianDashboard = () => {
       if (!user) return;
       if (isFetchingRef.current) return;
 
+      let loadingTimeout;
       try {
         isFetchingRef.current = true;
 
         // Only show full-screen loading on the very first load if we have no data
         // and add a tiny delay to avoid flashing if data comes from cache/fast network
-        let loadingTimeout;
         if (isInitial && !data) {
           loadingTimeout = setTimeout(() => {
             if (isFetchingRef.current) setLoading(true);

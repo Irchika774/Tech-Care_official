@@ -120,11 +120,14 @@ const Admin = () => {
   const fetchAllData = useCallback(async (isInitial = false) => {
     if (isFetchingRef.current) return;
 
+    let loadingTimeout;
     try {
       isFetchingRef.current = true;
       // Only show full-screen loader if we have no users yet and it's an initial call
       if (isInitial && users.length === 0) {
-        setIsLoading(true);
+        loadingTimeout = setTimeout(() => {
+          if (isFetchingRef.current) setIsLoading(true);
+        }, 300);
       }
 
       await Promise.all([
@@ -145,6 +148,7 @@ const Admin = () => {
         });
       }
     } finally {
+      if (loadingTimeout) clearTimeout(loadingTimeout);
       setIsLoading(false);
       isFetchingRef.current = false;
     }
