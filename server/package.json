@@ -1,7 +1,7 @@
 {
   "name": "techcare-backend",
-  "version": "2.2.0",
-  "description": "TechCare Backend API Server - V2.2.0 Stable",
+  "version": "2.2.1",
+  "description": "TechCare Backend API Server - V2.2.1 Stable",
   "main": "index.js",
   "type": "module",
   "scripts": {

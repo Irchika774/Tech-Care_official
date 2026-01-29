@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Loader2, Send, User, Phone, MessageCircle, Bot } from 'lucide-react';
+import { Loader2, Send, User, Phone, MessageCircle, Bot, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 
@@ -14,10 +14,38 @@ export default function Chat() {
     const [newMessage, setNewMessage] = useState('');
     const [loading, setLoading] = useState(true);
     const [recipient, setRecipient] = useState(null);
+    const [conversations, setConversations] = useState([]);
+    const [isListLoading, setIsListLoading] = useState(false);
     const scrollRef = useRef(null);
 
     useEffect(() => {
-        if (!bookingId || !user) return;
+        if (!user) return;
+
+        if (!bookingId) {
+            const fetchConversations = async () => {
+                setIsListLoading(true);
+                // Fetch recent bookings where the user is involved
+                const { data, error } = await supabase
+                    .from('bookings')
+                    .select(`
+                        id,
+                        device_type,
+                        status,
+                        created_at,
+                        customer:customers(id, name, user_id),
+                        technician:technicians(id, name, user_id)
+                    `)
+                    .or(`customer_id.eq.${user.id},technician_id.eq.${user.id}`)
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+
+                if (!error) setConversations(data || []);
+                setLoading(false);
+                setIsListLoading(false);
+            };
+            fetchConversations();
+            return;
+        }
 
         const fetchData = async () => {
             // Fetch booking to get participant info
@@ -131,9 +159,47 @@ export default function Chat() {
 
                     <CardContent
                         ref={scrollRef}
-                        className="flex-1 overflow-y-auto p-4 space-y-4 bg-zinc-950"
+                        className={`flex-1 overflow-y-auto p-4 space-y-4 ${!bookingId ? 'bg-zinc-900' : 'bg-zinc-950'}`}
                     >
-                        {messages.length === 0 ? (
+                        {!bookingId ? (
+                            <div className="space-y-4">
+                                <h3 className="text-sm font-medium text-zinc-400 mb-4 px-2">Recent Conversations</h3>
+                                {conversations.length === 0 ? (
+                                    <div className="text-center py-20 bg-zinc-950/50 rounded-2xl border border-zinc-800">
+                                        <MessageCircle className="h-16 w-16 text-zinc-600 mx-auto mb-4" />
+                                        <p className="text-zinc-500 italic">No active conversations found.</p>
+                                        <Button
+                                            variant="link"
+                                            className="text-blue-500 mt-2"
+                                            onClick={() => window.history.back()}
+                                        >
+                                            Go Back
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <div className="grid gap-3">
+                                        {conversations.map((conv) => (
+                                            <button
+                                                key={conv.id}
+                                                onClick={() => window.location.href = `/chat/${conv.id}`}
+                                                className="w-full flex items-center justify-between p-4 bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700/50 rounded-xl transition-all text-left"
+                                            >
+                                                <div className="flex items-center gap-4">
+                                                    <div className="h-10 w-10 rounded-full bg-zinc-700 flex items-center justify-center">
+                                                        <User className="h-5 w-5 text-zinc-400" />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-semibold text-white">Conversation about {conv.device_type}</h4>
+                                                        <p className="text-xs text-zinc-400">Status: {conv.status}</p>
+                                                    </div>
+                                                </div>
+                                                <ArrowRight className="h-4 w-4 text-zinc-600" />
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ) : messages.length === 0 ? (
                             <div className="text-center py-20">
                                 <MessageCircle className="h-16 w-16 text-zinc-600 mx-auto mb-4" />
                                 <p className="text-zinc-500 italic">No messages yet. Start the conversation!</p>
@@ -161,24 +227,26 @@ export default function Chat() {
                         )}
                     </CardContent>
 
-                    <CardFooter className="border-t border-zinc-800 p-4 bg-zinc-900">
-                        <form onSubmit={handleSendMessage} className="flex w-full gap-2">
-                            <Input
-                                placeholder="Type your message..."
-                                value={newMessage}
-                                onChange={(e) => setNewMessage(e.target.value)}
-                                className="flex-1 bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-zinc-500"
-                            />
-                            <Button
-                                type="submit"
-                                size="icon"
-                                disabled={!newMessage.trim()}
-                                className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
-                            >
-                                <Send className="h-4 w-4" />
-                            </Button>
-                        </form>
-                    </CardFooter>
+                    {bookingId && (
+                        <CardFooter className="border-t border-zinc-800 p-4 bg-zinc-900">
+                            <form onSubmit={handleSendMessage} className="flex w-full gap-2">
+                                <Input
+                                    placeholder="Type your message..."
+                                    value={newMessage}
+                                    onChange={(e) => setNewMessage(e.target.value)}
+                                    className="flex-1 bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-zinc-500"
+                                />
+                                <Button
+                                    type="submit"
+                                    size="icon"
+                                    disabled={!newMessage.trim()}
+                                    className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
+                                >
+                                    <Send className="h-4 w-4" />
+                                </Button>
+                            </form>
+                        </CardFooter>
+                    )}
                 </Card>
             </div>
         </div>

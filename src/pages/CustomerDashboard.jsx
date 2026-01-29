@@ -69,7 +69,7 @@ import { ImageUpload } from '../components/ImageUpload';
 
 function CustomerDashboard() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user, session, logout, refreshUser } = useAuth(); // Get session directly from context
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'overview');
@@ -79,6 +79,11 @@ function CustomerDashboard() {
     const tab = searchParams.get('tab');
     if (tab) setActiveTab(tab);
   }, [searchParams]);
+
+  const handleTabChange = (value) => {
+    setActiveTab(value);
+    setSearchParams({ tab: value });
+  };
   const [error, setError] = useState(null);
   const [data, setData] = useState(null);
   const [favorites, setFavorites] = useState([]);
@@ -570,7 +575,7 @@ function CustomerDashboard() {
               ))}
             </div>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
               <TabsList className="bg-zinc-900 border-zinc-800 p-1 rounded-xl h-14 overflow-x-auto flex-nowrap w-full md:w-auto scrollbar-hide">
                 <TabsTrigger value="overview" className="rounded-lg h-full px-4 md:px-6 data-[state=active]:bg-white data-[state=active]:text-black whitespace-nowrap">
                   <LayoutDashboard className="w-4 h-4 mr-2" /> Overview

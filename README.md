@@ -292,6 +292,46 @@ sequenceDiagram
     end
 ```
 
+### 🛰️ Real-time Communication Flow
+
+```mermaid
+sequenceDiagram
+    participant U as 👤 User
+    participant F as 🖥️ Frontend (Chat.jsx)
+    participant S as 🗄️ Supabase
+
+    U->>F: Access /chat (No bookingId)
+    F->>S: Fetch bookings for user
+    S-->>F: Return list of active bookings
+    F->>U: Display "Recent Conversations" list
+    U->>F: Select Conversation (bookingId)
+    F->>F: Redirect to /chat/:bookingId
+    F->>S: Fetch messages for bookingId
+    S-->>F: Return messages
+    F->>U: Display Chat Interface
+```
+
+### 🧭 Dashboard Navigation Flow
+
+```mermaid
+sequenceDiagram
+    participant U as 👤 User
+    participant H as 🧭 Header
+    participant D as 🖥️ Dashboard
+    participant L as 🔗 URL (useSearchParams)
+
+    U->>H: Click "Bids"
+    H->>L: Update URL: ?tab=bids
+    L->>D: Trigger useEffect(searchParams)
+    D->>D: setActiveTab('bids')
+    D->>U: Show Bids Section
+    
+    U->>D: Click "Earnings" Tab
+    D->>L: Update URL: ?tab=earnings
+    L->>D: (Synced)
+    D->>U: Show Earnings Section
+```
+
 ### 📅 Booking Flow
 
 ```mermaid
@@ -402,6 +442,7 @@ graph TD
         UC9([View Earnings]):::usecase
         UC10([Verify Technicians]):::usecase
         UC11([Platform Analytics]):::usecase
+        UC12([Select Conversation]):::usecase
     end
 
     Customer --> UC1
@@ -410,12 +451,14 @@ graph TD
     Customer --> UC4
     Customer --> UC5
     Customer --> UC6
+    Customer --> UC12
 
     Technician --> UC7
     Technician --> UC8
     Technician --> UC9
     Technician --> UC5
     Technician --> UC6
+    Technician --> UC12
 
     Admin --> UC10
     Admin --> UC11
@@ -535,6 +578,7 @@ usecaseDiagram
         usecase "Manage Users" as UC13
         usecase "Verify Technicians" as UC14
         usecase "System Settings" as UC15
+        usecase "Select Conversation" as UC16
     }
 
     Guest --> UC1
@@ -549,12 +593,14 @@ usecaseDiagram
     Customer --> UC6
     Customer --> UC7
     Customer --> UC8
+    Customer --> UC16
 
     Technician --> UC8
     Technician --> UC9
     Technician --> UC10
     Technician --> UC11
     Technician --> UC12
+    Technician --> UC16
 
     Admin --> UC13
     Admin --> UC14
@@ -1078,7 +1124,7 @@ If you find TechCare helpful or interesting, please consider:
 
 ---
 
-**Last Updated**: January 29, 2026 | **Version**: 2.2.0 | **Status**: ✅ Production Ready
+**Last Updated**: January 29, 2026 | **Version**: 2.2.1 | **Status**: ✅ Production Ready
 
 [![Made with React](https://img.shields.io/badge/Made%20with-React-61DAFB?style=flat-square&logo=react)](https://reactjs.org)
 [![Powered by Supabase](https://img.shields.io/badge/Powered%20by-Supabase-3ECF8E?style=flat-square&logo=supabase)](https://supabase.io)
@@ -1093,6 +1139,13 @@ If you find TechCare helpful or interesting, please consider:
 ---
 
 ## 📅 Version History
+
+### v2.2.1 - Communication & Navigation Refinement (Jan 29, 2026)
+**User Experience & Connectivity Fixes:**
+- **Smart Chat Routing**: Resolved "Infinite Loading" state on `/chat` route by implementing an automatic conversation list for users with multiple active bookings.
+- **Deep-Linkable Dashboards**: Enabled query parameter synchronization for `TechnicianDashboard`, `CustomerDashboard`, and `Admin` pages. Dashboard tabs now persist through page refreshes and browser history.
+- **Header Synchronization**: Fixed non-functional "Bids" and "Earnings" buttons by ensuring they correctly trigger dashboard tab states via URL parameters.
+- **Improved Real-time Feedback**: Added `ArrowRight` indicators and loading states to conversation selection for smoother transitions.
 
 ### v2.2.0 - Dashboard Stabilization & Auth Optimization (Jan 29, 2026)
 **Critical Resilience Upgrades:**
