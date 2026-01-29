@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -45,9 +45,13 @@ const TechnicianDashboard = () => {
       try {
         isFetchingRef.current = true;
 
-        // Only show full-screen loading on the very first load
+        // Only show full-screen loading on the very first load if we have no data
+        // and add a tiny delay to avoid flashing if data comes from cache/fast network
+        let loadingTimeout;
         if (isInitial && !data) {
-          setLoading(true);
+          loadingTimeout = setTimeout(() => {
+            if (isFetchingRef.current) setLoading(true);
+          }, 300);
         }
 
         // Get the access token from Supabase session
@@ -76,6 +80,7 @@ const TechnicianDashboard = () => {
           setError(err.message);
         }
       } finally {
+        if (loadingTimeout) clearTimeout(loadingTimeout);
         setLoading(false);
         isFetchingRef.current = false;
       }
