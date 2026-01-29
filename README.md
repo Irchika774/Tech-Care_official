@@ -5,7 +5,7 @@
 ### _Connecting Customers with Expert Technicians_
 
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-success?style=for-the-badge)](https://github.com)
-[![Version](https://img.shields.io/badge/Version-2.0-blue?style=for-the-badge)](https://github.com)
+[![Version](https://img.shields.io/badge/Version-2.1.0-blue?style=for-the-badge)](https://github.com)
 [![License](https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge)](LICENSE)
 [![Node](https://img.shields.io/badge/Node-24.x-green?style=for-the-badge&logo=node.js)](https://nodejs.org)
 [![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react)](https://reactjs.org)
@@ -20,8 +20,8 @@
 
 | Component | URL | Status |
 |-----------|-----|--------|
-| **🖥️ Frontend** | [techcareofficial.netlify.app](https://techcare-official-new.netlify.app/) | ![Netlify](https://img.shields.io/badge/Netlify-Online-00C7B7?logo=netlify) |
-| **⚙️ Backend API** | [techcare-flax.vercel.app](https://techcare-flax.vercel.app) | ![Vercel](https://img.shields.io/badge/Vercel-Online-000?logo=vercel) |
+| **🖥️ Frontend** | [techcare-official-new.netlify.app](https://techcare-official-new.netlify.app/) | ![Netlify](https://img.shields.io/badge/Netlify-Online-00C7B7?logo=netlify) |
+| **⚙️ Backend API** | [server-seven-ecru.vercel.app](https://server-seven-ecru.vercel.app) | ![Vercel](https://img.shields.io/badge/Vercel-Online-000?logo=vercel) |
 
 ---
 
@@ -208,6 +208,16 @@ erDiagram
         int rating
         string comment
         timestamp created_at
+    }
+    
+    GIGS {
+        uuid id PK
+        uuid technician_id FK
+        string title
+        string description
+        decimal price
+        timestamp created_at
+        timestamp approved_at
     }
     
     LOYALTY_ACCOUNTS ||--o{ LOYALTY_TRANSACTIONS : "records"
@@ -1068,7 +1078,7 @@ If you find TechCare helpful or interesting, please consider:
 
 ---
 
-**Last Updated**: January 3, 2026 | **Version**: 2.0 | **Status**: ✅ Production Ready
+**Last Updated**: January 29, 2026 | **Version**: 2.1.0 | **Status**: ✅ Production Ready
 
 [![Made with React](https://img.shields.io/badge/Made%20with-React-61DAFB?style=flat-square&logo=react)](https://reactjs.org)
 [![Powered by Supabase](https://img.shields.io/badge/Powered%20by-Supabase-3ECF8E?style=flat-square&logo=supabase)](https://supabase.io)
@@ -1083,6 +1093,13 @@ If you find TechCare helpful or interesting, please consider:
 ---
 
 ## 📅 Version History
+
+### v2.1.0 - Global Production Stability (Jan 29, 2026)
+**Critical Fixes & Optimization:**
+- **Technician Dashboard**: Resolved critical React Hook violation error #310 in `TechnicianDashboard.jsx` ensuring reliable rendering.
+- **Documentation Engine**: Upgraded system diagrams (Sequence, ER, Use Case) with Mermaid for real-time architecture visibility.
+- **Backend Sync**: Migrated production API to `server-seven-ecru.vercel.app` for enhanced performance.
+- **Attribution**: Standardized all project configurations and documentation under `Wenura17125` profile.
 
 ### v1.1.1 - Final Production Polish (Jan 28, 2026)
 **Stability & Documentation Improvements:**

@@ -22,10 +22,17 @@ import EarningsChart from '../components/EarningsChart';
 const TechnicianDashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [data, setData] = useState(null);
+  const [completeJob, setCompleteJob] = useState({
+    id: null,
+    isOpen: false,
+    actualCost: '',
+    notes: ''
+  });
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   useEffect(() => {
@@ -158,14 +165,7 @@ const TechnicianDashboard = () => {
     }
   };
 
-  const [completeJob, setCompleteJob] = useState({
-    id: null,
-    isOpen: false,
-    actualCost: '',
-    notes: ''
-  });
 
-  const { toast } = useToast();
 
   const handleStatusUpdate = async (jobId, newStatus) => {
     // If status is completed, open modal instead of immediate update
