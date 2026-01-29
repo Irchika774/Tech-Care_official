@@ -1,7 +1,7 @@
 {
   "name": "techcare-backend",
-  "version": "1.0.0",
-  "description": "TechCare Backend API Server",
+  "version": "2.2.0",
+  "description": "TechCare Backend API Server - V2.2.0 Stable",
   "main": "index.js",
   "type": "module",
   "scripts": {
@@ -15,8 +15,8 @@
     "backend",
     "api"
   ],
-  "author": "TechCare Team",
-  "license": "MIT",
+  "author": "Wenura17125",
+  "license": "Proprietary",
   "dependencies": {
     "@supabase/supabase-js": "^2.87.1",
     "axios": "^1.6.0",

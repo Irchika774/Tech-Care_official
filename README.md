@@ -1094,12 +1094,12 @@ If you find TechCare helpful or interesting, please consider:
 
 ## 📅 Version History
 
-### v2.2.0 - Dashboard Stabilization & Auth Optimization (Current)
+### v2.2.0 - Dashboard Stabilization & Auth Optimization (Jan 29, 2026)
 **Critical Resilience Upgrades:**
-- **Zero-Flicker Dashboards**: Implemented Stale-While-Revalidate (SWR) patterns in `TechnicianDashboard.jsx`, `Admin.jsx`, and `CustomerDashboard.jsx` to prevent the UI from disappearing during background data refreshes.
-- **Auth Robustness**: Overhauled `AuthContext.jsx` initialization to handle rapid state changes and slow network conditions gracefully.
-- **Intelligent Loading**: Replaced full-screen loaders with background synchronization for all authenticated dashboards.
-- **Database Fallbacks**: Optimized Supabase client timeouts and added local storage caching for user profiles to ensure instant UI responsiveness.
+- **Zero-Flicker Dashboards**: Implemented "Data-Aware Loading" in `TechnicianDashboard.jsx`, `Admin.jsx`, and `CustomerDashboard.jsx`.
+- **ReferenceError Fix**: Resolved `loadingTimeout` scoping issues in `finally` blocks across all dashboard components.
+- **Async Safety**: Corrected `useRef` import omissions and established stable default props for `EarningsChart.jsx` to prevent random data flashes.
+- **Auth Robustness**: Refined `AuthContext.jsx` initialization to handle rapid session transitions and prevent dual re-renders.
 
 ### v2.1.0 - Global Production Stability (Jan 29, 2026)
 **Critical Fixes & Optimization:**
