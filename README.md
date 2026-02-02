@@ -16,21 +16,67 @@
 
 ---
 
+
 ### 🌐 Live Demo
 
-| **🖥️ Frontend** | [techcare-official-new.netlify.app](https://techcare-official-new.netlify.app/) | ![Netlify](https://img.shields.io/badge/Netlify-Online-00C7B7?logo=netlify) |
+| 🖥️ Frontend | [techcare-official-new.netlify.app](https://techcare-official-new.netlify.app/) | ![Netlify](https://img.shields.io/badge/Netlify-Online-00C7B7?logo=netlify) |
+|---|---|---|
 | **⚙️ Backend API** | [server-seven-ecru.vercel.app](https://server-seven-ecru.vercel.app) | ![Vercel](https://img.shields.io/badge/Vercel-Online-000?logo=vercel) |
 
 ---
 
-## 📜 Version History (Latest)
+## 📅 Version History
 
-### v2.3.0 - 2026-02-02
-- **Removed**: AI-Powered Diagnostics (Simplified workflow).
-- **Added**: Technician Schedule Management.
-- **Improved**: Profile Editing & Payment Notifications.
+### v2.2.1 - Communication & Navigation Refinement (Jan 29, 2026)
+**User Experience & Connectivity Fixes:**
+- **Smart Chat Routing:** Resolved "Infinite Loading" state on `/chat` route by implementing an automatic conversation list for users with multiple active bookings.
+- **Deep-Linkable Dashboards:** Enabled query parameter synchronization for `TechnicianDashboard`, `CustomerDashboard`, and Admin pages. Dashboard tabs now persist through page refreshes and browser history.
+- **Header Synchronization:** Fixed non-functional "Bids" and "Earnings" buttons by ensuring they correctly trigger dashboard tab states via URL parameters.
+- **Improved Real-time Feedback:** Added ArrowRight indicators and loading states to conversation selection for smoother transitions.
 
-[View Full Version History](VERSION_HISTORY.md)
+### v2.2.0 - Dashboard Stabilization & Auth Optimization (Jan 29, 2026)
+**Critical Resilience Upgrades:**
+- **Zero-Flicker Dashboards:** Implemented "Data-Aware Loading" in `TechnicianDashboard.jsx`, `Admin.jsx`, and `CustomerDashboard.jsx`.
+- **ReferenceError Fix:** Resolved `loadingTimeout` scoping issues in `finally` blocks across all dashboard components.
+- **Async Safety:** Corrected `useRef` import omissions and established stable default props for `EarningsChart.jsx` to prevent random data flashes.
+- **Auth Robustness:** Refined `AuthContext.jsx` initialization to handle rapid session transitions and prevent dual re-renders.
+
+### v2.1.0 - Global Production Stability (Jan 29, 2026)
+**Critical Fixes & Optimization:**
+- **Technician Dashboard:** Resolved critical React Hook violation error #310 in `TechnicianDashboard.jsx` ensuring reliable rendering.
+- **Documentation Engine:** Upgraded system diagrams (Sequence, ER, Use Case) with Mermaid for real-time architecture visibility.
+- **Backend Sync:** Migrated production API to `server-seven-ecru.vercel.app` for enhanced performance.
+- **Attribution:** Standardized all project configurations and documentation under `Wenura17125` profile.
+
+### v1.1.1 - Final Production Polish (Jan 28, 2026)
+**Stability & Documentation Improvements:**
+- **Admin Panel:** Fixed technician verification logic and updated legacy `_id` to Supabase `id` for reliable data management.
+- **Build System:** Resolved critical import regression in `Profile.jsx` ensuring successful production builds.
+- **Documentation:** Added comprehensive Mermaid Use Case diagrams and updated ER/Sequence diagrams for better architecture visibility.
+- **Deployment:** Synchronized all codebases across Netlify (Frontend) and Vercel (Backend API).
+
+### v1.1.0 - Critical Stability Update (Jan 2026)
+**Major Fixes & Improvements:**
+- **Profile Management:** Fixed Profile Image upload persistence by integrating Supabase Storage correctly in `Profile.jsx` and `ImageUpload.jsx`. Resolved "Verification is failed" errors by ensuring correct profile data updates.
+- **Booking & Notifications:**
+  - Implemented real-time new booking notifications for technicians.
+  - Fixed Job Visibility bug where new 'pending' jobs were hidden from Technician Dashboard.
+- **Payments & Earnings:**
+  - Validated Payment Flow and Stripe integration.
+  - Fixed Technician Earnings calculation by implementing proper Job Completion logic (`/complete` endpoint) with actual cost input.
+- **Chat & Communications:**
+  - enabled Supabase Realtime for messages table to fix live chat updates.
+  - Resolved generic "Redirection" issues in Technician Chat view.
+- **Reviews & Ratings:**
+  - Replaced mock data in `Reviews.jsx` with fully functional API integration (GET, POST reviews).
+  - Validated Star Rating system calculations and display.
+- **Database:**
+  - Added specific SQL migrations for gigs schema fixes and Realtime enablement.
+
+### v1.0.0 - Initial Release
+- Complete Customer, Technician, and Admin portals.
+- AI Diagnostics implementation.
+- Basic Booking and Payment flows.
 
 ---
 
@@ -376,48 +422,63 @@ stateDiagram-v2
 
 
 
-### 👥 System Use Case Diagram
+### System Use Case Diagram
 
 ```mermaid
-graph TD
-    classDef actor fill:#f9f,stroke:#333,stroke-width:2px;
-    classDef usecase fill:#fff,stroke:#333,stroke-width:2px,rx:20,ry:20;
+usecaseDiagram
+    actor Guest as "👤 Guest"
+    actor Customer as "🛒 Customer"
+    actor Technician as "🔧 Technician"
+    actor Admin as "👑 Admin"
 
-    Customer((👤 Customer)):::actor
-    Technician((🛠️ Technician)):::actor
-    Admin((👤 Admin)):::actor
+    package "TechCare System" {
+        usecase "View Services" as UC1
+        usecase "Search Technicians" as UC2
+        usecase "Register/Login" as UC4
+        
+        usecase "Book Repair" as UC5
+        usecase "Track Status" as UC6
+        usecase "Write Review" as UC7
+        usecase "Manage Profile" as UC8
+        
+        usecase "View Jobs" as UC9
+        usecase "Accept/Reject Job" as UC10
+        usecase "Update Job Status" as UC11
+        usecase "View Earnings" as UC12
+        
+        usecase "Manage Users" as UC13
+        usecase "Verify Technicians" as UC14
+        usecase "System Settings" as UC15
+        usecase "Select Conversation" as UC16
+        usecase "Manage Schedule" as UC17
+    }
 
-    subgraph Platform["🛡️ TechCare Platform"]
-        UC1([Browse Services]):::usecase
-        UC3([Book Repair]):::usecase
-        UC4([Make Payment]):::usecase
-        UC5([Real-time Chat]):::usecase
-        UC6([Profile Management]):::usecase
-        UC7([Accept Jobs]):::usecase
-        UC8([Update Job Status]):::usecase
-        UC9([View Earnings]):::usecase
-        UC10([Verify Technicians]):::usecase
-        UC11([Platform Analytics]):::usecase
-        UC12([Select Conversation]):::usecase
-    end
+    Guest --> UC1
+    Guest --> UC2
+
+    Guest --> UC4
 
     Customer --> UC1
-    Customer --> UC3
+    Customer --> UC2
     Customer --> UC4
     Customer --> UC5
     Customer --> UC6
-    Customer --> UC12
+    Customer --> UC7
+    Customer --> UC8
+    Customer --> UC16
 
-    Technician --> UC7
     Technician --> UC8
     Technician --> UC9
-    Technician --> UC5
-    Technician --> UC6
+    Technician --> UC10
+    Technician --> UC11
     Technician --> UC12
+    Technician --> UC16
+    Technician --> UC17
 
-    Admin --> UC10
-    Admin --> UC11
-    Admin --> UC6
+    Admin --> UC13
+    Admin --> UC14
+    Admin --> UC15
+    Admin --> UC8
 ```
 
 ---
@@ -487,10 +548,9 @@ flowchart TB
 ### Permission Matrix
 
 | Feature | 👤 Guest | 🛒 Customer | 🔧 Technician | 👑 Admin |
-|---------|:--------:|:-----------:|:-------------:|:--------:|
+| :--- | :---: | :---: | :---: | :---: |
 | **View Services** | ✅ | ✅ | ✅ | ✅ |
 | **Browse Technicians** | ✅ | ✅ | ✅ | ✅ |
-
 | **Book Repairs** | ❌ | ✅ | ❌ | ✅ |
 | **Customer Dashboard** | ❌ | ✅ | ❌ | ✅ |
 | **Track Bookings** | ❌ | ✅ | ❌ | ✅ |
