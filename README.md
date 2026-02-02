@@ -187,6 +187,7 @@ erDiagram
         int total_reviews
         boolean verified
         jsonb location
+        jsonb availability
     }
     
     BOOKINGS ||--o{ PAYMENTS : "has"
