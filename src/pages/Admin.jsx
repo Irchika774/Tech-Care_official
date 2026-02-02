@@ -200,17 +200,18 @@ const Admin = () => {
   // Fetch Technicians
   const fetchTechnicians = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/technicians/all`, {
+      const response = await axios.get(`${API_URL}/api/admin/technicians`, {
         headers: await getAuthHeader()
       });
       setTechnicians(response.data);
     } catch (error) {
       console.error('[ADMIN] Error fetching technicians:', error);
       try {
-        const response = await axios.get(`${API_URL}/api/technicians/nearby?lng=79.8612&lat=6.9271&dist=5000000`);
-        setTechnicians(response.data.filter(t => t.role === 'technician'));
+        const response = await axios.get(`${API_URL}/api/technicians/all`);
+        setTechnicians(response.data);
       } catch (err) {
         console.error('[ADMIN] Fallback fetch also failed:', err);
+        setTechnicians([]);
       }
     }
   };
@@ -218,7 +219,7 @@ const Admin = () => {
   // Fetch Appointments
   const fetchAppointments = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/appointments`, {
+      const response = await axios.get(`${API_URL}/api/admin/bookings`, {
         headers: await getAuthHeader()
       });
       setAppointments(response.data);
@@ -231,7 +232,7 @@ const Admin = () => {
   // Fetch Reviews
   const fetchReviews = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/reviews`, {
+      const response = await axios.get(`${API_URL}/api/admin/reviews`, {
         headers: await getAuthHeader()
       });
       setReviews(response.data);
@@ -368,7 +369,7 @@ const Admin = () => {
   // Handle Update Appointment Status
   const handleUpdateAppointmentStatus = async (appointmentId, newStatus) => {
     try {
-      await axios.put(`${API_URL}/api/appointments/${appointmentId}`,
+      await axios.put(`${API_URL}/api/admin/bookings/${appointmentId}`,
         { status: newStatus },
         { headers: await getAuthHeader() }
       );
@@ -390,7 +391,7 @@ const Admin = () => {
   // Handle Update Review Status
   const handleUpdateReviewStatus = async (reviewId, newStatus) => {
     try {
-      await axios.put(`${API_URL}/api/reviews/${reviewId}`,
+      await axios.patch(`${API_URL}/api/reviews/${reviewId}`,
         { status: newStatus },
         { headers: await getAuthHeader() }
       );
@@ -659,7 +660,7 @@ const Admin = () => {
           </CardHeader>
           <CardContent>
             <ScrollArea className="h-[280px]">
-              {appointments.length === 0 ? (
+              {(!appointments || appointments.length === 0) ? (
                 <div className="text-center py-8 text-zinc-500">
                   <AlertCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
                   <p className="font-['Inter']">No appointments yet</p>
@@ -667,14 +668,14 @@ const Admin = () => {
               ) : (
                 <div className="space-y-3">
                   {appointments.slice(0, 5).map((apt) => (
-                    <div key={apt._id} className="flex items-start space-x-4 p-3 rounded-xl bg-zinc-800/50 border border-zinc-700 hover:border-zinc-600 transition-colors">
+                    <div key={apt.id || apt._id} className="flex items-start space-x-4 p-3 rounded-xl bg-zinc-800/50 border border-zinc-700 hover:border-zinc-600 transition-colors">
                       <div className="bg-blue-500/20 p-2 rounded-full">
                         <Calendar className="h-4 w-4 text-blue-500" />
                       </div>
                       <div className="flex-1 space-y-1">
                         <p className="text-sm font-['Inter'] font-medium text-white">New Appointment</p>
                         <p className="text-xs text-zinc-400">
-                          {apt.customerName || 'Customer'} • {new Date(apt.createdAt).toLocaleDateString()}
+                          {(apt.customer?.name || apt.customerName) || 'Customer'} • {new Date(apt.created_at || apt.createdAt).toLocaleDateString()}
                         </p>
                       </div>
                       <Badge variant={getStatusBadgeVariant(apt.status)}>
@@ -699,25 +700,25 @@ const Admin = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {technicians.length === 0 ? (
+            {(!technicians || technicians.length === 0) ? (
               <div className="text-center py-8 text-zinc-500">
                 <Wrench className="h-12 w-12 mx-auto mb-2 opacity-50" />
                 <p className="font-['Inter']">No technicians registered yet</p>
               </div>
             ) : (
               technicians.slice(0, 5).map((tech, index) => (
-                <div key={tech._id} className="flex items-center gap-4 p-3 rounded-xl bg-zinc-800/50 border border-zinc-700 hover:border-zinc-600 transition-colors">
+                <div key={tech.id || tech._id} className="flex items-center gap-4 p-3 rounded-xl bg-zinc-800/50 border border-zinc-700 hover:border-zinc-600 transition-colors">
                   <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white text-black font-['Outfit'] font-bold">
                     #{index + 1}
                   </div>
                   <Avatar className="h-10 w-10 border-2 border-zinc-600">
-                    <AvatarImage src={tech.profileImage} />
+                    <AvatarImage src={tech.profile_image || tech.profileImage} />
                     <AvatarFallback className="bg-zinc-700 text-white font-['Outfit']">{tech.name?.substring(0, 2).toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
                     <p className="font-['Outfit'] font-medium text-white">{tech.name}</p>
                     <p className="text-xs text-zinc-400 font-['Inter']">
-                      {tech.specialization?.join(', ') || 'General Services'}
+                      {Array.isArray(tech.specialization) ? tech.specialization.join(', ') : (tech.specialization || 'General Services')}
                     </p>
                   </div>
                   <div className="text-right">
@@ -725,7 +726,7 @@ const Admin = () => {
                       <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
                       <span className="font-['Inter'] font-semibold text-white">{tech.rating || 0}</span>
                     </div>
-                    <p className="text-xs text-zinc-400">{tech.reviewCount || 0} reviews</p>
+                    <p className="text-xs text-zinc-400">{tech.review_count || tech.reviewCount || 0} reviews</p>
                   </div>
                 </div>
               ))
@@ -772,12 +773,12 @@ const Admin = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((user) => (
+                {(users || []).map((user) => (
                   <TableRow key={user.id} className="border-zinc-800 hover:bg-zinc-800/50">
                     <TableCell className="font-['Inter'] font-medium text-white">
                       <div className="flex items-center gap-3">
                         <Avatar className="border-2 border-zinc-600">
-                          <AvatarImage src={user.profileImage} />
+                          <AvatarImage src={user.profile_image || user.profileImage} />
                           <AvatarFallback className="bg-zinc-700 text-white">{user.name?.substring(0, 2).toUpperCase()}</AvatarFallback>
                         </Avatar>
                         {user.name}
@@ -788,7 +789,7 @@ const Admin = () => {
                     <TableCell>
                       <Badge variant="outline" className="border-zinc-600 text-zinc-300">{user.role}</Badge>
                     </TableCell>
-                    <TableCell className="text-zinc-300">{new Date(user.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell className="text-zinc-300">{new Date(user.created_at || user.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button variant="ghost" size="icon" onClick={() => handleOpenModal('user', user)} className="text-zinc-400 hover:text-white hover:bg-zinc-800">
@@ -815,9 +816,10 @@ const Admin = () => {
   );
 
   const renderTechnicians = () => {
-    const filteredTechnicians = technicians.filter(tech => {
-      if (techFilter === 'verified') return tech.verified;
-      if (techFilter === 'unverified') return !tech.verified;
+    const filteredTechnicians = (technicians || []).filter(tech => {
+      const isVerified = (tech.is_verified || tech.verified);
+      if (techFilter === 'verified') return isVerified;
+      if (techFilter === 'unverified') return !isVerified;
       return true;
     });
 
@@ -869,72 +871,75 @@ const Admin = () => {
               <p className="text-zinc-400 font-['Inter']">No technicians found</p>
             </div>
           ) : (
-            filteredTechnicians.map((tech) => (
-              <Card key={tech.id} className="bg-zinc-900 border-zinc-800 hover:border-zinc-600 transition-all shadow-xl">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-12 w-12 border-2 border-zinc-600">
-                        <AvatarImage src={tech.profileImage} />
-                        <AvatarFallback className="bg-zinc-700 text-white font-['Outfit'] font-bold">{tech.name?.substring(0, 2).toUpperCase()}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <CardTitle className="text-lg font-['Outfit'] text-white">{tech.name}</CardTitle>
-                        <div className="flex items-center gap-1 mt-1">
-                          <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
-                          <span className="text-sm text-zinc-400">{tech.rating || 0} ({tech.reviewCount || 0})</span>
+            filteredTechnicians.map((tech) => {
+              const techIsVerified = tech.is_verified || tech.verified;
+              return (
+                <Card key={tech.id} className="bg-zinc-900 border-zinc-800 hover:border-zinc-600 transition-all shadow-xl">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-12 w-12 border-2 border-zinc-600">
+                          <AvatarImage src={tech.profile_image || tech.profileImage} />
+                          <AvatarFallback className="bg-zinc-700 text-white font-['Outfit'] font-bold">{tech.name?.substring(0, 2).toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <CardTitle className="text-lg font-['Outfit'] text-white">{tech.name}</CardTitle>
+                          <div className="flex items-center gap-1 mt-1">
+                            <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
+                            <span className="text-sm text-zinc-400">{tech.rating || 0} ({tech.review_count || tech.reviewCount || 0})</span>
+                          </div>
                         </div>
                       </div>
+                      {techIsVerified ? (
+                        <Badge variant="default" className="bg-emerald-500/20 text-emerald-400 border-emerald-500/50">
+                          <Shield className="h-3 w-3 mr-1" />
+                          Verified
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="border-zinc-600 text-zinc-400">Pending</Badge>
+                      )}
                     </div>
-                    {tech.verified ? (
-                      <Badge variant="default" className="bg-emerald-500/20 text-emerald-400 border-emerald-500/50">
-                        <Shield className="h-3 w-3 mr-1" />
-                        Verified
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="border-zinc-600 text-zinc-400">Pending</Badge>
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm text-zinc-400">
-                    <Mail className="h-4 w-4" />
-                    <span className="font-['Inter'] truncate">{tech.email}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-zinc-400">
-                    <Phone className="h-4 w-4" />
-                    <span className="font-['Inter']">{tech.phone || 'No phone'}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-zinc-400">
-                    <MapPin className="h-4 w-4" />
-                    <span className="font-['Inter'] truncate">{tech.location?.address || 'No location'}</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {tech.specialization?.slice(0, 3).map((spec, i) => (
-                      <Badge key={i} variant="outline" className="text-xs border-zinc-700 text-zinc-300">{spec}</Badge>
-                    ))}
-                  </div>
-                </CardContent>
-                <CardFooter className="pt-0 gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 border-zinc-700 text-white hover:bg-zinc-800"
-                    onClick={() => handleToggleVerification(tech.id, tech.verified)}
-                  >
-                    {tech.verified ? 'Revoke' : 'Verify'}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-red-500 hover:text-red-400 hover:bg-zinc-800"
-                    onClick={() => handleDeleteTechnician(tech.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm text-zinc-400">
+                      <Mail className="h-4 w-4" />
+                      <span className="font-['Inter'] truncate">{tech.email}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-zinc-400">
+                      <Phone className="h-4 w-4" />
+                      <span className="font-['Inter']">{tech.phone || 'No phone'}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-zinc-400">
+                      <MapPin className="h-4 w-4" />
+                      <span className="font-['Inter'] truncate">{tech.location?.address || 'No location'}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {tech.specialization?.slice(0, 3).map((spec, i) => (
+                        <Badge key={i} variant="outline" className="text-xs border-zinc-700 text-zinc-300">{spec}</Badge>
+                      ))}
+                    </div>
+                  </CardContent>
+                  <CardFooter className="pt-0 gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 border-zinc-700 text-white hover:bg-zinc-800"
+                      onClick={() => handleToggleVerification(tech.id, tech.is_verified || tech.verified)}
+                    >
+                      {(tech.is_verified || tech.verified) ? 'Revoke' : 'Verify'}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-red-500 hover:text-red-400 hover:bg-zinc-800"
+                      onClick={() => handleDeleteTechnician(tech.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </CardFooter>
+                </Card>
+              );
+            })
           )}
         </div>
       </div>
@@ -969,15 +974,15 @@ const Admin = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {appointments.map((apt) => (
-                  <TableRow key={apt._id} className="border-zinc-800 hover:bg-zinc-800/50">
-                    <TableCell className="font-['Inter'] text-white">{apt.customerName || '-'}</TableCell>
-                    <TableCell className="font-['Inter'] text-zinc-300">{apt.technicianName || 'Pending'}</TableCell>
-                    <TableCell className="text-zinc-300">{new Date(apt.scheduledDate || apt.createdAt).toLocaleDateString()}</TableCell>
+                {(appointments || []).map((apt) => (
+                  <TableRow key={apt.id} className="border-zinc-800 hover:bg-zinc-800/50">
+                    <TableCell className="font-['Inter'] text-white">{(apt.customer?.name || apt.customerName) || '-'}</TableCell>
+                    <TableCell className="font-['Inter'] text-zinc-300">{(apt.technician?.name || apt.technicianName) || 'Pending'}</TableCell>
+                    <TableCell className="text-zinc-300">{new Date(apt.scheduled_date || apt.scheduledDate || apt.created_at || apt.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell>
                       <Select
                         value={apt.status}
-                        onValueChange={(value) => handleUpdateAppointmentStatus(apt._id, value)}
+                        onValueChange={(value) => handleUpdateAppointmentStatus(apt.id, value)}
                       >
                         <SelectTrigger className="w-32 h-8 bg-zinc-800 border-zinc-700 text-white text-xs">
                           <SelectValue />
@@ -1014,22 +1019,22 @@ const Admin = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {reviews.length === 0 ? (
+        {(!reviews || reviews.length === 0) ? (
           <div className="col-span-full text-center py-12">
             <Star className="h-16 w-16 mx-auto mb-4 text-zinc-500 opacity-50" />
             <p className="text-zinc-400 font-['Inter']">No reviews found</p>
           </div>
         ) : (
           reviews.map((review) => (
-            <Card key={review._id} className="bg-zinc-900 border-zinc-800 shadow-xl">
+            <Card key={review.id || review._id} className="bg-zinc-900 border-zinc-800 shadow-xl">
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Avatar className="border-2 border-zinc-600">
-                      <AvatarFallback className="bg-zinc-700 text-white">{review.customerName?.substring(0, 2).toUpperCase() || 'U'}</AvatarFallback>
+                      <AvatarFallback className="bg-zinc-700 text-white">{(review.customer?.name || review.customerName)?.substring(0, 2).toUpperCase() || 'U'}</AvatarFallback>
                     </Avatar>
                     <div>
-                      <CardTitle className="text-sm font-['Outfit'] text-white">{review.customerName || 'Customer'}</CardTitle>
+                      <CardTitle className="text-sm font-['Outfit'] text-white">{review.customer?.name || review.customerName || 'Customer'}</CardTitle>
                       <div className="flex items-center gap-1">
                         {[...Array(5)].map((_, i) => (
                           <Star key={i} className={`h-3 w-3 ${i < review.rating ? 'text-yellow-500 fill-yellow-500' : 'text-zinc-600'}`} />
@@ -1045,7 +1050,7 @@ const Admin = () => {
               <CardContent>
                 <p className="text-sm text-zinc-300 font-['Inter'] line-clamp-3">{review.comment || 'No comment'}</p>
                 <p className="text-xs text-zinc-500 mt-2">
-                  For: {review.technicianName || 'Unknown'} • {new Date(review.createdAt).toLocaleDateString()}
+                  For: {review.technician?.name || review.technicianName || 'Unknown'} • {new Date(review.created_at || review.createdAt).toLocaleDateString()}
                 </p>
               </CardContent>
               <CardFooter className="pt-0 gap-2">
@@ -1053,7 +1058,7 @@ const Admin = () => {
                   variant="outline"
                   size="sm"
                   className="flex-1 border-zinc-700 text-emerald-400 hover:bg-zinc-800"
-                  onClick={() => handleUpdateReviewStatus(review._id, 'approved')}
+                  onClick={() => handleUpdateReviewStatus(review.id || review._id, 'approved')}
                 >
                   <CheckCircle className="h-4 w-4 mr-1" />
                   Approve
@@ -1062,7 +1067,7 @@ const Admin = () => {
                   variant="outline"
                   size="sm"
                   className="flex-1 border-zinc-700 text-red-400 hover:bg-zinc-800"
-                  onClick={() => handleUpdateReviewStatus(review._id, 'rejected')}
+                  onClick={() => handleUpdateReviewStatus(review.id || review._id, 'rejected')}
                 >
                   <XCircle className="h-4 w-4 mr-1" />
                   Reject
@@ -1121,7 +1126,7 @@ const Admin = () => {
           <CardContent className="space-y-4">
             <div className="flex items-center gap-4">
               <Avatar className="h-16 w-16 border-2 border-zinc-600">
-                <AvatarImage src={user?.profileImage} />
+                <AvatarImage src={user?.profile_image || user?.profileImage} />
                 <AvatarFallback className="bg-zinc-700 text-white font-['Outfit'] font-bold text-xl">{user?.name?.substring(0, 2).toUpperCase() || 'AD'}</AvatarFallback>
               </Avatar>
               <div>
