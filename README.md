@@ -27,58 +27,13 @@
 
 ## 📅 Version History
 
-### v2.2.1 - Communication & Navigation Refinement (Jan 29, 2026)
-**User Experience & Connectivity Fixes:**
-- **Smart Chat Routing:** Resolved "Infinite Loading" state on `/chat` route by implementing an automatic conversation list for users with multiple active bookings.
-- **Deep-Linkable Dashboards:** Enabled query parameter synchronization for `TechnicianDashboard`, `CustomerDashboard`, and Admin pages. Dashboard tabs now persist through page refreshes and browser history.
-- **Header Synchronization:** Fixed non-functional "Bids" and "Earnings" buttons by ensuring they correctly trigger dashboard tab states via URL parameters.
-- **Improved Real-time Feedback:** Added ArrowRight indicators and loading states to conversation selection for smoother transitions.
-
-### v2.2.0 - Dashboard Stabilization & Auth Optimization (Jan 29, 2026)
-**Critical Resilience Upgrades:**
-- **Zero-Flicker Dashboards:** Implemented "Data-Aware Loading" in `TechnicianDashboard.jsx`, `Admin.jsx`, and `CustomerDashboard.jsx`.
-- **ReferenceError Fix:** Resolved `loadingTimeout` scoping issues in `finally` blocks across all dashboard components.
-- **Async Safety:** Corrected `useRef` import omissions and established stable default props for `EarningsChart.jsx` to prevent random data flashes.
-- **Auth Robustness:** Refined `AuthContext.jsx` initialization to handle rapid session transitions and prevent dual re-renders.
-
-### v2.1.0 - Global Production Stability (Jan 29, 2026)
-**Critical Fixes & Optimization:**
-- **Technician Dashboard:** Resolved critical React Hook violation error #310 in `TechnicianDashboard.jsx` ensuring reliable rendering.
-- **Documentation Engine:** Upgraded system diagrams (Sequence, ER, Use Case) with Mermaid for real-time architecture visibility.
-- **Backend Sync:** Migrated production API to `server-seven-ecru.vercel.app` for enhanced performance.
-- **Attribution:** Standardized all project configurations and documentation under `Wenura17125` profile.
-
-### v1.1.1 - Final Production Polish (Jan 28, 2026)
-**Stability & Documentation Improvements:**
-- **Admin Panel:** Fixed technician verification logic and updated legacy `_id` to Supabase `id` for reliable data management.
-- **Build System:** Resolved critical import regression in `Profile.jsx` ensuring successful production builds.
-- **Documentation:** Added comprehensive Mermaid Use Case diagrams and updated ER/Sequence diagrams for better architecture visibility.
-- **Deployment:** Synchronized all codebases across Netlify (Frontend) and Vercel (Backend API).
-
-### v1.1.0 - Critical Stability Update (Jan 2026)
-**Major Fixes & Improvements:**
-- **Profile Management:** Fixed Profile Image upload persistence by integrating Supabase Storage correctly in `Profile.jsx` and `ImageUpload.jsx`. Resolved "Verification is failed" errors by ensuring correct profile data updates.
-- **Booking & Notifications:**
-  - Implemented real-time new booking notifications for technicians.
-  - Fixed Job Visibility bug where new 'pending' jobs were hidden from Technician Dashboard.
-- **Payments & Earnings:**
-  - Validated Payment Flow and Stripe integration.
-  - Fixed Technician Earnings calculation by implementing proper Job Completion logic (`/complete` endpoint) with actual cost input.
-- **Chat & Communications:**
-  - enabled Supabase Realtime for messages table to fix live chat updates.
-  - Resolved generic "Redirection" issues in Technician Chat view.
-- **Reviews & Ratings:**
-  - Replaced mock data in `Reviews.jsx` with fully functional API integration (GET, POST reviews).
-  - Validated Star Rating system calculations and display.
-- **Database:**
-  - Added specific SQL migrations for gigs schema fixes and Realtime enablement.
-
-### v1.0.0 - Initial Release
-- Complete Customer, Technician, and Admin portals.
-- AI Diagnostics implementation.
-- Basic Booking and Payment flows.
-
-## 📅 Version History
+### v2.3.0 - Technician Schedule & Diagnostics Refinement (Feb 02, 2026)
+**Feature Additions & Critical Fixes:**
+- **Technician Schedule Management:** Added comprehensive availability management for technicians, allowing them to set working days and hours (Database schema updated).
+- **Profile Picture Upload:** Fixed the broken image upload functionality in the Technician Profile using a robust `ImageUpload` component.
+- **Payment Notifications:** Resolved issue where technicians were not notified upon job payment; added immediate "Payment Confirmed" notifications.
+- **Workflow Simplification:** Removed "AI-Powered Diagnostics" from the core workflow and documentation to streamline the user experience.
+- **Documentation:** Updated System Use Case diagrams and Permission Matrices to reflect the latest architecture.
 
 ### v2.2.1 - Communication & Navigation Refinement (Jan 29, 2026)
 **User Experience & Connectivity Fixes:**
