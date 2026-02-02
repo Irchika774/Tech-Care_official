@@ -402,7 +402,6 @@ graph TD
     end
 
     Customer --> UC1
-    Customer --> UC2
     Customer --> UC3
     Customer --> UC4
     Customer --> UC5
@@ -533,6 +532,7 @@ usecaseDiagram
         usecase "Verify Technicians" as UC14
         usecase "System Settings" as UC15
         usecase "Select Conversation" as UC16
+        usecase "Manage Schedule" as UC17
     }
 
     Guest --> UC1
@@ -542,7 +542,7 @@ usecaseDiagram
 
     Customer --> UC1
     Customer --> UC2
-    Customer --> UC3
+    Customer --> UC4
     Customer --> UC5
     Customer --> UC6
     Customer --> UC7
@@ -555,6 +555,7 @@ usecaseDiagram
     Technician --> UC11
     Technician --> UC12
     Technician --> UC16
+    Technician --> UC17
 
     Admin --> UC13
     Admin --> UC14
