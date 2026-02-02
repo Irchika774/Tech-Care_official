@@ -1,5 +1,6 @@
 import express from 'express';
 import { supabaseAdmin } from '../lib/supabase.js';
+import { successResponse, errorResponse } from '../lib/response.js';
 
 const router = express.Router();
 
@@ -66,14 +67,14 @@ router.post('/technicians', async (req, res) => {
 
         if (error) throw error;
 
-        res.json({
+        return successResponse(res, {
             technicians: technicians || [],
             total: count || 0,
             hasMore: (count || 0) > skip + limit
         });
     } catch (error) {
         console.error('Technician search error:', error);
-        res.status(500).json({ error: 'Failed to search technicians' });
+        return errorResponse(res, 'Failed to search technicians');
     }
 });
 
@@ -85,11 +86,11 @@ router.get('/filters', async (req, res) => {
             .from('technicians')
             .select('brands, specialization, expertise');
 
-        const brands = [...new Set(techs.flatMap(t => t.brands || []))].sort();
-        const specializations = [...new Set(techs.flatMap(t => t.specialization || []))].sort();
-        const expertise = [...new Set(techs.flatMap(t => t.expertise || []))].sort();
+        const brands = [...new Set(techs?.flatMap(t => t.brands || []) || [])].sort();
+        const specializations = [...new Set(techs?.flatMap(t => t.specialization || []) || [])].sort();
+        const expertise = [...new Set(techs?.flatMap(t => t.expertise || []) || [])].sort();
 
-        res.json({
+        return successResponse(res, {
             brands,
             specializations,
             expertise,
@@ -97,7 +98,7 @@ router.get('/filters', async (req, res) => {
         });
     } catch (error) {
         console.error('Get filters error:', error);
-        res.status(500).json({ error: 'Failed to get filter options' });
+        return errorResponse(res, 'Failed to get filter options');
     }
 });
 

@@ -244,6 +244,15 @@ const Payment = () => {
             setBookingDetails(booking);
 
             try {
+                // Validate payment amount
+                const paymentAmount = Number(booking.total);
+                if (isNaN(paymentAmount) || paymentAmount <= 0) {
+                    throw new Error('Invalid payment amount. Please restart the booking process.');
+                }
+                if (paymentAmount > 1000000) {
+                    throw new Error('Payment amount exceeds maximum limit. Please contact support.');
+                }
+
                 // Get the access token from Supabase session
                 const { data: { session } } = await supabase.auth.getSession();
                 const token = session?.access_token;
@@ -256,17 +265,22 @@ const Payment = () => {
                 }
 
                 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+                const bookingId = booking._id || booking.id;
+                if (!bookingId) {
+                    throw new Error('Invalid booking ID. Please restart the booking process.');
+                }
+
                 const response = await fetch(`${apiUrl}/api/payment/create-payment-intent`, {
                     method: 'POST',
                     headers: headers,
                     body: JSON.stringify({
-                        amount: booking.total,
+                        amount: paymentAmount,
                         currency: 'lkr',
-                        bookingId: booking._id || booking.id,
+                        bookingId: bookingId,
                         customerId: booking.customerId || user?.id,
                         metadata: {
                             service: booking.serviceType,
-                            device: `${booking.device?.brand} ${booking.device?.model}`
+                            device: `${booking.device?.brand || ''} ${booking.device?.model || ''}`
                         }
                     })
                 });
@@ -298,27 +312,29 @@ const Payment = () => {
 
     const fetchPaymentHistory = async () => {
         if (!user?.id) {
-            setPaymentHistory([
-                {
-                    id: 'pay_demo_1',
-                    created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-                    amount: 12000,
-                    status: 'completed',
-                    card_brand: 'Visa',
-                    card_last4: '4242'
-                }
-            ]);
+            setPaymentHistory([]);
             return;
         }
 
         setHistoryLoading(true);
         try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
             const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-            const response = await fetch(`${apiUrl}/api/payment/payments/customer/${user.id}`);
-            const data = await response.json();
-            setPaymentHistory(Array.isArray(data) ? data : []);
+            const response = await fetch(`${apiUrl}/api/payment/payments/customer/${user.id}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            const result = await response.json();
+            if (result.success && result.data?.payments) {
+                setPaymentHistory(result.data.payments);
+            } else {
+                setPaymentHistory([]);
+            }
         } catch (err) {
             console.error('Error fetching payment history:', err);
+            setPaymentHistory([]);
         } finally {
             setHistoryLoading(false);
         }
@@ -460,7 +476,9 @@ const Payment = () => {
                                 <div className="pb-3 border-b border-gray-200 dark:border-gray-700">
                                     <p className="text-sm text-gray-600 dark:text-gray-400">Technician</p>
                                     <p className="font-semibold text-text-light dark:text-text-dark">
-                                        {bookingDetails.technician?.name}
+                                        {bookingDetails.technician?.name ||
+                                            bookingDetails.technicianName ||
+                                            (bookingDetails.technician_id ? 'Selected Technician' : 'Auto-assign')}
                                     </p>
                                     {bookingDetails.technician?.rating && (
                                         <p className="text-sm text-yellow-600">

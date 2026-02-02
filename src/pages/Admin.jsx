@@ -244,31 +244,36 @@ const Admin = () => {
 
   // Calculate statistics
   const calculateStats = useCallback(() => {
-    const totalUsers = users.filter(u => u.role !== 'technician').length;
-    const activeTechnicians = technicians.filter(t => t.role === 'technician').length;
-    const pendingAppointments = appointments.filter(a => a.status === 'pending' || a.status === 'scheduled').length;
-    const completedAppointments = appointments.filter(a => a.status === 'completed').length;
-    const cancelledAppointments = appointments.filter(a => a.status === 'cancelled').length;
+    const safeUsers = Array.isArray(users) ? users : [];
+    const safeTechs = Array.isArray(technicians) ? technicians : [];
+    const safeAppts = Array.isArray(appointments) ? appointments : [];
+    const safeReviews = Array.isArray(reviews) ? reviews : [];
 
-    const totalRevenue = appointments
+    const totalUsersCount = safeUsers.filter(u => u.role !== 'technician').length;
+    const activeTechniciansCount = safeTechs.length;
+    const pendingAppointmentsCount = safeAppts.filter(a => a.status === 'pending' || a.status === 'scheduled').length;
+    const completedAppointmentsCount = safeAppts.filter(a => a.status === 'completed').length;
+    const cancelledAppointmentsCount = safeAppts.filter(a => a.status === 'cancelled').length;
+
+    const totalRevenue = safeAppts
       .filter(a => a.status === 'completed')
-      .reduce((sum, a) => sum + (a.price || 0), 0);
+      .reduce((sum, a) => sum + (a.price || a.amount || a.estimated_cost || 0), 0);
 
-    const avgRating = technicians.length > 0
-      ? technicians.reduce((sum, t) => sum + (t.rating || 0), 0) / technicians.length
+    const avgRating = safeTechs.length > 0
+      ? safeTechs.reduce((sum, t) => sum + (parseFloat(t.rating) || 0), 0) / safeTechs.length
       : 0;
 
-    const totalReviews = reviews.length;
+    const totalReviewsCount = safeReviews.length;
 
     setStats({
-      totalUsers,
-      activeTechnicians,
-      pendingAppointments,
-      completedAppointments,
+      totalUsers: totalUsersCount,
+      activeTechnicians: activeTechniciansCount,
+      pendingAppointments: pendingAppointmentsCount,
+      completedAppointments: completedAppointmentsCount,
       totalRevenue,
       avgRating: parseFloat(avgRating.toFixed(2)),
-      totalReviews,
-      cancelledAppointments
+      totalReviews: totalReviewsCount,
+      cancelledAppointments: cancelledAppointmentsCount
     });
   }, [users, technicians, appointments, reviews]);
 

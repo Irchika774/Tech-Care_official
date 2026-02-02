@@ -17,6 +17,7 @@ export default function Chat() {
     const [conversations, setConversations] = useState([]);
     const [isListLoading, setIsListLoading] = useState(false);
     const scrollRef = useRef(null);
+    const cleanupRef = useRef(null);
 
     useEffect(() => {
         if (!user) return;
@@ -24,6 +25,9 @@ export default function Chat() {
         if (!bookingId) {
             const fetchConversations = async () => {
                 setIsListLoading(true);
+                // Sanitize user ID for safety (though Supabase handles this)
+                const sanitizedUserId = user.id.replace(/[^a-zA-Z0-9-]/g, '');
+
                 // Fetch recent bookings where the user is involved
                 const { data, error } = await supabase
                     .from('bookings')
@@ -35,7 +39,7 @@ export default function Chat() {
                         customer:customers(id, name, user_id),
                         technician:technicians(id, name, user_id)
                     `)
-                    .or(`customer_id.eq.${user.id},technician_id.eq.${user.id}`)
+                    .or(`customer_id.eq.${sanitizedUserId},technician_id.eq.${sanitizedUserId}`)
                     .order('created_at', { ascending: false })
                     .limit(10);
 
@@ -46,6 +50,26 @@ export default function Chat() {
             fetchConversations();
             return;
         }
+
+        let isMounted = true;
+        const channelRef = supabase
+            .channel(`booking-chat-${bookingId}`)
+            .on(
+                'postgres_changes',
+                { event: 'INSERT', schema: 'public', table: 'messages', filter: `booking_id=eq.${bookingId}` },
+                (payload) => {
+                    if (isMounted) {
+                        setMessages(prev => [...prev, payload.new]);
+                    }
+                }
+            )
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED' && isMounted) {
+                    console.log('Chat: Subscribed to realtime messages');
+                } else if ((status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') && isMounted) {
+                    console.error('Chat: Realtime subscription error');
+                }
+            });
 
         const fetchData = async () => {
             // Fetch booking to get participant info
@@ -59,8 +83,8 @@ export default function Chat() {
                 .eq('id', bookingId)
                 .single();
 
-            if (!bookingError) {
-                const isCustomer = user.id === booking.customer.user_id;
+            if (!bookingError && isMounted) {
+                const isCustomer = user.id === booking.customer?.user_id;
                 setRecipient(isCustomer ? booking.technician : booking.customer);
             }
 
@@ -71,34 +95,22 @@ export default function Chat() {
                 .eq('booking_id', bookingId)
                 .order('created_at', { ascending: true });
 
-            if (!msgsError) setMessages(msgs);
+            if (!msgsError && isMounted) setMessages(msgs || []);
             setLoading(false);
         };
 
         fetchData();
 
-        // Subscribe to new messages
-        const channel = supabase
-            .channel(`booking-chat-${bookingId}`)
-            .on(
-                'postgres_changes',
-                { event: 'INSERT', schema: 'public', table: 'messages', filter: `booking_id=eq.${bookingId}` },
-                (payload) => {
-                    setMessages(prev => [...prev, payload.new]);
-                }
-            )
-            .subscribe((status) => {
-                if (status === 'SUBSCRIBED') {
-                    console.log('Chat: Subscribed to realtime messages');
-                } else if (status === 'CHANNEL_ERROR') {
-                    console.error('Chat: Realtime subscription error');
-                } else if (status === 'TIMED_OUT') {
-                    console.error('Chat: Realtime subscription timed out');
-                }
-            });
+        // Store channel for cleanup
+        cleanupRef.current = () => {
+            isMounted = false;
+            supabase.removeChannel(channelRef);
+        };
 
         return () => {
-            supabase.removeChannel(channel);
+            if (cleanupRef.current) {
+                cleanupRef.current();
+            }
         };
     }, [bookingId, user]);
 

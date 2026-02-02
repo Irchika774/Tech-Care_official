@@ -1,6 +1,7 @@
 import express from 'express';
 import { supabaseAdmin, getProfileByUserId, getCustomerByUserId, getTechnicianByUserId } from '../lib/supabase.js';
 import { supabaseAuth } from '../middleware/supabaseAuth.js';
+import { successResponse, errorResponse } from '../lib/response.js';
 
 const router = express.Router();
 
@@ -9,7 +10,7 @@ router.post('/register', async (req, res) => {
         const { name, email, password, role = 'user' } = req.body;
 
         if (!name || !email || !password) {
-            return res.status(400).json({ error: 'Name, email, and password are required.' });
+            return errorResponse(res, 'Name, email, and password are required.', 400);
         }
 
         const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -20,7 +21,7 @@ router.post('/register', async (req, res) => {
         });
 
         if (authError) {
-            return res.status(400).json({ error: authError.message });
+            return errorResponse(res, authError.message, 400);
         }
 
         const { error: profileError } = await supabaseAdmin
@@ -34,7 +35,7 @@ router.post('/register', async (req, res) => {
 
         if (profileError) {
             await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
-            return res.status(500).json({ error: 'Failed to create profile.' });
+            return errorResponse(res, 'Failed to create profile.', 500);
         }
 
         if (role === 'technician') {
@@ -64,30 +65,26 @@ router.post('/register', async (req, res) => {
             }
         }
 
-        const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.generateLink({
-            type: 'magiclink',
-            email
-        });
-
-        res.status(201).json({
-            message: 'User registered successfully',
+        // Generate magic link is optional here, we just confirmation-auto
+        // res.status(201).json
+        return successResponse(res, {
             user: {
                 id: authData.user.id,
                 email: authData.user.email,
                 name,
                 role
             }
-        });
+        }, 'User registered successfully', 201);
     } catch (error) {
         console.error('Registration error:', error);
-        res.status(500).json({ error: error.message });
+        return errorResponse(res, error.message);
     }
 });
 
 router.get('/me', supabaseAuth, async (req, res) => {
     try {
         const profile = await getProfileByUserId(req.user.id);
-        
+
         let extendedProfile = null;
         if (profile.role === 'technician') {
             extendedProfile = await getTechnicianByUserId(req.user.id);
@@ -95,14 +92,14 @@ router.get('/me', supabaseAuth, async (req, res) => {
             extendedProfile = await getCustomerByUserId(req.user.id);
         }
 
-        res.json({
+        return successResponse(res, {
             ...profile,
             _id: profile.id,
             extendedProfile
         });
     } catch (error) {
         console.error('Get user error:', error);
-        res.status(500).json({ error: error.message });
+        return errorResponse(res, error.message);
     }
 });
 
@@ -135,15 +132,15 @@ router.put('/profile', supabaseAuth, async (req, res) => {
                 .eq('user_id', req.user.id);
         }
 
-        res.json(data);
+        return successResponse(res, data, 'Profile updated successfully');
     } catch (error) {
         console.error('Update profile error:', error);
-        res.status(500).json({ error: error.message });
+        return errorResponse(res, error.message);
     }
 });
 
 router.get('/role', supabaseAuth, (req, res) => {
-    res.json({ role: req.user.role });
+    return successResponse(res, { role: req.user.role });
 });
 
 export default router;

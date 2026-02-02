@@ -1,6 +1,7 @@
 import express from 'express';
 import { supabaseAdmin } from '../lib/supabase.js';
 import { supabaseAuth } from '../middleware/supabaseAuth.js';
+import { successResponse, errorResponse } from '../lib/response.js';
 
 const router = express.Router();
 
@@ -17,9 +18,26 @@ router.post('/', supabaseAuth, async (req, res) => {
         } = req.body;
 
         const customer_id = req.user.customerId;
+        const user_role = req.user.role;
+
+        // Validate user role
+        if (user_role !== 'customer' && user_role !== 'user') {
+            return errorResponse(res, 'Only customers can create bookings', 403);
+        }
+
+        // Validate estimated_cost is a positive number
+        const cost = parseFloat(estimated_cost);
+        if (isNaN(cost) || cost < 0) {
+            return errorResponse(res, 'Invalid estimated cost. Must be a positive number.', 400);
+        }
+
+        // Validate required fields
+        if (!device_type || !device_brand || !device_model) {
+            return errorResponse(res, 'Device type, brand, and model are required.', 400);
+        }
 
         if (!customer_id) {
-            return res.status(403).json({ error: 'Only customers can create bookings' });
+            return errorResponse(res, 'Customer profile not found', 403);
         }
 
         const { data: booking, error } = await supabaseAdmin
@@ -32,7 +50,7 @@ router.post('/', supabaseAuth, async (req, res) => {
                 device_model,
                 issue_description,
                 scheduled_date,
-                estimated_cost,
+                estimated_cost: cost,
                 status: 'pending',
                 payment_status: 'pending'
             }])
@@ -52,10 +70,76 @@ router.post('/', supabaseAuth, async (req, res) => {
             }]);
         }
 
-        res.status(201).json(booking);
+        return successResponse(res, booking, 'Booking created successfully', 201);
     } catch (error) {
         console.error('Booking creation error:', error);
-        res.status(500).json({ error: 'Failed to create booking' });
+        return errorResponse(res, 'Failed to create booking');
+    }
+});
+
+// PATCH endpoint for updating booking (confirmation, scheduling)
+router.patch('/:id', supabaseAuth, async (req, res) => {
+    try {
+        const bookingId = req.params.id;
+        const updates = req.body;
+        const userId = req.user.id;
+
+        // First, get the booking to check authorization
+        const { data: booking, error: fetchError } = await supabaseAdmin
+            .from('bookings')
+            .select('*, customer:customers(id, name, email, phone), technician:technicians(id, name, email, phone, rating)')
+            .eq('id', bookingId)
+            .single();
+
+        if (fetchError) {
+            console.error('[DEBUG] Booking fetch error:', fetchError);
+            // Try fetching without relations if join fails
+            const { data: simpleBooking } = await supabaseAdmin
+                .from('bookings')
+                .select('*')
+                .eq('id', bookingId)
+                .single();
+
+            if (!simpleBooking) {
+                return errorResponse(res, 'Booking not found', 404);
+            }
+        }
+
+        if (!booking) {
+            return errorResponse(res, 'Booking not found', 404);
+        }
+
+        // Authorization check: User must be either the customer or the technician involved
+        const isCustomer = booking.customer_id === userId || booking.customer_id === req.user.customerId;
+        const isTechnician = booking.technician_id === userId || booking.technician_id === req.user.technicianId;
+        const isAdmin = req.user.role === 'admin';
+
+        if (!isCustomer && !isTechnician && !isAdmin) {
+            console.error('[DEBUG] Authorization failed for booking update:', { userId, bookingCustomerId: booking.customer_id, bookingTechnicianId: booking.technician_id });
+            return errorResponse(res, 'Access denied', 403);
+        }
+
+        // Perform the update
+        const { data: updatedBooking, error } = await supabaseAdmin
+            .from('bookings')
+            .update({
+                ...updates,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', bookingId)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('[DEBUG] Booking update error:', error);
+            throw error;
+        }
+
+        console.log('[DEBUG] Booking updated successfully:', bookingId);
+        return successResponse(res, updatedBooking);
+    } catch (error) {
+        console.error('Booking update error:', error);
+        return errorResponse(res, 'Failed to update booking');
     }
 });
 
@@ -72,7 +156,7 @@ router.get('/:id', supabaseAuth, async (req, res) => {
             .single();
 
         if (error) throw error;
-        if (!booking) return res.status(404).json({ error: 'Booking not found' });
+        if (!booking) return errorResponse(res, 'Booking not found', 404);
 
         // Authorization check: User must be either the customer or the technician involved
         const isAuthorized =
@@ -81,7 +165,7 @@ router.get('/:id', supabaseAuth, async (req, res) => {
             req.user.role === 'admin';
 
         if (!isAuthorized) {
-            return res.status(403).json({ error: 'Access denied' });
+            return errorResponse(res, 'Access denied', 403);
         }
 
         const { data: bids } = await supabaseAdmin
@@ -90,10 +174,10 @@ router.get('/:id', supabaseAuth, async (req, res) => {
             .eq('booking_id', req.params.id)
             .order('amount', { ascending: true });
 
-        res.json({ booking, bids: bids || [] });
+        return successResponse(res, { booking, bids: bids || [] });
     } catch (error) {
         console.error('Booking fetch error:', error);
-        res.status(500).json({ error: 'Failed to fetch booking' });
+        return errorResponse(res, 'Failed to fetch booking');
     }
 });
 
@@ -104,7 +188,7 @@ router.post('/:id/select-bid', supabaseAuth, async (req, res) => {
         const customerId = req.user.customerId;
 
         if (!customerId) {
-            return res.status(403).json({ error: 'Only customers can select bids' });
+            return errorResponse(res, 'Only customers can select bids', 403);
         }
 
         // Verify booking ownership
@@ -115,7 +199,7 @@ router.post('/:id/select-bid', supabaseAuth, async (req, res) => {
             .single();
 
         if (!bookingCheck || bookingCheck.customer_id !== customerId) {
-            return res.status(403).json({ error: 'Access denied' });
+            return errorResponse(res, 'Access denied', 403);
         }
 
         const { data: bid, error: bidError } = await supabaseAdmin
@@ -125,7 +209,7 @@ router.post('/:id/select-bid', supabaseAuth, async (req, res) => {
             .single();
 
         if (bidError || !bid) {
-            return res.status(404).json({ error: 'Bid not found' });
+            return errorResponse(res, 'Bid not found', 404);
         }
 
         const { data: booking, error } = await supabaseAdmin
@@ -166,10 +250,10 @@ router.post('/:id/select-bid', supabaseAuth, async (req, res) => {
             data: { booking_id: bookingId, bid_id: bidId }
         }]);
 
-        res.json({ booking, message: 'Bid selected successfully' });
+        return successResponse(res, booking, 'Bid selected successfully');
     } catch (error) {
         console.error('Select bid error:', error);
-        res.status(500).json({ error: 'Failed to select bid' });
+        return errorResponse(res, 'Failed to select bid');
     }
 });
 
@@ -180,7 +264,7 @@ router.post('/:id/review', supabaseAuth, async (req, res) => {
         const customerId = req.user.customerId;
 
         if (!customerId) {
-            return res.status(403).json({ error: 'Only customers can review' });
+            return errorResponse(res, 'Only customers can review', 403);
         }
 
         const { data: booking } = await supabaseAdmin
@@ -190,15 +274,15 @@ router.post('/:id/review', supabaseAuth, async (req, res) => {
             .single();
 
         if (!booking) {
-            return res.status(404).json({ error: 'Booking not found' });
+            return errorResponse(res, 'Booking not found', 404);
         }
 
         if (booking.customer_id !== customerId) {
-            return res.status(403).json({ error: 'Access denied' });
+            return errorResponse(res, 'Access denied', 403);
         }
 
         if (booking.status !== 'completed') {
-            return res.status(400).json({ error: 'Can only review completed bookings' });
+            return errorResponse(res, 'Can only review completed bookings', 400);
         }
 
         const { data: review, error } = await supabaseAdmin
@@ -255,10 +339,10 @@ router.post('/:id/review', supabaseAuth, async (req, res) => {
             }
         }
 
-        res.status(201).json({ review, message: 'Review submitted successfully' });
+        return successResponse(res, review, 'Review submitted successfully', 201);
     } catch (error) {
         console.error('Review submission error:', error);
-        res.status(500).json({ error: 'Failed to submit review' });
+        return errorResponse(res, 'Failed to submit review');
     }
 });
 

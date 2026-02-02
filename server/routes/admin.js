@@ -2,6 +2,7 @@ import express from 'express';
 import { supabaseAdmin } from '../lib/supabase.js';
 import { supabaseAuth } from '../middleware/supabaseAuth.js';
 import { logAuditTrail } from '../middleware/auditLogger.js';
+import { successResponse, errorResponse } from '../lib/response.js';
 
 const router = express.Router();
 
@@ -9,7 +10,7 @@ const adminCheck = (req, res, next) => {
     if (req.user && req.user.role === 'admin') {
         next();
     } else {
-        res.status(403).json({ message: 'Access denied. Admin only.' });
+        return errorResponse(res, 'Access denied. Admin only.', 403);
     }
 };
 
@@ -70,7 +71,7 @@ router.get('/dashboard', supabaseAuth, adminCheck, async (req, res) => {
             }
         });
 
-        res.json({
+        return successResponse(res, {
             stats: {
                 totalUsers: totalUsersRes.count || 0,
                 totalTechnicians: totalTechniciansRes.count || 0,
@@ -84,7 +85,7 @@ router.get('/dashboard', supabaseAuth, adminCheck, async (req, res) => {
         });
     } catch (error) {
         console.error('Admin dashboard error:', error);
-        res.status(500).json({ error: 'Failed to fetch dashboard data' });
+        return errorResponse(res, 'Failed to fetch dashboard data');
     }
 });
 
@@ -95,10 +96,9 @@ router.get('/users', supabaseAuth, adminCheck, async (req, res) => {
             .select('*')
             .order('created_at', { ascending: false });
 
-        if (error) throw error;
-        res.json(users || []);
+        return successResponse(res, users || []);
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        return errorResponse(res, err.message);
     }
 });
 
@@ -112,11 +112,11 @@ router.put('/users/:id', supabaseAuth, adminCheck, async (req, res) => {
             .single();
 
         if (error) throw error;
-        if (!user) return res.status(404).json({ message: 'User not found' });
+        if (!user) return errorResponse(res, 'User not found', 404);
 
-        res.json(user);
+        return successResponse(res, user);
     } catch (err) {
-        res.status(400).json({ message: err.message });
+        return errorResponse(res, err.message, 400);
     }
 });
 
@@ -128,9 +128,9 @@ router.delete('/users/:id', supabaseAuth, adminCheck, logAuditTrail('ADMIN_DELET
             .eq('id', req.params.id);
 
         if (error) throw error;
-        res.json({ message: 'User deleted successfully' });
+        return successResponse(res, null, 'User deleted successfully');
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        return errorResponse(res, err.message);
     }
 });
 
@@ -142,9 +142,9 @@ router.get('/technicians', supabaseAuth, adminCheck, async (req, res) => {
             .order('created_at', { ascending: false });
 
         if (error) throw error;
-        res.json(technicians || []);
+        return successResponse(res, technicians || []);
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        return errorResponse(res, err.message);
     }
 });
 
@@ -158,9 +158,9 @@ router.put('/technicians/:id', supabaseAuth, adminCheck, async (req, res) => {
             .single();
 
         if (error) throw error;
-        res.json(technician);
+        return successResponse(res, technician);
     } catch (err) {
-        res.status(400).json({ message: err.message });
+        return errorResponse(res, err.message, 400);
     }
 });
 
@@ -201,9 +201,9 @@ router.patch('/technicians/:id/verify', supabaseAuth, adminCheck, logAuditTrail(
             }
         }
 
-        res.json({ technician, message: `Technician ${isVerified ? 'verified' : 'unverified'} successfully` });
+        return successResponse(res, technician, `Technician ${isVerified ? 'verified' : 'unverified'} successfully`);
     } catch (err) {
-        res.status(400).json({ message: err.message });
+        return errorResponse(res, err.message, 400);
     }
 });
 
@@ -215,9 +215,9 @@ router.delete('/technicians/:id', supabaseAuth, adminCheck, async (req, res) => 
             .eq('id', req.params.id);
 
         if (error) throw error;
-        res.json({ message: 'Technician deleted successfully' });
+        return successResponse(res, null, 'Technician deleted successfully');
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        return errorResponse(res, err.message);
     }
 });
 
@@ -240,9 +240,9 @@ router.get('/bookings', supabaseAuth, adminCheck, async (req, res) => {
             .limit(parseInt(limit));
 
         if (error) throw error;
-        res.json(bookings || []);
+        return successResponse(res, bookings || []);
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        return errorResponse(res, err.message);
     }
 });
 
@@ -310,9 +310,9 @@ router.put('/bookings/:id', supabaseAuth, adminCheck, logAuditTrail('ADMIN_UPDAT
             await supabaseAdmin.from('notifications').insert(notifications);
         }
 
-        res.json(booking);
+        return successResponse(res, booking);
     } catch (err) {
-        res.status(400).json({ message: err.message });
+        return errorResponse(res, err.message, 400);
     }
 });
 
@@ -328,9 +328,9 @@ router.get('/reviews', supabaseAuth, adminCheck, async (req, res) => {
             .order('created_at', { ascending: false });
 
         if (error) throw error;
-        res.json(reviews || []);
+        return successResponse(res, reviews || []);
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        return errorResponse(res, err.message);
     }
 });
 
@@ -342,9 +342,9 @@ router.delete('/reviews/:id', supabaseAuth, adminCheck, async (req, res) => {
             .eq('id', req.params.id);
 
         if (error) throw error;
-        res.json({ message: 'Review deleted successfully' });
+        return successResponse(res, null, 'Review deleted successfully');
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        return errorResponse(res, err.message);
     }
 });
 
@@ -363,9 +363,9 @@ router.get('/gigs/pending', supabaseAuth, adminCheck, async (req, res) => {
             .order('created_at', { ascending: false });
 
         if (error) throw error;
-        res.json(gigs || []);
+        return successResponse(res, gigs || []);
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        return errorResponse(res, err.message);
     }
 });
 
@@ -387,9 +387,9 @@ router.get('/gigs', supabaseAuth, adminCheck, async (req, res) => {
 
         const { data: gigs, error } = await query;
         if (error) throw error;
-        res.json(gigs || []);
+        return successResponse(res, gigs || []);
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        return errorResponse(res, err.message);
     }
 });
 
@@ -436,9 +436,9 @@ router.patch('/gigs/:id/approve', supabaseAuth, adminCheck, async (req, res) => 
             }
         }
 
-        res.json({ gig, message: 'Gig approved successfully' });
+        return successResponse(res, gig, 'Gig approved successfully');
     } catch (err) {
-        res.status(400).json({ message: err.message });
+        return errorResponse(res, err.message, 400);
     }
 });
 
@@ -487,9 +487,9 @@ router.patch('/gigs/:id/reject', supabaseAuth, adminCheck, async (req, res) => {
             }
         }
 
-        res.json({ gig, message: 'Gig rejected' });
+        return successResponse(res, gig, 'Gig rejected');
     } catch (err) {
-        res.status(400).json({ message: err.message });
+        return errorResponse(res, err.message, 400);
     }
 });
 
@@ -502,9 +502,9 @@ router.delete('/gigs/:id', supabaseAuth, adminCheck, async (req, res) => {
             .eq('id', req.params.id);
 
         if (error) throw error;
-        res.json({ message: 'Gig deleted successfully' });
+        return successResponse(res, null, 'Gig deleted successfully');
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        return errorResponse(res, err.message);
     }
 });
 
@@ -529,7 +529,7 @@ router.get('/stats', supabaseAuth, adminCheck, async (req, res) => {
 
         const totalRevenue = (paymentsSum.data || []).reduce((sum, p) => sum + (p.amount || 0), 0);
 
-        res.json({
+        return successResponse(res, {
             totalUsers: usersCount.count || 0,
             totalTechnicians: techsCount.count || 0,
             totalBookings: bookingsCount.count || 0,
@@ -537,7 +537,7 @@ router.get('/stats', supabaseAuth, adminCheck, async (req, res) => {
             totalRevenue
         });
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        return errorResponse(res, err.message);
     }
 });
 
@@ -578,9 +578,9 @@ router.get('/logs', supabaseAuth, adminCheck, async (req, res) => {
             }))
         ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-        res.json(logs);
+        return successResponse(res, logs);
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        return errorResponse(res, err.message);
     }
 });
 

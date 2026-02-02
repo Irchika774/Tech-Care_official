@@ -1,6 +1,7 @@
 import express from 'express';
 import { supabaseAdmin } from '../lib/supabase.js';
 import { supabaseAuth } from '../middleware/supabaseAuth.js';
+import { successResponse, errorResponse } from '../lib/response.js';
 
 const router = express.Router();
 
@@ -62,7 +63,7 @@ router.get('/', async (req, res) => {
             }
         }
 
-        res.json({
+        return successResponse(res, {
             reviews: reviews || [],
             total: count || 0,
             averageRating: averageRating ? parseFloat(averageRating.toFixed(1)) : null,
@@ -75,7 +76,7 @@ router.get('/', async (req, res) => {
         });
     } catch (error) {
         console.error('Reviews fetch error:', error);
-        res.status(500).json({ error: error.message || 'Failed to fetch reviews' });
+        return errorResponse(res, 'Failed to fetch reviews');
     }
 });
 
@@ -95,15 +96,15 @@ router.get('/:id', async (req, res) => {
 
         if (error) {
             if (error.code === 'PGRST116') {
-                return res.status(404).json({ error: 'Review not found' });
+                return errorResponse(res, 'Review not found', 404);
             }
             throw error;
         }
 
-        res.json(review);
+        return successResponse(res, review);
     } catch (error) {
         console.error('Review fetch error:', error);
-        res.status(500).json({ error: error.message || 'Failed to fetch review' });
+        return errorResponse(res, 'Failed to fetch review');
     }
 });
 
@@ -124,15 +125,11 @@ router.post('/', supabaseAuth, async (req, res) => {
 
         // Validate required fields
         if (!technician_id || !rating) {
-            return res.status(400).json({
-                error: 'Missing required fields: technician_id and rating are required'
-            });
+            return errorResponse(res, 'Missing required fields: technician_id and rating are required', 400);
         }
 
         if (rating < 1 || rating > 5) {
-            return res.status(400).json({
-                error: 'Rating must be between 1 and 5'
-            });
+            return errorResponse(res, 'Rating must be between 1 and 5', 400);
         }
 
         // Get customer ID from authenticated user
@@ -149,9 +146,7 @@ router.post('/', supabaseAuth, async (req, res) => {
                 .single();
 
             if (existingReview) {
-                return res.status(400).json({
-                    error: 'You have already reviewed this technician for this booking'
-                });
+                return errorResponse(res, 'You have already reviewed this technician for this booking', 400);
             }
         }
 
@@ -203,7 +198,6 @@ router.post('/', supabaseAuth, async (req, res) => {
             }
         } catch (notifyError) {
             console.error('Failed to notify technician about review:', notifyError);
-            // Non-blocking error
         }
 
         // AWARD LOYALTY POINTS FOR REVIEW
@@ -233,13 +227,10 @@ router.post('/', supabaseAuth, async (req, res) => {
             console.error('Failed to award review loyalty points:', loyaltyError);
         }
 
-        res.status(201).json({
-            message: 'Review created successfully',
-            review
-        });
+        return successResponse(res, review, 'Review created successfully', 201);
     } catch (error) {
         console.error('Review creation error:', error);
-        res.status(500).json({ error: error.message || 'Failed to create review' });
+        return errorResponse(res, 'Failed to create review');
     }
 });
 
@@ -256,13 +247,13 @@ router.patch('/:id', supabaseAuth, async (req, res) => {
             .single();
 
         if (!existingReview) {
-            return res.status(404).json({ error: 'Review not found' });
+            return errorResponse(res, 'Review not found', 404);
         }
 
         const isAdmin = req.user.role === 'admin';
 
         if (existingReview.customer_id !== customerId && !isAdmin) {
-            return res.status(403).json({ error: 'You can only edit your own reviews' });
+            return errorResponse(res, 'You can only edit your own reviews', 403);
         }
 
         const allowedFields = ['rating', 'title', 'comment', 'service_quality', 'communication', 'value_for_money', 'would_recommend', 'status'];
@@ -270,13 +261,11 @@ router.patch('/:id', supabaseAuth, async (req, res) => {
 
         for (const field of allowedFields) {
             if (req.body[field] !== undefined) {
-                // Only admins can change status to/from restricted states if needed, but here we just allow it
                 if (field === 'status' && !isAdmin) continue;
                 updates[field] = req.body[field];
             }
         }
 
-        // If it is admin, allow status update specifically
         if (isAdmin && req.body.status) {
             updates.status = req.body.status;
         }
@@ -296,13 +285,10 @@ router.patch('/:id', supabaseAuth, async (req, res) => {
             await updateTechnicianRating(existingReview.technician_id);
         }
 
-        res.json({
-            message: 'Review updated successfully',
-            review
-        });
+        return successResponse(res, review, 'Review updated successfully');
     } catch (error) {
         console.error('Review update error:', error);
-        res.status(500).json({ error: 'Failed to update review' });
+        return errorResponse(res, 'Failed to update review');
     }
 });
 
@@ -320,11 +306,11 @@ router.delete('/:id', supabaseAuth, async (req, res) => {
             .single();
 
         if (!existingReview) {
-            return res.status(404).json({ error: 'Review not found' });
+            return errorResponse(res, 'Review not found', 404);
         }
 
         if (existingReview.customer_id !== customerId && !isAdmin) {
-            return res.status(403).json({ error: 'You can only delete your own reviews' });
+            return errorResponse(res, 'You can only delete your own reviews', 403);
         }
 
         const { error } = await supabaseAdmin
@@ -337,10 +323,10 @@ router.delete('/:id', supabaseAuth, async (req, res) => {
         // Update technician's average rating
         await updateTechnicianRating(existingReview.technician_id);
 
-        res.json({ message: 'Review deleted successfully' });
+        return successResponse(res, null, 'Review deleted successfully');
     } catch (error) {
         console.error('Review deletion error:', error);
-        res.status(500).json({ error: 'Failed to delete review' });
+        return errorResponse(res, 'Failed to delete review');
     }
 });
 
@@ -364,13 +350,10 @@ router.post('/:id/helpful', supabaseAuth, async (req, res) => {
 
         if (updateError) throw updateError;
 
-        res.json({
-            message: 'Marked as helpful',
-            helpful_count: updatedReview.helpful_count
-        });
+        return successResponse(res, { helpful_count: updatedReview.helpful_count }, 'Marked as helpful');
     } catch (error) {
         console.error('Helpful mark error:', error);
-        res.status(500).json({ error: 'Failed to mark review as helpful' });
+        return errorResponse(res, 'Failed to mark review as helpful');
     }
 });
 
@@ -380,8 +363,6 @@ router.post('/:id/report', supabaseAuth, async (req, res) => {
         const { reason } = req.body;
         const reporterId = req.user.customerId || req.user.technicianId || req.user.id;
 
-        // Create a report record (you'd need a reports table)
-        // For now, we'll just update the review status
         const { error } = await supabaseAdmin
             .from('reviews')
             .update({
@@ -394,10 +375,10 @@ router.post('/:id/report', supabaseAuth, async (req, res) => {
 
         if (error) throw error;
 
-        res.json({ message: 'Review reported successfully' });
+        return successResponse(res, null, 'Review reported successfully');
     } catch (error) {
         console.error('Review report error:', error);
-        res.status(500).json({ error: 'Failed to report review' });
+        return errorResponse(res, 'Failed to report review');
     }
 });
 
@@ -415,7 +396,7 @@ router.get('/stats/:technicianId', async (req, res) => {
         if (error) throw error;
 
         if (!reviews || reviews.length === 0) {
-            return res.json({
+            return successResponse(res, {
                 totalReviews: 0,
                 averageRating: 0,
                 ratingDistribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
@@ -449,7 +430,7 @@ router.get('/stats/:technicianId', async (req, res) => {
         const recommendCount = reviews.filter(r => r.would_recommend !== false).length;
         const recommendationRate = (recommendCount / totalReviews) * 100;
 
-        res.json({
+        return successResponse(res, {
             totalReviews,
             averageRating: parseFloat(averageRating.toFixed(1)),
             ratingDistribution,
@@ -462,7 +443,7 @@ router.get('/stats/:technicianId', async (req, res) => {
         });
     } catch (error) {
         console.error('Review stats error:', error);
-        res.status(500).json({ error: 'Failed to fetch review statistics' });
+        return errorResponse(res, 'Failed to fetch review statistics');
     }
 });
 
@@ -487,6 +468,7 @@ async function updateTechnicianRating(technicianId) {
                 .eq('id', technicianId);
         }
     } catch (error) {
+        // Log error but don't reject
         console.error('Error updating technician rating:', error);
     }
 }

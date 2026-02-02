@@ -1,6 +1,7 @@
 import express from 'express';
 import { supabaseAdmin } from '../lib/supabase.js';
 import { supabaseAuth } from '../middleware/supabaseAuth.js';
+import { successResponse, errorResponse } from '../lib/response.js';
 
 const router = express.Router();
 
@@ -9,17 +10,13 @@ router.get('/', supabaseAuth, async (req, res) => {
         const { limit = 20, skip = 0, unreadOnly = false, userId: requestedUserId } = req.query;
 
         // Determine the target User ID from the token context
-        // We prioritize the specialized profile IDs (technician/customer) if available, 
-        // but often the client knows which ID it wants to query for.
-        // We must verify the client isn't asking for someone else' data.
-
         let targetUserId = requestedUserId;
 
         // Validation: Ensure the requestedUserId belongs to the authenticated user
         const allowedIds = [req.user.id, req.user.customerId, req.user.technicianId].filter(id => id);
 
         if (targetUserId && !allowedIds.includes(targetUserId)) {
-            return res.status(403).json({ error: 'Access denied. You can only view your own notifications.' });
+            return errorResponse(res, 'Access denied. You can only view your own notifications.', 403);
         }
 
         // If no userId provided, default to best guess (Customer or Technician ID, then Auth ID)
@@ -28,7 +25,7 @@ router.get('/', supabaseAuth, async (req, res) => {
         }
 
         if (!targetUserId) {
-            return res.json({ notifications: [], unreadCount: 0, total: 0, hasMore: false });
+            return successResponse(res, { notifications: [], unreadCount: 0, total: 0, hasMore: false });
         }
 
         let query = supabaseAdmin
@@ -52,7 +49,7 @@ router.get('/', supabaseAuth, async (req, res) => {
             .eq('user_id', targetUserId)
             .eq('read', false);
 
-        res.json({
+        return successResponse(res, {
             notifications: notifications || [],
             unreadCount: unreadCount || 0,
             total: count || 0,
@@ -60,7 +57,7 @@ router.get('/', supabaseAuth, async (req, res) => {
         });
     } catch (error) {
         console.error('Notifications fetch error:', error);
-        res.status(500).json({ error: 'Failed to fetch notifications' });
+        return errorResponse(res, 'Failed to fetch notifications');
     }
 });
 
@@ -76,7 +73,7 @@ router.patch('/:id/read', supabaseAuth, async (req, res) => {
             .single();
 
         if (notificationCheck && !allowedIds.includes(notificationCheck.user_id)) {
-            return res.status(403).json({ error: 'Access denied' });
+            return errorResponse(res, 'Access denied', 403);
         }
 
         const { data: notification, error } = await supabaseAdmin
@@ -87,10 +84,10 @@ router.patch('/:id/read', supabaseAuth, async (req, res) => {
             .single();
 
         if (error) throw error;
-        res.json({ message: 'Notification marked as read', notification });
+        return successResponse(res, notification, 'Notification marked as read');
     } catch (error) {
         console.error('Notification update error:', error);
-        res.status(500).json({ error: 'Failed to update notification' });
+        return errorResponse(res, 'Failed to update notification');
     }
 });
 
@@ -102,13 +99,10 @@ router.patch('/read-all', supabaseAuth, async (req, res) => {
         const allowedIds = [req.user.id, req.user.customerId, req.user.technicianId].filter(id => id);
 
         if (targetUserId && !allowedIds.includes(targetUserId)) {
-            return res.status(403).json({ error: 'Access denied.' });
+            return errorResponse(res, 'Access denied.', 403);
         }
 
         if (!targetUserId) {
-            // Default to all known IDs for this user
-            // But 'in' query might be safer?
-            // For now, default to the main profile ID
             targetUserId = req.user.technicianId || req.user.customerId || req.user.id;
         }
 
@@ -119,10 +113,10 @@ router.patch('/read-all', supabaseAuth, async (req, res) => {
             .eq('read', false);
 
         if (error) throw error;
-        res.json({ message: 'All notifications marked as read' });
+        return successResponse(res, null, 'All notifications marked as read');
     } catch (error) {
         console.error('Mark all read error:', error);
-        res.status(500).json({ error: 'Failed to mark all as read' });
+        return errorResponse(res, 'Failed to mark all as read');
     }
 });
 
@@ -138,7 +132,7 @@ router.delete('/:id', supabaseAuth, async (req, res) => {
             .single();
 
         if (notificationCheck && !allowedIds.includes(notificationCheck.user_id)) {
-            return res.status(403).json({ error: 'Access denied' });
+            return errorResponse(res, 'Access denied', 403);
         }
 
         const { error } = await supabaseAdmin
@@ -147,10 +141,10 @@ router.delete('/:id', supabaseAuth, async (req, res) => {
             .eq('id', req.params.id);
 
         if (error) throw error;
-        res.json({ message: 'Notification deleted' });
+        return successResponse(res, null, 'Notification deleted');
     } catch (error) {
         console.error('Notification deletion error:', error);
-        res.status(500).json({ error: 'Failed to delete notification' });
+        return errorResponse(res, 'Failed to delete notification');
     }
 });
 

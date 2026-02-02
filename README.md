@@ -5,7 +5,7 @@
 ### _Connecting Customers with Expert Technicians_
 
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-success?style=for-the-badge)](https://github.com)
-[![Version](https://img.shields.io/badge/Version-2.3.1-blue?style=for-the-badge)](https://github.com)
+[![Version](https://img.shields.io/badge/Version-2.5.0-blue?style=for-the-badge)](https://github.com)
 [![License](https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge)](LICENSE)
 [![Node](https://img.shields.io/badge/Node-24.x-green?style=for-the-badge&logo=node.js)](https://nodejs.org)
 [![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react)](https://reactjs.org)
@@ -27,10 +27,27 @@
 
 ## 📅 Version History
 
+### v2.5.0 - Technician Empowerment & Scheduling (Feb 02, 2026)
+**New Features & Critical Fixes:**
+- **Technician Custom Pricing:** Added capability for technicians to set individual prices for common services (Battery, Screen, Water Damage, etc.) via their dashboard settings.
+- **Dynamic Booking Price:** The booking process now dynamically fetches and applies technician-specific pricing instead of using global defaults.
+- **Smart Working Hours:** Enhanced the scheduling system to respect technician's custom availability schedule. Appointment slots are strictly limited to technician's working hours.
+- **Booking Flow Stabilization:** Resolved a critical 404 error during schedule confirmation by fixing API response data extraction logic.
+- **UI/UX Consistency:** Fixed missing technician names on the payment page and ensured service amounts are updated correctly based on selection.
+- **Database Schema Expansion:** Added `technician_services` and `technician_availability` tables for granular business management.
+
+### v2.4.0 - Global API Standardization (Feb 02, 2026)
+**API Reliability & Consistency Upgrades:**
+- **Standardized Response Layer:** Implemented `successResponse` and `errorResponse` utilities across all 18 backend route modules for uniform JSON structure.
+- **Improved Error Handling:** Standardized error payloads across Auth, Payments, Bookings, and Admin modules for predictable frontend handling.
+- **Financial System Hardening:** Refactored Stripe Payment API integration to provide clearer transaction states and consistent error messaging.
+- **Enhanced Data Integrity:** Standardized return types for Search, Reviews, and Loyalty modules, ensuring type safety for the frontend.
+
 ### v2.3.1 - Critical Dashboard Performance & Initialization Fix (Feb 02, 2026)
 **Stability & Performance Fixes:**
 - **Admin Dashboard Fix:** Resolved a critical `ReferenceError` (Temporal Dead Zone) in `Admin.jsx` by properly sequencing initialization-dependent functions.
 - **Data Loading Optimization:** Removed redundant state recalculations during Admin data fetching to improve interface responsiveness.
+- **Documentation Fix:** Resolved syntax errors in the "Booking Flow" Mermaid diagram for reliable rendering.
 - **Git Identity Standardization:** Standardized all repository contributions under the `Wenura17125` profile.
 
 ### v2.3.0 - Technician Schedule & Diagnostics Refinement (Feb 02, 2026)
@@ -250,17 +267,37 @@ erDiagram
     
     TECHNICIANS ||--o{ BOOKINGS : "receives"
     TECHNICIANS ||--o{ REVIEWS : "gets"
+    TECHNICIANS ||--o{ TECHNICIAN_SERVICES : "offers"
+    TECHNICIANS ||--o{ TECHNICIAN_AVAILABILITY : "defines"
     TECHNICIANS {
         uuid id PK
         uuid profile_id FK
+        string name
+        string email
         string business_name
-        string[] services
-        string[] districts
+        string[] specialization
         float rating
         int total_reviews
-        boolean verified
+        boolean is_verified
         jsonb location
-        jsonb availability
+    }
+
+    TECHNICIAN_SERVICES {
+        uuid id PK
+        uuid technician_id FK
+        string name
+        string description
+        decimal price
+        boolean is_active
+    }
+
+    TECHNICIAN_AVAILABILITY {
+        uuid id PK
+        uuid technician_id FK
+        int day_of_week
+        time start_time
+        time end_time
+        boolean is_available
     }
     
     BOOKINGS ||--o{ PAYMENTS : "has"
@@ -339,7 +376,9 @@ sequenceDiagram
         F->>API: GET /api/technicians/nearby
         API->>DB: Fetch verified technicians
         DB-->>API: Technician list
-        API-->>F: Display Technicians
+        F->>API: GET /api/technicians/:id/services
+        API->>DB: Fetch custom prices
+        DB-->>F: Display Technicians with Custom Pricing
     end
 
     rect rgb(40, 60, 40)
@@ -489,32 +528,71 @@ sequenceDiagram
 ### 📅 Booking Flow
 
 ```mermaid
-stateDiagram-v2
-    [*] --> BrowseServices: User visits services page
+flowchart TD
+    %% Node Definitions
+    StartNode((Start)):::start
+    Browse[Browse Services]
+    Select[Select Repair Type]
+    Details[Enter Device & Issue Details]
+    ChooseTech{Choose specific<br/>Technician?}
+    AutoAssign[System Auto-Assigns]
+    PickTech[Select Technician from List]
+    Schedule[Select Date & Time]
+    Review[Review Booking]
+    Pay[Secure Payment via Stripe]:::payment
+    PayConfirm{Payment<br/>Success?}
+    PayRetry[Retry / Change Method]
+    BookingCreated[Booking Created]:::success
+    Notify[Notify Technician]
+    TechResponse{Technician<br/>Response}
+    Reassign[Auto-Reassign / Notify Admin]
+    InProgress[Repair In Progress]
+    Track[Real-time Status Tracking]
+    Done[Repair Completed]
+    ReviewPoints[Leave Review &<br/>Earn Loyalty Points]
+    EndNode((End)):::end
+
+    %% Flow Relationships
+    StartNode --> Browse
+    Browse --> Select
+    Select --> Details
+    Details --> ChooseTech
     
-    BrowseServices --> SelectService: Choose repair type
-    SelectService --> EnterDetails: Add device info
-    EnterDetails --> ChooseTechnician: Optional selection
-    ChooseTechnician --> SelectDateTime: Pick appointment slot
-    SelectDateTime --> ReviewBooking: Confirm details
+    ChooseTech -- "No" --> AutoAssign
+    ChooseTech -- "Yes" --> PickTech
     
-    ReviewBooking --> Payment: Proceed to pay
-    Payment --> PaymentSuccess: Payment successful
-    Payment --> PaymentFailed: Payment failed
-    PaymentFailed --> Payment: Retry
+    AutoAssign --> Schedule
+    PickTech --> Schedule
     
-    PaymentSuccess --> BookingConfirmed: Create booking
-    BookingConfirmed --> NotifyTechnician: Send notification
-    NotifyTechnician --> TechnicianAccepts: Wait for response
+    Schedule --> Review
+    Review --> Pay
     
-    TechnicianAccepts --> InProgress: Start repair
-    InProgress --> Completed: Finish repair
-    Completed --> LeaveReview: Optional
-    LeaveReview --> AwardPoints: Loyalty points
-    AwardPoints --> [*]
+    Pay --> PayConfirm
+    PayConfirm -- "No" --> PayRetry
+    PayRetry --> Pay
     
-    TechnicianAccepts --> Rejected: Technician unavailable
-    Rejected --> ChooseTechnician: Select different technician
+    PayConfirm -- "Yes" --> BookingCreated
+    BookingCreated --> Notify
+    
+    Notify --> TechResponse
+    TechResponse -- "Reject" --> Reassign
+    Reassign --> Notify
+    
+    TechResponse -- "Accept" --> InProgress
+    InProgress --> Track
+    Track --> Done
+    
+    Done --> ReviewPoints
+    ReviewPoints --> EndNode
+
+    %% Styling and Classes
+    classDef start fill:#22c55e,stroke:#fff,color:#fff
+    classDef end fill:#ef4444,stroke:#fff,color:#fff
+    classDef success fill:#22c55e,stroke:#fff,color:#fff
+    classDef payment fill:#6366f1,stroke:#fff,color:#fff
+    
+    style StartNode stroke-width:4px
+    style EndNode stroke-width:4px
 ```
 
 
@@ -551,6 +629,7 @@ flowchart LR
         UC15(["System Settings"])
         UC16(["Select Conversation"])
         UC17(["Manage Schedule"])
+        UC18(["Manage Custom Pricing"])
     end
 
     %% Relationships
@@ -574,6 +653,7 @@ flowchart LR
     Technician --> UC12
     Technician --> UC16
     Technician --> UC17
+    Technician --> UC18
 
     Admin --> UC13
     Admin --> UC14
@@ -616,9 +696,10 @@ flowchart TB
             T3["Update Job Status"]
             T4["View Earnings"]
             T5["Manage Schedule"]
-            T6["Generate Invoices"]
-            T7["Receive Reviews"]
-            T8["Chat with Customers"]
+            T6["Manage Custom Pricing"]
+            T7["Generate Invoices"]
+            T8["Receive Reviews"]
+            T9["Chat with Customers"]
         end
         
         subgraph AdminRole["👑 ADMIN"]
@@ -663,6 +744,7 @@ flowchart TB
 | **Admin Dashboard** | ❌ | ❌ | ❌ | ✅ |
 | **Manage Users** | ❌ | ❌ | ❌ | ✅ |
 | **System Settings** | ❌ | ❌ | ❌ | ✅ |
+| **Custom Pricing** | ❌ | ❌ | ✅ | ✅ |
 
 
 

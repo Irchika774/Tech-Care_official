@@ -1,6 +1,7 @@
 import express from 'express';
 import { supabaseAdmin } from '../lib/supabase.js';
 import { supabaseAuth } from '../middleware/supabaseAuth.js';
+import { successResponse, errorResponse } from '../lib/response.js';
 
 const router = express.Router();
 
@@ -16,9 +17,10 @@ router.get('/bookings', async (req, res) => {
             .order('created_at', { ascending: false });
 
         if (error) throw error;
-        res.json(bookings || []);
+        return successResponse(res, bookings || []);
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        console.error('Fetch bookings error:', err);
+        return errorResponse(res, err.message);
     }
 });
 
@@ -31,9 +33,10 @@ router.post('/bookings', async (req, res) => {
             .single();
 
         if (error) throw error;
-        res.status(201).json(booking);
+        return successResponse(res, booking, 'Booking created successfully', 201);
     } catch (err) {
-        res.status(400).json({ message: err.message });
+        console.error('Create booking error:', err);
+        return errorResponse(res, err.message, 400);
     }
 });
 
@@ -47,16 +50,17 @@ router.put('/bookings/:id', async (req, res) => {
             .single();
 
         if (error) throw error;
-        res.json(booking);
+        return successResponse(res, booking, 'Booking updated successfully');
     } catch (err) {
-        res.status(400).json({ message: err.message });
+        console.error('Update booking error:', err);
+        return errorResponse(res, err.message, 400);
     }
 });
 
 router.get('/users', supabaseAuth, async (req, res) => {
     // Only admins should see all users
     if (req.user.role !== 'admin') {
-        return res.status(403).json({ error: 'Access denied' });
+        return errorResponse(res, 'Access denied', 403);
     }
     try {
         const { data: users, error } = await supabaseAdmin
@@ -64,9 +68,10 @@ router.get('/users', supabaseAuth, async (req, res) => {
             .select('*');
 
         if (error) throw error;
-        res.json(users || []);
+        return successResponse(res, users || []);
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        console.error('Fetch users error:', err);
+        return errorResponse(res, err.message);
     }
 });
 
@@ -97,10 +102,10 @@ router.delete('/users/me', supabaseAuth, async (req, res) => {
 
         if (authError) throw authError;
 
-        res.json({ success: true, message: 'Account deleted successfully' });
+        return successResponse(res, null, 'Account deleted successfully');
     } catch (error) {
         console.error('Delete account error:', error);
-        res.status(500).json({ error: 'Failed to delete account from system' });
+        return errorResponse(res, 'Failed to delete account from system');
     }
 });
 
@@ -116,9 +121,10 @@ router.get('/reviews', async (req, res) => {
             .order('created_at', { ascending: false });
 
         if (error) throw error;
-        res.json(reviews || []);
+        return successResponse(res, reviews || []);
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        console.error('Fetch reviews error:', err);
+        return errorResponse(res, err.message);
     }
 });
 
@@ -132,9 +138,10 @@ router.put('/reviews/:id', async (req, res) => {
             .single();
 
         if (error) throw error;
-        res.json(review);
+        return successResponse(res, review, 'Review updated successfully');
     } catch (err) {
-        res.status(400).json({ message: err.message });
+        console.error('Update review error:', err);
+        return errorResponse(res, err.message, 400);
     }
 });
 

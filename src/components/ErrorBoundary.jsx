@@ -1,8 +1,6 @@
-import { Component } from 'react';
-import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
-import { Button } from './ui/button';
+import React from 'react';
 
-class ErrorBoundary extends Component {
+class ErrorBoundary extends React.Component {
     constructor(props) {
         super(props);
         this.state = { hasError: false, error: null, errorInfo: null };
@@ -14,65 +12,43 @@ class ErrorBoundary extends Component {
 
     componentDidCatch(error, errorInfo) {
         this.setState({ errorInfo });
-        console.error('ErrorBoundary caught an error:', error, errorInfo);
 
-        // Auto-refresh on chunk load errors (often happens after a new deployment)
-        const isChunkLoadError = error.name === 'ChunkLoadError' ||
-            error.message?.includes('Failed to fetch dynamically imported module');
+        // Log error to console in development
+        if (import.meta.env.DEV) {
+            console.error('ErrorBoundary caught an error:', error, errorInfo);
+        }
 
-        if (isChunkLoadError) {
-            const lastReload = localStorage.getItem('last_chunk_reload');
-            const now = Date.now();
-
-            // Only auto-reload if we haven't reloaded in the last 10 seconds to avoid loops
-            if (!lastReload || (now - parseInt(lastReload) > 10000)) {
-                localStorage.setItem('last_chunk_reload', now.toString());
-                console.warn('Chunk load error detected! Attempting automatic page refresh...');
-                window.location.reload();
-            }
+        // Optionally send to error reporting service
+        if (this.props.onError) {
+            this.props.onError(error, errorInfo);
         }
     }
-
-    handleReload = () => {
-        window.location.reload();
-    };
-
-    handleGoHome = () => {
-        window.location.href = '/';
-    };
 
     render() {
         if (this.state.hasError) {
             return (
-                <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-blue-900/20 p-4">
-                    <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 text-center">
-                        <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <AlertTriangle className="w-8 h-8 text-red-500" />
-                        </div>
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                            Something went wrong
-                        </h1>
-                        <p className="text-gray-600 dark:text-gray-400 mb-6">
-                            We're sorry, but something unexpected happened. Please try refreshing the page.
-                        </p>
-                        {process.env.NODE_ENV === 'development' && this.state.error && (
-                            <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 mb-6 text-left overflow-auto max-h-40">
-                                <p className="text-sm font-mono text-red-600 dark:text-red-400">
-                                    {this.state.error.toString()}
-                                </p>
-                            </div>
-                        )}
-                        <div className="flex gap-3 justify-center">
-                            <Button onClick={this.handleReload} className="gradient-primary">
-                                <RefreshCw className="w-4 h-4 mr-2" />
-                                Refresh Page
-                            </Button>
-                            <Button onClick={this.handleGoHome} variant="outline">
-                                <Home className="w-4 h-4 mr-2" />
-                                Go Home
-                            </Button>
-                        </div>
-                    </div>
+                <div className="error-boundary p-6 bg-red-50 border border-red-200 rounded-lg">
+                    <h2 className="text-xl font-bold text-red-600 mb-2">
+                        Something went wrong
+                    </h2>
+                    <p className="text-red-500 mb-4">
+                        {this.state.error?.message || 'An unexpected error occurred'}
+                    </p>
+                    {this.props.fallback ? (
+                        this.props.fallback(this.state)
+                    ) : (
+                        <button
+                            onClick={() => {
+                                this.setState({ hasError: false, error: null, errorInfo: null });
+                                if (this.props.onReset) {
+                                    this.props.onReset();
+                                }
+                            }}
+                            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                        >
+                            Try Again
+                        </button>
+                    )}
                 </div>
             );
         }

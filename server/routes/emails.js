@@ -2,6 +2,7 @@ import express from 'express';
 import { supabaseAuth } from '../middleware/supabaseAuth.js';
 import { emailService } from '../lib/emailService.js';
 import { supabaseAdmin } from '../lib/supabase.js';
+import { successResponse, errorResponse } from '../lib/response.js';
 
 const router = express.Router();
 
@@ -14,7 +15,7 @@ router.post('/booking-confirmation', supabaseAuth, async (req, res) => {
         const { bookingId } = req.body;
 
         if (!bookingId) {
-            return res.status(400).json({ error: 'bookingId is required' });
+            return errorResponse(res, 'bookingId is required', 400);
         }
 
         // Fetch booking details
@@ -29,7 +30,7 @@ router.post('/booking-confirmation', supabaseAuth, async (req, res) => {
             .single();
 
         if (error || !booking) {
-            return res.status(404).json({ error: 'Booking not found' });
+            return errorResponse(res, 'Booking not found', 404);
         }
 
         // Send email
@@ -45,10 +46,10 @@ router.post('/booking-confirmation', supabaseAuth, async (req, res) => {
             estimatedCost: booking.estimated_cost
         });
 
-        res.json({ success: true, message: 'Booking confirmation email sent' });
+        return successResponse(res, null, 'Booking confirmation email sent');
     } catch (error) {
         console.error('Send booking confirmation error:', error);
-        res.status(500).json({ error: error.message || 'Failed to send email' });
+        return errorResponse(res, error.message || 'Failed to send email');
     }
 });
 
@@ -61,7 +62,7 @@ router.post('/status-update', supabaseAuth, async (req, res) => {
         const { bookingId, newStatus, statusMessage } = req.body;
 
         if (!bookingId || !newStatus) {
-            return res.status(400).json({ error: 'bookingId and newStatus are required' });
+            return errorResponse(res, 'bookingId and newStatus are required', 400);
         }
 
         // Fetch booking details
@@ -75,7 +76,7 @@ router.post('/status-update', supabaseAuth, async (req, res) => {
             .single();
 
         if (error || !booking) {
-            return res.status(404).json({ error: 'Booking not found' });
+            return errorResponse(res, 'Booking not found', 404);
         }
 
         // Send email
@@ -86,10 +87,10 @@ router.post('/status-update', supabaseAuth, async (req, res) => {
             statusMessage
         });
 
-        res.json({ success: true, message: 'Status update email sent' });
+        return successResponse(res, null, 'Status update email sent');
     } catch (error) {
         console.error('Send status update error:', error);
-        res.status(500).json({ error: error.message || 'Failed to send email' });
+        return errorResponse(res, error.message || 'Failed to send email');
     }
 });
 
@@ -102,7 +103,7 @@ router.post('/payment-receipt', supabaseAuth, async (req, res) => {
         const { bookingId, amount, transactionId, paymentMethod } = req.body;
 
         if (!bookingId) {
-            return res.status(400).json({ error: 'bookingId is required' });
+            return errorResponse(res, 'bookingId is required', 400);
         }
 
         // Fetch booking details
@@ -116,7 +117,7 @@ router.post('/payment-receipt', supabaseAuth, async (req, res) => {
             .single();
 
         if (error || !booking) {
-            return res.status(404).json({ error: 'Booking not found' });
+            return errorResponse(res, 'Booking not found', 404);
         }
 
         // Send email
@@ -129,10 +130,10 @@ router.post('/payment-receipt', supabaseAuth, async (req, res) => {
             paidAt: new Date().toLocaleString()
         });
 
-        res.json({ success: true, message: 'Payment receipt email sent' });
+        return successResponse(res, null, 'Payment receipt email sent');
     } catch (error) {
         console.error('Send payment receipt error:', error);
-        res.status(500).json({ error: error.message || 'Failed to send email' });
+        return errorResponse(res, error.message || 'Failed to send email');
     }
 });
 
@@ -145,7 +146,7 @@ router.post('/welcome', supabaseAuth, async (req, res) => {
         const { email, userName, userRole } = req.body;
 
         if (!email || !userName) {
-            return res.status(400).json({ error: 'email and userName are required' });
+            return errorResponse(res, 'email and userName are required', 400);
         }
 
         // Send email
@@ -154,10 +155,10 @@ router.post('/welcome', supabaseAuth, async (req, res) => {
             userRole: userRole || 'user'
         });
 
-        res.json({ success: true, message: 'Welcome email sent' });
+        return successResponse(res, null, 'Welcome email sent');
     } catch (error) {
         console.error('Send welcome error:', error);
-        res.status(500).json({ error: error.message || 'Failed to send email' });
+        return errorResponse(res, error.message || 'Failed to send email');
     }
 });
 
@@ -169,7 +170,7 @@ router.get('/preview/:template', async (req, res) => {
     try {
         // Only allow in development
         if (process.env.NODE_ENV === 'production') {
-            return res.status(403).json({ error: 'Not available in production' });
+            return errorResponse(res, 'Not available in production', 403);
         }
 
         const { template } = req.params;
@@ -177,7 +178,7 @@ router.get('/preview/:template', async (req, res) => {
 
         const templateConfig = templates.EMAIL_TEMPLATES[template];
         if (!templateConfig) {
-            return res.status(404).json({ error: `Template '${template}' not found` });
+            return errorResponse(res, `Template '${template}' not found`, 404);
         }
 
         // Sample data for preview
@@ -221,7 +222,7 @@ router.get('/preview/:template', async (req, res) => {
         res.type('html').send(html);
     } catch (error) {
         console.error('Preview template error:', error);
-        res.status(500).json({ error: error.message || 'Failed to preview template' });
+        return errorResponse(res, error.message || 'Failed to preview template');
     }
 });
 
@@ -238,7 +239,7 @@ router.get('/templates', async (req, res) => {
         { name: 'paymentReceipt', description: 'Sent after successful payment' }
     ];
 
-    res.json(templates);
+    return successResponse(res, templates);
 });
 
 export default router;

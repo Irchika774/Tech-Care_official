@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
@@ -18,6 +18,7 @@ import CurrencyDisplay from '../components/CurrencyDisplay';
 import { formatDistanceToNow } from 'date-fns';
 import SEO from '../components/SEO';
 import EarningsChart from '../components/EarningsChart';
+import { POLLING_INTERVALS } from '../lib/constants';
 
 const TechnicianDashboard = () => {
   const navigate = useNavigate();
@@ -72,8 +73,12 @@ const TechnicianDashboard = () => {
         }
 
         const result = await response.json();
-        setData(result);
-        setError(null);
+        if (result.success && result.data) {
+          setData(result.data);
+          setError(null);
+        } else {
+          throw new Error(result.error || 'Failed to parse dashboard data');
+        }
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
         // Only show error if we don't have any data yet
@@ -90,7 +95,7 @@ const TechnicianDashboard = () => {
     fetchDashboardData(true);
 
     // Refresh data every 30 seconds for real-time updates
-    const interval = setInterval(() => fetchDashboardData(false), 30000);
+    const interval = setInterval(() => fetchDashboardData(false), POLLING_INTERVALS.DASHBOARD_REFRESH);
     return () => clearInterval(interval);
   }, [user?.id]); // Use user.id specifically for more stable dependency
 
@@ -268,9 +273,8 @@ const TechnicianDashboard = () => {
         })
       });
 
-      if (!response.ok) throw new Error('Failed to complete job');
-
       const result = await response.json();
+      if (!result.success) throw new Error(result.error || 'Failed to complete job');
 
       // Update local state
       setData(prev => ({
@@ -432,12 +436,13 @@ const TechnicianDashboard = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 h-auto p-1 bg-zinc-900 border border-zinc-800 rounded-xl">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-6 h-auto p-1 bg-zinc-900 border border-zinc-800 rounded-xl">
             <TabsTrigger value="overview" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">Overview</TabsTrigger>
             <TabsTrigger value="jobs" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">Jobs</TabsTrigger>
             <TabsTrigger value="bids" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">Bids</TabsTrigger>
             <TabsTrigger value="earnings" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">Earnings</TabsTrigger>
             <TabsTrigger value="analytics" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">Analytics</TabsTrigger>
+            <TabsTrigger value="settings" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">Settings</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -703,6 +708,220 @@ const TechnicianDashboard = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Settings Tab - Services & Availability */}
+          <TabsContent value="settings">
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Profile Settings */}
+              <Card className="bg-zinc-900 border-zinc-800">
+                <CardHeader>
+                  <CardTitle className="text-lg font-['Outfit'] font-bold text-white">Profile Settings</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-zinc-400">Technician Name</Label>
+                    <Input
+                      defaultValue={data.technician?.name || ''}
+                      className="bg-zinc-950 border-zinc-800"
+                      id="tech-name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-zinc-400">Email</Label>
+                    <Input
+                      defaultValue={data.technician?.email || ''}
+                      disabled
+                      className="bg-zinc-950 border-zinc-800 opacity-60"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-zinc-400">Phone</Label>
+                    <Input
+                      defaultValue={data.technician?.phone || ''}
+                      className="bg-zinc-950 border-zinc-800"
+                      id="tech-phone"
+                    />
+                  </div>
+                  <Button className="w-full bg-white text-black hover:bg-gray-100">
+                    Save Profile
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Services Management */}
+              <Card className="bg-zinc-900 border-zinc-800">
+                <CardHeader>
+                  <CardTitle className="text-lg font-['Outfit'] font-bold text-white">My Services & Pricing</CardTitle>
+                  <CardDescription className="text-zinc-400">
+                    Manage your services and set custom prices for customers to see.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    {(data.services || []).length > 0 ? (
+                      data.services.map((service) => (
+                        <div key={service.id} className="flex items-center justify-between p-3 bg-zinc-950 rounded-lg border border-zinc-800">
+                          <div>
+                            <p className="font-medium text-white">{service.name}</p>
+                            <p className="text-sm text-zinc-400">{service.description}</p>
+                          </div>
+                          <div className="text-right">
+                            <Input
+                              type="number"
+                              defaultValue={service.price}
+                              className="w-24 h-8 bg-zinc-900 border-zinc-700 text-right"
+                              onBlur={async (e) => {
+                                const newPrice = parseFloat(e.target.value);
+                                if (newPrice === service.price) return;
+                                try {
+                                  const { data: { session } } = await supabase.auth.getSession();
+                                  const token = session?.access_token;
+                                  await fetch(`${API_URL}/api/technicians/services/${service.id}`, {
+                                    method: 'PATCH',
+                                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ price: newPrice })
+                                  });
+                                  toast({ title: "Price Updated", description: `${service.name} price saved.` });
+                                } catch (err) {
+                                  toast({ title: "Update Failed", variant: "destructive" });
+                                }
+                              }}
+                            />
+                            <p className="text-xs text-zinc-500 mt-1">LKR</p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-4 text-zinc-500">
+                        <p>No services defined. Add them via the button below.</p>
+                      </div>
+                    )}
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="w-full border-zinc-800 text-zinc-400 hover:text-white"
+                    onClick={() => {
+                      /* Logic to add a new service could go here */
+                      toast({ title: "Coming Soon", description: "Manual service addition will be available in the next update." });
+                    }}
+                  >
+                    Add Custom Service
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Availability Settings */}
+              <Card className="bg-zinc-900 border-zinc-800 md:col-span-2">
+                <CardHeader>
+                  <CardTitle className="text-lg font-['Outfit'] font-bold text-white">Availability Schedule</CardTitle>
+                  <CardDescription className="text-zinc-400">
+                    Set your working hours for appointments. Empty slots will show as unavailable to customers.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[
+                      { id: 1, name: 'Monday' },
+                      { id: 2, name: 'Tuesday' },
+                      { id: 3, name: 'Wednesday' },
+                      { id: 4, name: 'Thursday' },
+                      { id: 5, name: 'Friday' },
+                      { id: 6, name: 'Saturday' },
+                      { id: 0, name: 'Sunday' }
+                    ].map((day) => {
+                      const avail = (data.availability || []).find(a => a.day_of_week === day.id) || {
+                        is_available: true,
+                        start_time: '09:00',
+                        end_time: '17:00'
+                      };
+                      return (
+                        <div key={day.id} className="space-y-2 p-3 bg-zinc-950/50 rounded-lg border border-zinc-800/50">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              id={`day-${day.id}`}
+                              defaultChecked={avail.is_available}
+                              className="rounded border-zinc-600"
+                              onChange={async (e) => {
+                                try {
+                                  const { data: { session } } = await supabase.auth.getSession();
+                                  const token = session?.access_token;
+                                  await fetch(`${API_URL}/api/technicians/availability`, {
+                                    method: 'POST',
+                                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                      day_of_week: day.id,
+                                      is_available: e.target.checked,
+                                      start_time: avail.start_time,
+                                      end_time: avail.end_time
+                                    })
+                                  });
+                                } catch (err) { }
+                              }}
+                            />
+                            <Label htmlFor={`day-${day.id}`} className="text-white text-sm">{day.name}</Label>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <Input
+                              type="time"
+                              defaultValue={avail.start_time.slice(0, 5)}
+                              className="h-8 bg-zinc-900 border-zinc-800 text-xs px-1"
+                              onBlur={async (e) => {
+                                try {
+                                  const { data: { session } } = await supabase.auth.getSession();
+                                  const token = session?.access_token;
+                                  await fetch(`${API_URL}/api/technicians/availability`, {
+                                    method: 'POST',
+                                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                      day_of_week: day.id,
+                                      start_time: e.target.value,
+                                      end_time: avail.end_time,
+                                      is_available: avail.is_available
+                                    })
+                                  });
+                                } catch (err) { }
+                              }}
+                            />
+                            <Input
+                              type="time"
+                              defaultValue={avail.end_time.slice(0, 5)}
+                              className="h-8 bg-zinc-900 border-zinc-800 text-xs px-1"
+                              onBlur={async (e) => {
+                                try {
+                                  const { data: { session } } = await supabase.auth.getSession();
+                                  const token = session?.access_token;
+                                  await fetch(`${API_URL}/api/technicians/availability`, {
+                                    method: 'POST',
+                                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                      day_of_week: day.id,
+                                      start_time: avail.start_time,
+                                      end_time: e.target.value,
+                                      is_available: avail.is_available
+                                    })
+                                  });
+                                } catch (err) { }
+                              }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <Button
+                    className="w-full mt-6 bg-white text-black hover:bg-gray-100"
+                    onClick={() => {
+                      fetchDashboardData(true);
+                      toast({ title: "Settings Saved", description: "Your availability has been synchronized." });
+                    }}
+                  >
+                    Refresh & Verify Sync
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </main>

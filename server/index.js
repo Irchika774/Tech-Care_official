@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
+import { successResponse, errorResponse } from './lib/response.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -61,8 +62,41 @@ app.use(cors({
 
 app.use(express.json({ limit: '10mb' }));
 
+// Rate limiting middleware (simple in-memory implementation)
+const rateLimitMap = new Map();
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX = 100; // Max requests per window
+
+const rateLimiter = (req, res, next) => {
+    const ip = req.ip || req.connection.remoteAddress;
+    const now = Date.now();
+
+    if (!rateLimitMap.has(ip)) {
+        rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+        return next();
+    }
+
+    const record = rateLimitMap.get(ip);
+
+    // Reset if window has passed
+    if (now > record.resetTime) {
+        rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+        return next();
+    }
+
+    // Check limit
+    if (record.count >= RATE_LIMIT_MAX) {
+        return errorResponse(res, 'Too many requests, please try again later', 429);
+    }
+
+    record.count++;
+    next();
+};
+
+app.use(rateLimiter);
+
 app.get('/api/health', (req, res) => {
-    res.json({
+    return successResponse(res, {
         status: 'running',
         timestamp: new Date().toISOString(),
         port: PORT,
@@ -71,7 +105,7 @@ app.get('/api/health', (req, res) => {
 });
 
 app.get('/api/debug-env', (req, res) => {
-    res.json({
+    return successResponse(res, {
         SUPABASE_URL: process.env.SUPABASE_URL ? 'SET' : 'NOT SET',
         VITE_SUPABASE_URL: process.env.VITE_SUPABASE_URL ? 'SET' : 'NOT SET',
         SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SET' : 'NOT SET',
@@ -81,7 +115,7 @@ app.get('/api/debug-env', (req, res) => {
 });
 
 app.get('/', (req, res) => {
-    res.json({
+    return successResponse(res, {
         message: 'TechCare API is running',
         version: '1.0.0',
         endpoints: {
@@ -173,20 +207,14 @@ async function loadRoutes() {
             app.use('/api', apiLimiter, apiRoutes.default);
 
             app.use((req, res) => {
-                res.status(404).json({
-                    error: 'Route not found',
-                    path: req.path
-                });
+                return errorResponse(res, `Route not found: ${req.path}`, 404);
             });
 
             app.use(securityErrorHandler);
 
             app.use((err, req, res, next) => {
                 console.error('Server Error:', err.stack);
-                res.status(err.status || 500).json({
-                    error: 'Internal server error',
-                    message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
-                });
+                return errorResponse(res, process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong', err.status || 500);
             });
 
             routesLoaded = true;
@@ -206,7 +234,7 @@ const handler = async (req, res) => {
         app(req, res);
     } catch (error) {
         console.error('Handler error:', error);
-        res.status(500).json({ error: 'Server initialization failed', message: error.message });
+        return errorResponse(res, `Server initialization failed: ${error.message}`, 500);
     }
 };
 

@@ -65,7 +65,11 @@ export const AuthProvider = ({ children }) => {
 
             if (isMounted.current) {
                 // Determine the most authoritative role
-                const authoritativeRole = finalProfile.role || authUser.user_metadata?.role || 'user';
+                let authoritativeRole = finalProfile.role || authUser.user_metadata?.role || 'user';
+                // Normalize role: map 'user' to 'customer' for consistency
+                if (authoritativeRole === 'user') {
+                    authoritativeRole = 'customer';
+                }
                 finalProfile.role = authoritativeRole;
 
                 setProfile(finalProfile);
@@ -321,11 +325,15 @@ export const AuthProvider = ({ children }) => {
             // Clear any local storage if needed
             localStorage.removeItem('supabase.auth.token');
             console.log('[DEBUG] Logout successful, redirecting...');
-            // Force reload to clear all state and redirect to home
-            window.location.assign('/');
+            // Use navigate for proper SPA navigation
+            setTimeout(() => {
+                navigate('/', { replace: true });
+            }, 100);
         } catch (error) {
             console.error('Logout error:', error);
-            window.location.assign('/');
+            setTimeout(() => {
+                navigate('/', { replace: true });
+            }, 100);
         }
     };
 
@@ -346,7 +354,7 @@ export const AuthProvider = ({ children }) => {
 
     const isAdmin = () => hasRole('admin');
     const isTechnician = () => hasRole('technician');
-    const isCustomer = () => hasRole(['user', 'customer']);
+    const isCustomer = () => hasRole(['user', 'customer', 'customer']);
     const isAuthenticated = () => !!user;
 
     return (

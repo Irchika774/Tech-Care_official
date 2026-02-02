@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { supabaseAdmin } from '../lib/supabase.js';
 import { supabaseAuth } from '../middleware/supabaseAuth.js';
 import { createNotification } from './notifications.js';
+import { successResponse, errorResponse } from '../lib/response.js';
 
 const router = express.Router();
 
@@ -11,16 +12,12 @@ const stripe = process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.i
     : null;
 
 // Zero-decimal currencies do not have minor units (cents)
-// LKR (Sri Lankan Rupee) is NOT zero-decimal - it uses decimal places
-// Reference: https://stripe.com/docs/currencies#zero-decimal
 const ZERO_DECIMAL_CURRENCIES = ['bif', 'clp', 'djf', 'gnf', 'jpy', 'kmf', 'krw', 'mga', 'pyg', 'rwf', 'ugx', 'vnd', 'vuv', 'xaf', 'xof', 'xpf'];
 
 router.post('/create-payment-intent', supabaseAuth, async (req, res) => {
     try {
         if (!stripe) {
-            return res.status(503).json({
-                error: 'Payment service not configured. Please add Stripe API key to .env file.'
-            });
+            return errorResponse(res, 'Payment service not configured. Please add Stripe API key to .env file.', 503);
         }
 
         const { amount, currency = 'lkr', bookingId, customerId, metadata = {}, setupFutureUsage = false } = req.body;
@@ -81,7 +78,7 @@ router.post('/create-payment-intent', supabaseAuth, async (req, res) => {
         }
 
         if (!amount || amount <= 0) {
-            return res.status(400).json({ error: 'Invalid amount' });
+            return errorResponse(res, 'Invalid amount', 400);
         }
 
         const currencyLower = currency.toLowerCase();
@@ -97,7 +94,6 @@ router.post('/create-payment-intent', supabaseAuth, async (req, res) => {
                     customer_id: finalCustomerId || '',
                     ...metadata
                 },
-                // automatic_payment_methods: { enabled: true },
                 payment_method_types: ['card'], // Force card to avoid config issues with LKR
             };
 
@@ -142,24 +138,14 @@ router.post('/create-payment-intent', supabaseAuth, async (req, res) => {
             }
         }
 
-        res.json({
+        return successResponse(res, {
             clientSecret: paymentIntent.client_secret,
             paymentIntentId: paymentIntent.id,
             customer: stripeCustomerId
         });
     } catch (error) {
-        console.error('[STRIPE ERROR] create-payment-intent failed:', {
-            message: error.message,
-            code: error.code,
-            type: error.type,
-            stack: error.stack,
-            body: req.body
-        });
-        res.status(500).json({
-            error: error.message || 'An internal error occurred while creating the payment intent',
-            code: error.code || 'UNKNOWN_ERROR',
-            type: error.type || 'internal_server_error'
-        });
+        console.error('[STRIPE ERROR] create-payment-intent failed:', error);
+        return errorResponse(res, error.message || 'An internal error occurred while creating the payment intent');
     }
 });
 
@@ -168,7 +154,7 @@ router.post('/confirm-payment', async (req, res) => {
         const { paymentIntentId, bookingId, customerId } = req.body;
 
         if (!paymentIntentId || !bookingId) {
-            return res.status(400).json({ error: 'Missing paymentIntentId or bookingId' });
+            return errorResponse(res, 'Missing paymentIntentId or bookingId', 400);
         }
 
         const { error } = await supabaseAdmin
@@ -208,10 +194,10 @@ router.post('/confirm-payment', async (req, res) => {
             }
         }
 
-        res.json({ success: true, message: 'Payment confirmed' });
+        return successResponse(res, null, 'Payment confirmed');
     } catch (error) {
         console.error('Confirm payment error:', error);
-        res.status(500).json({ error: error.message });
+        return errorResponse(res, error.message);
     }
 });
 
@@ -225,7 +211,7 @@ router.get('/history', supabaseAuth, async (req, res) => {
             .single();
 
         if (!profile?.stripe_customer_id) {
-            return res.json({ payments: [] });
+            return successResponse(res, { payments: [] });
         }
 
         const payments = await stripe.paymentIntents.list({
@@ -233,9 +219,61 @@ router.get('/history', supabaseAuth, async (req, res) => {
             limit: 20
         });
 
-        res.json({ payments: payments.data });
+        return successResponse(res, { payments: payments.data });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        return errorResponse(res, error.message);
+    }
+});
+
+// Get payment history for a specific customer
+router.get('/payments/customer/:customerId', supabaseAuth, async (req, res) => {
+    try {
+        const { customerId } = req.params;
+        const requesterId = req.user.id;
+        const requesterRole = req.user.role;
+
+        // Authorization: Only allow access to own data or admin
+        if (requesterId !== customerId && requesterRole !== 'admin') {
+            return errorResponse(res, 'Access denied', 403);
+        }
+
+        // First get the Stripe customer ID from Supabase
+        const { data: profile, error: profileError } = await supabaseAdmin
+            .from('profiles')
+            .select('stripe_customer_id, name, email')
+            .eq('id', customerId)
+            .single();
+
+        if (profileError || !profile) {
+            console.log('[DEBUG] Profile not found for customer:', customerId);
+            // Return empty array instead of error - graceful fallback
+            return successResponse(res, { payments: [], customer: null });
+        }
+
+        if (!profile.stripe_customer_id) {
+            console.log('[DEBUG] No Stripe customer ID for:', customerId);
+            return successResponse(res, { payments: [], customer: { name: profile.name, email: profile.email } });
+        }
+
+        // Fetch payments from Stripe
+        try {
+            const payments = await stripe.paymentIntents.list({
+                customer: profile.stripe_customer_id,
+                limit: 50
+            });
+
+            return successResponse(res, {
+                payments: payments.data,
+                customer: { name: profile.name, email: profile.email }
+            });
+        } catch (stripeError) {
+            console.error('[DEBUG] Stripe payment fetch error:', stripeError.message);
+            // Return empty if Stripe fails
+            return successResponse(res, { payments: [], customer: { name: profile.name, email: profile.email } });
+        }
+    } catch (error) {
+        console.error('Payment history error:', error);
+        return errorResponse(res, error.message);
     }
 });
 
@@ -254,7 +292,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         console.log(`PaymentIntent for ${paymentIntent.amount} was successful!`);
     }
 
-    res.json({ received: true });
+    return successResponse(res, { received: true });
 });
 
 export default router;

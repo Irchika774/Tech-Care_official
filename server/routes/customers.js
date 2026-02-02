@@ -1,6 +1,7 @@
 import express from 'express';
 import { supabaseAdmin } from '../lib/supabase.js';
 import { supabaseAuth } from '../middleware/supabaseAuth.js';
+import { successResponse, errorResponse } from '../lib/response.js';
 
 const router = express.Router();
 
@@ -102,7 +103,7 @@ router.get('/dashboard', supabaseAuth, verifyCustomer, async (req, res) => {
             favoriteTechniciansCount: favoritesCountRes.count || 0
         };
 
-        res.json({
+        return successResponse(res, {
             customer: {
                 name: profile?.name || req.user.name,
                 email: profile?.email || req.user.email,
@@ -115,7 +116,7 @@ router.get('/dashboard', supabaseAuth, verifyCustomer, async (req, res) => {
         });
     } catch (error) {
         console.error('Dashboard error:', error);
-        res.status(500).json({ error: 'Failed to fetch dashboard data' });
+        return errorResponse(res, 'Failed to fetch dashboard data');
     }
 });
 
@@ -145,14 +146,14 @@ router.get('/bookings', supabaseAuth, verifyCustomer, async (req, res) => {
 
         if (error) throw error;
 
-        res.json({
+        return successResponse(res, {
             bookings: bookings || [],
             total: count || 0,
             hasMore: (count || 0) > parseInt(skip) + parseInt(limit)
         });
     } catch (error) {
         console.error('Bookings fetch error:', error);
-        res.status(500).json({ error: 'Failed to fetch bookings' });
+        return errorResponse(res, 'Failed to fetch bookings');
     }
 });
 
@@ -201,10 +202,10 @@ router.post('/bookings', supabaseAuth, verifyCustomer, async (req, res) => {
             data: { booking_id: booking.id }
         }]);
 
-        res.status(201).json({ booking, message: 'Booking created successfully' });
+        return successResponse(res, booking, 'Booking created successfully', 201);
     } catch (error) {
         console.error('Booking creation error:', error);
-        res.status(500).json({ error: 'Failed to create booking' });
+        return errorResponse(res, 'Failed to create booking');
     }
 });
 
@@ -276,10 +277,10 @@ router.patch('/bookings/:id', supabaseAuth, verifyCustomer, async (req, res) => 
 
         if (error) throw error;
 
-        res.json({ booking, message: 'Booking updated successfully' });
+        return successResponse(res, booking, 'Booking updated successfully');
     } catch (error) {
         console.error('Booking update error:', error);
-        res.status(500).json({ error: 'Failed to update booking' });
+        return errorResponse(res, 'Failed to update booking');
     }
 });
 
@@ -307,10 +308,10 @@ router.get('/notifications', supabaseAuth, verifyCustomer, async (req, res) => {
             .eq('user_id', userId)
             .eq('read', false);
 
-        res.json({ notifications: notifications || [], unreadCount: unreadCount || 0 });
+        return successResponse(res, { notifications: notifications || [], unreadCount: unreadCount || 0 });
     } catch (error) {
         console.error('Notifications fetch error:', error);
-        res.status(500).json({ error: 'Failed to fetch notifications' });
+        return errorResponse(res, 'Failed to fetch notifications');
     }
 });
 
@@ -322,10 +323,10 @@ router.patch('/notifications/:id', supabaseAuth, verifyCustomer, async (req, res
             .eq('id', req.params.id);
 
         if (error) throw error;
-        res.json({ message: 'Notification marked as read' });
+        return successResponse(res, null, 'Notification marked as read');
     } catch (error) {
         console.error('Notification update error:', error);
-        res.status(500).json({ error: 'Failed to update notification' });
+        return errorResponse(res, 'Failed to update notification');
     }
 });
 
@@ -340,10 +341,10 @@ router.get('/profile', supabaseAuth, verifyCustomer, async (req, res) => {
             .single();
 
         if (error) throw error;
-        res.json({ customer: profile });
+        return successResponse(res, profile);
     } catch (error) {
         console.error('Profile fetch error:', error);
-        res.status(500).json({ error: 'Failed to fetch profile' });
+        return errorResponse(res, 'Failed to fetch profile');
     }
 });
 
@@ -375,10 +376,10 @@ router.patch('/profile', supabaseAuth, verifyCustomer, async (req, res) => {
         ]);
 
         if (profileRes.error) throw profileRes.error;
-        res.json({ customer: profileRes.data, message: 'Profile updated successfully' });
+        return successResponse(res, profileRes.data, 'Profile updated successfully');
     } catch (error) {
         console.error('Profile update error:', error);
-        res.status(500).json({ error: 'Failed to update profile' });
+        return errorResponse(res, 'Failed to update profile');
     }
 });
 
@@ -403,19 +404,19 @@ router.get('/favorites', supabaseAuth, verifyCustomer, async (req, res) => {
 
         if (error) throw error;
 
-        res.json({
-            favorites: (favorites || []).map(f => ({
-                _id: f.technician?.id,
-                ...f.technician,
-                name: f.technician?.name,
-                rating: f.technician?.rating || 0,
-                reviewCount: f.technician?.review_count || 0,
-                profileImage: f.technician?.profile_image
-            }))
-        });
+        const favoritesData = (favorites || []).map(f => ({
+            _id: f.technician?.id,
+            ...f.technician,
+            name: f.technician?.name,
+            rating: f.technician?.rating || 0,
+            reviewCount: f.technician?.review_count || 0,
+            profileImage: f.technician?.profile_image
+        }));
+
+        return successResponse(res, favoritesData);
     } catch (error) {
         console.error('Favorites fetch error:', error);
-        res.status(500).json({ error: 'Failed to fetch favorites' });
+        return errorResponse(res, 'Failed to fetch favorites');
     }
 });
 
@@ -603,10 +604,10 @@ router.post('/bookings/:id/select-bid', supabaseAuth, verifyCustomer, async (req
             data: { booking_id: bookingId, bid_id: bidId }
         }]);
 
-        res.json({ booking: updatedBooking, message: 'Bid accepted successfully' });
+        return successResponse(res, updatedBooking, 'Bid accepted successfully');
     } catch (error) {
         console.error('Bid selection error:', error);
-        res.status(500).json({ error: 'Failed to select bid' });
+        return errorResponse(res, 'Failed to select bid');
     }
 });
 

@@ -1,6 +1,7 @@
 import express from 'express';
 import { supabaseAdmin } from '../lib/supabase.js';
 import { supabaseAuth } from '../middleware/supabaseAuth.js';
+import { successResponse, errorResponse } from '../lib/response.js';
 
 const router = express.Router();
 
@@ -80,6 +81,38 @@ router.get('/:id', async (req, res, next) => {
     }
 });
 
+// Get technician services (Public)
+router.get('/:id/services', async (req, res) => {
+    try {
+        const { data: services, error } = await supabaseAdmin
+            .from('technician_services')
+            .select('*')
+            .eq('technician_id', req.params.id)
+            .eq('is_active', true);
+
+        if (error) throw error;
+        return successResponse(res, services);
+    } catch (error) {
+        return errorResponse(res, 'Failed to fetch technician services');
+    }
+});
+
+// Get technician availability (Public)
+router.get('/:id/availability', async (req, res) => {
+    try {
+        const { data: availability, error } = await supabaseAdmin
+            .from('technician_availability')
+            .select('*')
+            .eq('technician_id', req.params.id)
+            .eq('is_available', true);
+
+        if (error) throw error;
+        return successResponse(res, availability);
+    } catch (error) {
+        return errorResponse(res, 'Failed to fetch technician availability');
+    }
+});
+
 router.get('/', async (req, res) => {
     try {
         const { data: technicians, error } = await supabaseAdmin
@@ -141,33 +174,48 @@ router.get('/dashboard', supabaseAuth, verifyTechnician, async (req, res) => {
 
         const todayEarnings = (todayBookings || []).reduce((sum, b) => sum + (parseFloat(b.price) || 0), 0);
 
+        const { data: services } = await supabaseAdmin
+            .from('technician_services')
+            .select('*')
+            .eq('technician_id', technician.id);
+
+        const { data: availability } = await supabaseAdmin
+            .from('technician_availability')
+            .select('*')
+            .eq('technician_id', technician.id);
+
         res.json({
-            technician: {
-                name: technician.name,
-                email: technician.email,
-                phone: technician.phone,
-                profileImage: technician.profile_image,
-                isVerified: technician.is_verified
-            },
-            stats: {
-                totalJobs: technician.total_jobs || 0,
-                completedJobs: technician.completed_jobs || 0,
-                activeJobs: technician.active_jobs || 0,
-                activeBids: technician.active_bids || 0,
-                rating: technician.rating || 0,
-                reviewCount: technician.review_count || 0,
-                totalEarnings: technician.total_earnings || 0,
-                availableBalance: technician.available_balance || 0,
-                todayEarnings: todayEarnings,
-                completionRate: technician.completion_rate || 0,
-                responseTime: `${technician.avg_response_time || 0} mins`
-            },
-            activeJobs: activeJobs || [],
-            activeBids: activeBids || []
+            success: true,
+            data: {
+                technician: {
+                    name: technician.name,
+                    email: technician.email,
+                    phone: technician.phone,
+                    profileImage: technician.profile_image,
+                    isVerified: technician.is_verified
+                },
+                stats: {
+                    totalJobs: technician.total_jobs || 0,
+                    completedJobs: technician.completed_jobs || 0,
+                    activeJobs: technician.active_jobs || 0,
+                    activeBids: technician.active_bids || 0,
+                    rating: technician.rating || 0,
+                    reviewCount: technician.review_count || 0,
+                    totalEarnings: technician.total_earnings || 0,
+                    availableBalance: technician.available_balance || 0,
+                    todayEarnings: todayEarnings,
+                    completionRate: technician.completion_rate || 0,
+                    responseTime: `${technician.avg_response_time || 0} mins`
+                },
+                activeJobs: activeJobs || [],
+                activeBids: activeBids || [],
+                services: services || [],
+                availability: availability || []
+            }
         });
     } catch (error) {
         console.error('Dashboard error:', error);
-        res.status(500).json({ error: 'Failed to fetch dashboard data' });
+        res.status(500).json({ success: false, error: 'Failed to fetch dashboard data' });
     }
 });
 
@@ -181,11 +229,10 @@ router.get('/jobs', supabaseAuth, verifyTechnician, async (req, res) => {
             .order('created_at', { ascending: false })
             .limit(50);
 
-        if (error) throw error;
-        res.json({ jobs: jobs || [] });
+        return successResponse(res, { jobs: jobs || [] });
     } catch (error) {
         console.error('Jobs fetch error:', error);
-        res.status(500).json({ error: 'Failed to fetch jobs' });
+        return errorResponse(res, 'Failed to fetch jobs');
     }
 });
 
@@ -218,13 +265,16 @@ router.get('/bookings', supabaseAuth, verifyTechnician, async (req, res) => {
         if (error) throw error;
 
         res.json({
-            bookings: bookings || [],
-            total: count || 0,
-            hasMore: (count || 0) > parseInt(skip) + parseInt(limit)
+            success: true,
+            data: {
+                bookings: bookings || [],
+                total: count || 0,
+                hasMore: (count || 0) > parseInt(skip) + parseInt(limit)
+            }
         });
     } catch (error) {
         console.error('Bookings fetch error:', error);
-        res.status(500).json({ error: 'Failed to fetch bookings' });
+        return errorResponse(res, 'Failed to fetch bookings');
     }
 });
 
@@ -257,10 +307,10 @@ router.patch('/bookings/:id/accept', supabaseAuth, verifyTechnician, async (req,
             total_jobs: (technician.total_jobs || 0) + 1
         }).eq('id', technician.id);
 
-        res.json({ booking, message: 'Job accepted successfully' });
+        return successResponse(res, booking, 'Job accepted successfully');
     } catch (error) {
         console.error('Accept job error:', error);
-        res.status(500).json({ error: 'Failed to accept job' });
+        return errorResponse(res, 'Failed to accept job');
     }
 });
 
@@ -302,10 +352,10 @@ router.patch('/bookings/:id/complete', supabaseAuth, verifyTechnician, async (re
             total_earnings: (technician.total_earnings || 0) + (actualCost || 0)
         }).eq('id', technician.id);
 
-        res.json({ booking, message: 'Job marked as complete' });
+        return successResponse(res, booking, 'Job marked as complete');
     } catch (error) {
         console.error('Complete job error:', error);
-        res.status(500).json({ error: 'Failed to complete job' });
+        return errorResponse(res, 'Failed to complete job');
     }
 });
 
@@ -354,10 +404,10 @@ router.post('/bids', supabaseAuth, verifyTechnician, async (req, res) => {
             active_bids: (technician.active_bids || 0) + 1
         }).eq('id', technician.id);
 
-        res.status(201).json({ bid, message: 'Bid submitted successfully' });
+        return successResponse(res, bid, 'Bid submitted successfully', 201);
     } catch (error) {
         console.error('Bid submission error:', error);
-        res.status(500).json({ error: 'Failed to submit bid' });
+        return errorResponse(res, 'Failed to submit bid');
     }
 });
 
@@ -373,7 +423,7 @@ router.get('/bids', supabaseAuth, verifyTechnician, async (req, res) => {
             .single();
 
         if (!technician) {
-            return res.json({ bids: [] });
+            return successResponse(res, { bids: [] });
         }
 
         let query = supabaseAdmin
@@ -386,10 +436,10 @@ router.get('/bids', supabaseAuth, verifyTechnician, async (req, res) => {
         const { data: bids, error } = await query.order('created_at', { ascending: false });
 
         if (error) throw error;
-        res.json({ bids: bids || [] });
+        return successResponse(res, { bids: bids || [] });
     } catch (error) {
         console.error('Bids fetch error:', error);
-        res.status(500).json({ error: 'Failed to fetch bids' });
+        return errorResponse(res, 'Failed to fetch bids');
     }
 });
 
@@ -404,7 +454,7 @@ router.get('/earnings', supabaseAuth, verifyTechnician, async (req, res) => {
             .single();
 
         if (!technician) {
-            return res.json({ earnings: [], summary: { totalEarnings: 0, pendingEarnings: 0, availableBalance: 0 } });
+            return successResponse(res, { earnings: [], summary: { totalEarnings: 0, pendingEarnings: 0, availableBalance: 0 } });
         }
 
         const { data: earnings } = await supabaseAdmin
@@ -414,7 +464,7 @@ router.get('/earnings', supabaseAuth, verifyTechnician, async (req, res) => {
             .eq('status', 'completed')
             .order('completed_date', { ascending: false });
 
-        res.json({
+        return successResponse(res, {
             earnings: earnings || [],
             summary: {
                 totalEarnings: technician.total_earnings || 0,
@@ -424,7 +474,7 @@ router.get('/earnings', supabaseAuth, verifyTechnician, async (req, res) => {
         });
     } catch (error) {
         console.error('Earnings fetch error:', error);
-        res.status(500).json({ error: 'Failed to fetch earnings' });
+        return errorResponse(res, 'Failed to fetch earnings');
     }
 });
 
@@ -439,7 +489,7 @@ router.get('/analytics', supabaseAuth, verifyTechnician, async (req, res) => {
             .single();
 
         if (!technician) {
-            return res.json({
+            return successResponse(res, {
                 metrics: { averageResponseTime: 0, completionRate: 0, customerSatisfaction: 0, onTimeCompletion: 0 },
                 ratingBreakdown: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
                 monthlyEarnings: [],
@@ -447,7 +497,7 @@ router.get('/analytics', supabaseAuth, verifyTechnician, async (req, res) => {
             });
         }
 
-        res.json({
+        return successResponse(res, {
             metrics: {
                 averageResponseTime: technician.avg_response_time || 0,
                 completionRate: technician.completion_rate || 0,
@@ -472,7 +522,7 @@ router.get('/analytics', supabaseAuth, verifyTechnician, async (req, res) => {
         });
     } catch (error) {
         console.error('Analytics fetch error:', error);
-        res.status(500).json({ error: 'Failed to fetch analytics' });
+        return errorResponse(res, 'Failed to fetch analytics');
     }
 });
 
@@ -480,20 +530,10 @@ router.get('/profile', supabaseAuth, verifyTechnician, async (req, res) => {
     try {
         const userId = req.user.id;
 
-        const { data: technician, error } = await supabaseAdmin
-            .from('technicians')
-            .select('*')
-            .eq('user_id', userId)
-            .single();
-
-        if (error || !technician) {
-            return res.status(404).json({ error: 'Technician not found' });
-        }
-
-        res.json({ technician });
+        return successResponse(res, technician);
     } catch (error) {
         console.error('Profile fetch error:', error);
-        res.status(500).json({ error: 'Failed to fetch profile' });
+        return errorResponse(res, 'Failed to fetch profile');
     }
 });
 
@@ -510,10 +550,209 @@ router.patch('/profile', supabaseAuth, verifyTechnician, async (req, res) => {
             .single();
 
         if (error) throw error;
-        res.json({ technician, message: 'Profile updated successfully' });
+        return successResponse(res, technician, 'Profile updated successfully');
     } catch (error) {
         console.error('Profile update error:', error);
-        res.status(500).json({ error: 'Failed to update profile' });
+        return errorResponse(res, 'Failed to update profile');
+    }
+});
+
+// Technician Services Management
+router.get('/services', supabaseAuth, verifyTechnician, async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        // Get technician ID
+        const { data: technician } = await supabaseAdmin
+            .from('technicians')
+            .select('id')
+            .eq('user_id', userId)
+            .single();
+
+        if (!technician) {
+            return res.status(404).json({ error: 'Technician profile not found' });
+        }
+
+        // Fetch services for this technician
+        const { data: services, error } = await supabaseAdmin
+            .from('technician_services')
+            .select('*')
+            .eq('technician_id', technician.id)
+            .order('name');
+
+        if (error) throw error;
+        res.json({ services: services || [] });
+    } catch (error) {
+        console.error('Fetch services error:', error);
+        res.status(500).json({ error: 'Failed to fetch services' });
+    }
+});
+
+router.post('/services', supabaseAuth, verifyTechnician, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { name, description, price, category, estimated_time } = req.body;
+
+        // Get technician ID
+        const { data: technician } = await supabaseAdmin
+            .from('technicians')
+            .select('id')
+            .eq('user_id', userId)
+            .single();
+
+        if (!technician) {
+            return res.status(404).json({ error: 'Technician profile not found' });
+        }
+
+        const { data: service, error } = await supabaseAdmin
+            .from('technician_services')
+            .insert([{
+                technician_id: technician.id,
+                name,
+                description,
+                price: price || 0,
+                category,
+                estimated_time,
+                is_active: true
+            }])
+            .select()
+            .single();
+
+        if (error) throw error;
+        return successResponse(res, service, 'Service added successfully', 201);
+    } catch (error) {
+        console.error('Add service error:', error);
+        return errorResponse(res, 'Failed to add service');
+    }
+});
+
+router.patch('/services/:serviceId', supabaseAuth, verifyTechnician, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { serviceId } = req.params;
+        const updates = req.body;
+
+        // Get technician ID
+        const { data: technician } = await supabaseAdmin
+            .from('technicians')
+            .select('id')
+            .eq('user_id', userId)
+            .single();
+
+        if (!technician) {
+            return res.status(404).json({ error: 'Technician profile not found' });
+        }
+
+        const { data: service, error } = await supabaseAdmin
+            .from('technician_services')
+            .update({ ...updates, updated_at: new Date().toISOString() })
+            .eq('id', serviceId)
+            .eq('technician_id', technician.id)
+            .select()
+            .single();
+
+        if (error) throw error;
+        if (!service) return res.status(404).json({ error: 'Service not found' });
+
+        return successResponse(res, service, 'Service updated successfully');
+    } catch (error) {
+        console.error('Update service error:', error);
+        return errorResponse(res, 'Failed to update service');
+    }
+});
+
+router.delete('/services/:serviceId', supabaseAuth, verifyTechnician, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { serviceId } = req.params;
+
+        // Get technician ID
+        const { data: technician } = await supabaseAdmin
+            .from('technicians')
+            .select('id')
+            .eq('user_id', userId)
+            .single();
+
+        if (!technician) {
+            return res.status(404).json({ error: 'Technician profile not found' });
+        }
+
+        const { error } = await supabaseAdmin
+            .from('technician_services')
+            .delete()
+            .eq('id', serviceId)
+            .eq('technician_id', technician.id);
+
+        if (error) throw error;
+        return successResponse(res, null, 'Service deleted successfully');
+    } catch (error) {
+        console.error('Delete service error:', error);
+        return errorResponse(res, 'Failed to delete service');
+    }
+});
+
+// Technician Availability Management
+router.get('/availability', supabaseAuth, verifyTechnician, async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        // Get technician ID
+        const { data: technician } = await supabaseAdmin
+            .from('technicians')
+            .select('id')
+            .eq('user_id', userId)
+            .single();
+
+        if (!technician) {
+            return res.status(404).json({ error: 'Technician profile not found' });
+        }
+
+        const { data: availability, error } = await supabaseAdmin
+            .from('technician_availability')
+            .select('*')
+            .eq('technician_id', technician.id)
+            .order('day_of_week');
+
+        if (error) throw error;
+        res.json({ availability: availability || [] });
+    } catch (error) {
+        console.error('Fetch availability error:', error);
+        res.status(500).json({ error: 'Failed to fetch availability' });
+    }
+});
+
+router.post('/availability', supabaseAuth, verifyTechnician, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { day_of_week, start_time, end_time, is_available } = req.body;
+
+        // Get technician ID
+        const { data: technician } = await supabaseAdmin
+            .from('technicians')
+            .select('id')
+            .eq('user_id', userId)
+            .single();
+
+        if (!technician) {
+            return res.status(404).json({ error: 'Technician profile not found' });
+        }
+
+        const { data: availability, error } = await supabaseAdmin
+            .from('technician_availability')
+            .upsert([{
+                technician_id: technician.id,
+                day_of_week,
+                start_time,
+                end_time,
+                is_available: is_available !== false
+            }], { onConflict: 'technician_id_day_of_week' })
+            .select()
+            .single();
+
+        return successResponse(res, availability, 'Availability updated successfully', 201);
+    } catch (error) {
+        console.error('Update availability error:', error);
+        return errorResponse(res, 'Failed to update availability');
     }
 });
 

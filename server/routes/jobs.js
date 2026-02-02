@@ -2,6 +2,7 @@ import express from 'express';
 import Job from '../models/Job.js';
 import Bid from '../models/Bid.js';
 import { supabaseAuth } from '../middleware/supabaseAuth.js';
+import { successResponse, errorResponse } from '../lib/response.js';
 
 const router = express.Router();
 
@@ -41,7 +42,7 @@ router.get('/', async (req, res) => {
 
         const total = await Job.countDocuments(filter);
 
-        res.json({
+        return successResponse(res, {
             jobs,
             pagination: {
                 total,
@@ -52,7 +53,7 @@ router.get('/', async (req, res) => {
         });
     } catch (error) {
         console.error('Error fetching jobs:', error);
-        res.status(500).json({ error: 'Failed to fetch jobs', message: error.message });
+        return errorResponse(res, 'Failed to fetch jobs');
     }
 });
 
@@ -63,7 +64,7 @@ router.get('/:id', async (req, res) => {
             .populate('postedBy', 'name email phone');
 
         if (!job) {
-            return res.status(404).json({ error: 'Job not found' });
+            return errorResponse(res, 'Job not found', 404);
         }
 
         // Get bids for this job
@@ -71,10 +72,10 @@ router.get('/:id', async (req, res) => {
             .populate('technicianId', 'name email rating reviewCount')
             .sort('-createdAt');
 
-        res.json({ job, bids });
+        return successResponse(res, { job, bids });
     } catch (error) {
         console.error('Error fetching job:', error);
-        res.status(500).json({ error: 'Failed to fetch job', message: error.message });
+        return errorResponse(res, 'Failed to fetch job');
     }
 });
 
@@ -115,13 +116,10 @@ router.post('/', supabaseAuth, async (req, res) => {
 
         const populatedJob = await Job.findById(job._id).populate('postedBy', 'name email');
 
-        res.status(201).json({
-            message: 'Job posted successfully',
-            job: populatedJob
-        });
+        return successResponse(res, populatedJob, 'Job posted successfully', 201);
     } catch (error) {
         console.error('Error creating job:', error);
-        res.status(500).json({ error: 'Failed to create job', message: error.message });
+        return errorResponse(res, 'Failed to create job');
     }
 });
 
@@ -131,12 +129,12 @@ router.put('/:id', supabaseAuth, async (req, res) => {
         const job = await Job.findById(req.params.id);
 
         if (!job) {
-            return res.status(404).json({ error: 'Job not found' });
+            return errorResponse(res, 'Job not found', 404);
         }
 
         // Check if user owns this job or is an admin
         if (job.postedBy.toString() !== req.user.id && req.user.role !== 'admin') {
-            return res.status(403).json({ error: 'Not authorized to update this job' });
+            return errorResponse(res, 'Not authorized to update this job', 403);
         }
 
         const { status } = req.body;
@@ -144,10 +142,10 @@ router.put('/:id', supabaseAuth, async (req, res) => {
 
         await job.save();
 
-        res.json({ message: 'Job updated successfully', job });
+        return successResponse(res, job, 'Job updated successfully');
     } catch (error) {
         console.error('Error updating job:', error);
-        res.status(500).json({ error: 'Failed to update job', message: error.message });
+        return errorResponse(res, 'Failed to update job');
     }
 });
 
@@ -157,22 +155,22 @@ router.delete('/:id', supabaseAuth, async (req, res) => {
         const job = await Job.findById(req.params.id);
 
         if (!job) {
-            return res.status(404).json({ error: 'Job not found' });
+            return errorResponse(res, 'Job not found', 404);
         }
 
         // Check if user owns this job or is an admin
         if (job.postedBy.toString() !== req.user.id && req.user.role !== 'admin') {
-            return res.status(403).json({ error: 'Not authorized to delete this job' });
+            return errorResponse(res, 'Not authorized to delete this job', 403);
         }
 
         await Job.findByIdAndDelete(req.params.id);
         // Also delete all bids for this job
         await Bid.deleteMany({ jobId: req.params.id });
 
-        res.json({ message: 'Job deleted successfully' });
+        return successResponse(res, null, 'Job deleted successfully');
     } catch (error) {
         console.error('Error deleting job:', error);
-        res.status(500).json({ error: 'Failed to delete job', message: error.message });
+        return errorResponse(res, 'Failed to delete job');
     }
 });
 
@@ -185,10 +183,10 @@ router.get('/:jobId/bids', async (req, res) => {
             .populate('technicianId', 'name email rating reviewCount specialization experience')
             .sort('-createdAt');
 
-        res.json({ bids });
+        return successResponse(res, { bids });
     } catch (error) {
         console.error('Error fetching bids:', error);
-        res.status(500).json({ error: 'Failed to fetch bids', message: error.message });
+        return errorResponse(res, 'Failed to fetch bids');
     }
 });
 
@@ -199,10 +197,10 @@ router.get('/my-bids', supabaseAuth, async (req, res) => {
             .populate('jobId')
             .sort('-createdAt');
 
-        res.json({ bids });
+        return successResponse(res, { bids });
     } catch (error) {
         console.error('Error fetching technician bids:', error);
-        res.status(500).json({ error: 'Failed to fetch bids', message: error.message });
+        return errorResponse(res, 'Failed to fetch bids');
     }
 });
 
@@ -214,11 +212,11 @@ router.post('/bids', supabaseAuth, async (req, res) => {
         // Check if job exists and is open
         const job = await Job.findById(jobId);
         if (!job) {
-            return res.status(404).json({ error: 'Job not found' });
+            return errorResponse(res, 'Job not found', 404);
         }
 
         if (job.status !== 'open') {
-            return res.status(400).json({ error: 'Job is no longer open for bidding' });
+            return errorResponse(res, 'Job is no longer open for bidding', 400);
         }
 
         // Check if technician already bid on this job
@@ -228,7 +226,7 @@ router.post('/bids', supabaseAuth, async (req, res) => {
         });
 
         if (existingBid) {
-            return res.status(400).json({ error: 'You have already bid on this job' });
+            return errorResponse(res, 'You have already bid on this job', 400);
         }
 
         const bid = new Bid({
@@ -247,13 +245,10 @@ router.post('/bids', supabaseAuth, async (req, res) => {
             .populate('technicianId', 'name email rating')
             .populate('jobId');
 
-        res.status(201).json({
-            message: 'Bid placed successfully',
-            bid: populatedBid
-        });
+        return successResponse(res, populatedBid, 'Bid placed successfully', 201);
     } catch (error) {
         console.error('Error creating bid:', error);
-        res.status(500).json({ error: 'Failed to place bid', message: error.message });
+        return errorResponse(res, 'Failed to place bid');
     }
 });
 
@@ -263,12 +258,12 @@ router.put('/bids/:id', supabaseAuth, async (req, res) => {
         const bid = await Bid.findById(req.params.id).populate('jobId');
 
         if (!bid) {
-            return res.status(404).json({ error: 'Bid not found' });
+            return errorResponse(res, 'Bid not found', 404);
         }
 
         // Check if user owns the job this bid is for
         if (bid.jobId.postedBy.toString() !== req.user.id) {
-            return res.status(403).json({ error: 'Not authorized to update this bid' });
+            return errorResponse(res, 'Not authorized to update this bid', 403);
         }
 
         const { status } = req.body;
@@ -288,10 +283,10 @@ router.put('/bids/:id', supabaseAuth, async (req, res) => {
 
         await bid.save();
 
-        res.json({ message: 'Bid updated successfully', bid });
+        return successResponse(res, bid, 'Bid updated successfully');
     } catch (error) {
         console.error('Error updating bid:', error);
-        res.status(500).json({ error: 'Failed to update bid', message: error.message });
+        return errorResponse(res, 'Failed to update bid');
     }
 });
 
@@ -301,24 +296,24 @@ router.delete('/bids/:id', supabaseAuth, async (req, res) => {
         const bid = await Bid.findById(req.params.id);
 
         if (!bid) {
-            return res.status(404).json({ error: 'Bid not found' });
+            return errorResponse(res, 'Bid not found', 404);
         }
 
         // Check if user owns this bid
         if (bid.technicianId.toString() !== req.user.id) {
-            return res.status(403).json({ error: 'Not authorized to delete this bid' });
+            return errorResponse(res, 'Not authorized to delete this bid', 403);
         }
 
         if (bid.status !== 'pending') {
-            return res.status(400).json({ error: 'Can only delete pending bids' });
+            return errorResponse(res, 'Can only delete pending bids', 400);
         }
 
         await Bid.findByIdAndDelete(req.params.id);
 
-        res.json({ message: 'Bid deleted successfully' });
+        return successResponse(res, null, 'Bid deleted successfully');
     } catch (error) {
         console.error('Error deleting bid:', error);
-        res.status(500).json({ error: 'Failed to delete bid', message: error.message });
+        return errorResponse(res, 'Failed to delete bid');
     }
 });
 

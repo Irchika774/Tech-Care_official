@@ -10,6 +10,8 @@ import { Calendar } from '../components/ui/calendar';
 import { Badge } from '../components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
 import { ScrollArea } from '../components/ui/scroll-area';
+import { Input } from '../components/ui/input';
+import { Checkbox } from '../components/ui/checkbox';
 import { format, isSameDay, setHours, setMinutes, isAfter } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -33,11 +35,14 @@ import {
   Star,
   Zap,
   ChevronLeft,
-  Loader2
+  Loader2,
+  Search,
+  Filter
 } from 'lucide-react';
 import SEO from '../components/SEO';
 import CurrencyDisplay from '../components/CurrencyDisplay';
 import { useToast } from '../hooks/use-toast';
+import { PLATFORM_FEES } from '../lib/constants';
 
 const Schedule = () => {
   const navigate = useNavigate();
@@ -70,14 +75,23 @@ const Schedule = () => {
     return localStorage.getItem('techcare_booking_tech') || 'pending';
   });
 
+  const [techAvailability, setTechAvailability] = useState([]);
+
   // Schedule States
   const [date, setDate] = useState(new Date());
   const [timeSlot, setTimeSlot] = useState('');
 
   // Data States
   const [techniciansList, setTechnicians] = useState([]);
+  const [filteredTechnicians, setFilteredTechnicians] = useState([]);
   const [availableServices, setAvailableServices] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // Filter States
+  const [techSearchTerm, setTechSearchTerm] = useState('');
+  const [techMinRating, setTechMinRating] = useState('0');
+  const [techShowOnlyVerified, setTechShowOnlyVerified] = useState(false);
+  const [showTechFilters, setShowTechFilters] = useState(false);
 
   // Persistence
   useEffect(() => {
@@ -105,53 +119,136 @@ const Schedule = () => {
 
   // Data Fetching
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchServices = async () => {
       try {
-        // Fetch Services
-        const { data: services } = await supabase.from('services').select('*').order('created_at', { ascending: false });
+        const { data: services, error } = await supabase.from('services').select('*').order('created_at', { ascending: false });
+        if (error) throw error;
         if (services?.length) setAvailableServices(services);
         else {
-          // Fallback defaults
           setAvailableServices([
-            { id: 'battery', name: 'Battery Replacement', price: 5000 },
-            { id: 'screen', name: 'Screen Repair', price: 12000 },
-            { id: 'water-damage', name: 'Water Damage', price: 8500 },
-            { id: 'general', name: 'General Repair', price: 4000 },
+            { id: 'battery', name: 'Battery Replacement', price: 1500 },
+            { id: 'screen', name: 'Screen Repair', price: 2500 },
+            { id: 'water-damage', name: 'Water Damage', price: 3000 },
+            { id: 'general', name: 'General Repair', price: 1000 },
           ]);
         }
+      } catch (err) {
+        console.error("Services fetch error:", err);
+      }
+    };
 
-        // Fetch Technicians
+    const fetchTechnicians = async () => {
+      try {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
         const techRes = await fetch(`${apiUrl}/api/technicians`);
         const techData = await techRes.json();
         setTechnicians(Array.isArray(techData) ? techData : []);
       } catch (err) {
-        console.error("Data fetch error:", err);
+        console.error("Technician fetch error:", err);
       }
     };
-    fetchData();
+
+    fetchServices();
+    fetchTechnicians();
   }, []);
+
+  // Fetch technician specific services when a technician is selected
+  useEffect(() => {
+    const fetchTechServices = async () => {
+      if (!technician || technician === 'pending') {
+        // Reset to global services if no technician selected
+        const { data: services } = await supabase.from('services').select('*');
+        if (services) setAvailableServices(services);
+        return;
+      }
+
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const res = await fetch(`${apiUrl}/api/technicians/${technician}/services`);
+        const result = await res.json();
+
+        if (result.success && result.data?.length > 0) {
+          setAvailableServices(result.data);
+          // If current repairService is not in the new list, reset to first or general
+          if (!result.data.find(s => (s.id || s._id) === repairService)) {
+            setRepairService(result.data[0].id || result.data[0]._id);
+          }
+        } else {
+          // Fallback to global services if tech has none defined
+          const { data: services } = await supabase.from('services').select('*');
+          if (services) setAvailableServices(services);
+        }
+      } catch (err) {
+        console.error("Error fetching tech services:", err);
+      }
+    };
+
+    fetchTechServices();
+  }, [technician]);
+
+  // Fetch technician availability
+  useEffect(() => {
+    const fetchTechAvail = async () => {
+      if (!technician || technician === 'pending') {
+        setTechAvailability([]);
+        return;
+      }
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const res = await fetch(`${apiUrl}/api/technicians/${technician}/availability`);
+        const result = await res.json();
+        if (result.success) setTechAvailability(result.data);
+      } catch (err) {
+        console.error("Error fetching tech availability:", err);
+      }
+    };
+    fetchTechAvail();
+  }, [technician]);
 
   // Pricing Calculation
   const selectedServiceInfo = availableServices.find(s => (s.id || s._id) === repairService) || availableServices.find(s => (s.id || s._id) === 'general');
-  const serviceAmount = Number(selectedServiceInfo?.price || 4000);
-  const platformFee = 500;
+  const serviceAmount = Number(selectedServiceInfo?.price || 0);
+  const platformFee = PLATFORM_FEES.BOOKING_FEE;
   const totalAmount = serviceAmount + platformFee;
 
   // Smart Time Slots
   const availableTimeSlots = useMemo(() => {
-    const slots = ['09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '01:00 PM', '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM'];
-    if (!date || !isSameDay(date, new Date())) return slots;
+    const defaultSlots = ['09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '01:00 PM', '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM'];
+
+    // If technician selected, find their availability for this day of week
+    let daySlots = defaultSlots;
+    if (technician !== 'pending' && techAvailability.length > 0) {
+      const dayOfWeek = date.getDay(); // 0-6
+      const daySetting = techAvailability.find(a => a.day_of_week === dayOfWeek);
+
+      if (daySetting) {
+        if (!daySetting.is_available) return []; // Not working this day
+
+        // Filter slots based on start/end time
+        const start = daySetting.start_time; // HH:mm:ss
+        const end = daySetting.end_time;
+
+        daySlots = defaultSlots.filter(slot => {
+          const [time, period] = slot.split(' ');
+          const [hours, minutes] = time.split(':').map(Number);
+          let hours24 = period === 'PM' && hours !== 12 ? hours + 12 : (period === 'AM' && hours === 12 ? 0 : hours);
+          const slotTime = `${hours24.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+          return slotTime >= start.slice(0, 5) && slotTime < end.slice(0, 5);
+        });
+      }
+    }
+
+    if (!date || !isSameDay(date, new Date())) return daySlots;
 
     const now = new Date();
-    return slots.filter(slot => {
+    return daySlots.filter(slot => {
       const [time, period] = slot.split(' ');
       const [hours, minutes] = time.split(':').map(Number);
       let slotDate = setHours(date, period === 'PM' && hours !== 12 ? hours + 12 : (period === 'AM' && hours === 12 ? 0 : hours));
       slotDate = setMinutes(slotDate, minutes);
       return isAfter(slotDate, now);
     });
-  }, [date]);
+  }, [date, technician, techAvailability]);
 
   useEffect(() => {
     // Reset time slot if date changes and current slot becomes invalid
@@ -159,6 +256,33 @@ const Schedule = () => {
       setTimeSlot('');
     }
   }, [date, availableTimeSlots, timeSlot]);
+
+  // Apply technician filters
+  useEffect(() => {
+    let filtered = [...techniciansList];
+
+    if (techSearchTerm.trim()) {
+      const search = techSearchTerm.toLowerCase();
+      filtered = filtered.filter(tech =>
+        tech.name?.toLowerCase().includes(search) ||
+        tech.business_name?.toLowerCase().includes(search) ||
+        tech.bio?.toLowerCase().includes(search) ||
+        tech.services?.some(s => s.toLowerCase().includes(search)) ||
+        tech.specialization?.some(s => s.toLowerCase().includes(search))
+      );
+    }
+
+    const minRating = parseFloat(techMinRating);
+    if (minRating > 0) {
+      filtered = filtered.filter(tech => (tech.rating || 0) >= minRating);
+    }
+
+    if (techShowOnlyVerified) {
+      filtered = filtered.filter(tech => tech.is_verified === true);
+    }
+
+    setFilteredTechnicians(filtered);
+  }, [techniciansList, techSearchTerm, techMinRating, techShowOnlyVerified]);
 
 
   const handleSubmit = async (e) => {
@@ -193,11 +317,12 @@ const Schedule = () => {
         });
 
         if (!res.ok) throw new Error('Booking initialization failed');
-        const bookingData = await res.json();
+        const bookingResponse = await res.json();
+        const bookingData = bookingResponse.data;
 
         navigate('/payment', {
           state: {
-            booking: { ...bookingData, total: totalAmount, serviceType: selectedServiceInfo?.name }
+            booking: { ...bookingData, total: totalAmount, serviceType: selectedServiceInfo?.name, technicianName: techniciansList.find(t => t.id === (technician === 'pending' ? null : technician))?.name }
           }
         });
       } else if (step === 2) {
@@ -329,9 +454,8 @@ const Schedule = () => {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label className="text-zinc-400">Brand</Label>
-                        <input
+                        <Input
                           required
-                          className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 focus:outline-none focus:border-primary transition-colors"
                           placeholder="e.g. Apple"
                           value={deviceBrand}
                           onChange={e => setDeviceBrand(e.target.value)}
@@ -339,9 +463,8 @@ const Schedule = () => {
                       </div>
                       <div className="space-y-2">
                         <Label className="text-zinc-400">Model</Label>
-                        <input
+                        <Input
                           required
-                          className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 focus:outline-none focus:border-primary transition-colors"
                           placeholder="e.g. iPhone 13"
                           value={deviceModel}
                           onChange={e => setDeviceModel(e.target.value)}
@@ -371,8 +494,62 @@ const Schedule = () => {
 
                 {/* Technician Selection */}
                 <Card className="bg-zinc-900 border-zinc-800">
-                  <CardHeader><CardTitle className="flex items-center gap-2"><User className="w-5 h-5 text-primary" /> Select Technician</CardTitle></CardHeader>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><User className="w-5 h-5 text-primary" /> Select Technician</CardTitle>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowTechFilters(!showTechFilters)}
+                      className="text-zinc-400 hover:text-white mt-2"
+                    >
+                      <Filter className="w-4 h-4 mr-1" />
+                      {showTechFilters ? 'Hide Filters' : 'Show Filters'}
+                    </Button>
+                  </CardHeader>
                   <CardContent>
+                    {/* Filter Controls */}
+                    {showTechFilters && (
+                      <div className="mb-4 p-3 bg-zinc-950 rounded-lg border border-zinc-800 space-y-3 animate-in slide-in-from-top-2">
+                        <div className="flex items-center gap-2">
+                          <Search className="w-4 h-4 text-zinc-500" />
+                          <Input
+                            placeholder="Search technicians..."
+                            value={techSearchTerm}
+                            onChange={(e) => setTechSearchTerm(e.target.value)}
+                            className="bg-zinc-900 border-zinc-800"
+                          />
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-2">
+                            <Label className="text-zinc-400 text-xs">Min Rating:</Label>
+                            <Select value={techMinRating} onValueChange={setTechMinRating}>
+                              <SelectTrigger className="w-20 h-8 bg-zinc-900 border-zinc-800">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
+                                <SelectItem value="0">Any</SelectItem>
+                                <SelectItem value="3">3+ ⭐</SelectItem>
+                                <SelectItem value="4">4+ ⭐</SelectItem>
+                                <SelectItem value="4.5">4.5+ ⭐</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              id="verify-filter"
+                              checked={techShowOnlyVerified}
+                              onCheckedChange={(checked) => setTechShowOnlyVerified(checked === true)}
+                            />
+                            <Label htmlFor="verify-filter" className="text-zinc-400 text-xs">Verified Only</Label>
+                          </div>
+                        </div>
+                        {filteredTechnicians.length !== techniciansList.length && (
+                          <p className="text-xs text-zinc-500">
+                            Showing {filteredTechnicians.length} of {techniciansList.length} technicians
+                          </p>
+                        )}
+                      </div>
+                    )}
                     <RadioGroup value={technician} onValueChange={setTechnician} className="space-y-3">
                       <div className="flex items-center space-x-2 p-3 rounded-lg border border-zinc-800 bg-zinc-950 hover:bg-zinc-900/80 cursor-pointer">
                         <RadioGroupItem value="pending" id="tech-auto" />
@@ -386,21 +563,46 @@ const Schedule = () => {
                       </div>
                       <ScrollArea className="h-[300px] pr-4">
                         <div className="space-y-3">
-                          {techniciansList.map(tech => (
-                            <div key={tech.id} className="flex items-center space-x-2 p-3 rounded-lg border border-zinc-800 bg-zinc-950 hover:bg-zinc-900/80 cursor-pointer">
-                              <RadioGroupItem value={tech.id} id={`tech-${tech.id}`} />
-                              <Label htmlFor={`tech-${tech.id}`} className="flex-1 cursor-pointer flex items-center gap-3">
-                                <Avatar>
-                                  <AvatarImage src={tech.avatar_url} />
-                                  <AvatarFallback>{tech.name?.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1">
-                                  <p className="font-medium">{tech.name}</p>
-                                  <p className="text-xs text-amber-500 flex items-center gap-1"><Star className="w-3 h-3 fill-current" /> {tech.rating || 'New'}</p>
-                                </div>
-                              </Label>
+                          {filteredTechnicians.length > 0 ? (
+                            filteredTechnicians.map(tech => (
+                              <div key={tech.id} className="flex items-center space-x-2 p-3 rounded-lg border border-zinc-800 bg-zinc-950 hover:bg-zinc-900/80 cursor-pointer">
+                                <RadioGroupItem value={tech.id} id={`tech-${tech.id}`} />
+                                <Label htmlFor={`tech-${tech.id}`} className="flex-1 cursor-pointer flex items-center gap-3">
+                                  <Avatar>
+                                    <AvatarImage src={tech.avatar_url} />
+                                    <AvatarFallback>{tech.name?.charAt(0)}</AvatarFallback>
+                                  </Avatar>
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <p className="font-medium">{tech.name}</p>
+                                      {tech.is_verified && (
+                                        <Badge variant="secondary" className="text-xs bg-emerald-900/50 text-emerald-300 border-emerald-700">
+                                          ✓ Verified
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <p className="text-xs text-amber-500 flex items-center gap-1"><Star className="w-3 h-3 fill-current" /> {tech.rating || 'New'}</p>
+                                  </div>
+                                </Label>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="text-center py-8 text-zinc-500">
+                              <p>No technicians match your filters</p>
+                              <Button
+                                variant="link"
+                                size="sm"
+                                onClick={() => {
+                                  setTechSearchTerm('');
+                                  setTechMinRating('0');
+                                  setTechShowOnlyVerified(false);
+                                }}
+                                className="text-primary"
+                              >
+                                Clear filters
+                              </Button>
                             </div>
-                          ))}
+                          )}
                         </div>
                       </ScrollArea>
                     </RadioGroup>

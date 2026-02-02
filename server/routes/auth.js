@@ -1,6 +1,7 @@
 import express from 'express';
 import { supabaseAdmin } from '../lib/supabase.js';
 import { logAuditTrail } from '../middleware/auditLogger.js';
+import { successResponse, errorResponse } from '../lib/response.js';
 
 const router = express.Router();
 
@@ -26,15 +27,12 @@ router.post('/register', logAuditTrail('USER_REGISTER'), async (req, res) => {
 
         if (authError) {
             console.error('Supabase Auth Create Error:', authError);
-            return res.status(400).json({ error: authError.message });
+            return errorResponse(res, authError.message, 400);
         }
 
         const user = authData.user;
 
         // 2. Create Profile in 'profiles' table (and 'customers' if needed)
-        // Note: If you have a Trigger on auth.users, this might duplicate or fail.
-        // We assume NO Trigger for now, or we handle conflict.
-
         // Profile
         const { error: profileError } = await supabaseAdmin
             .from('profiles')
@@ -50,7 +48,7 @@ router.post('/register', logAuditTrail('USER_REGISTER'), async (req, res) => {
             // Rollback Auth User if profile fails
             await supabaseAdmin.auth.admin.deleteUser(user.id);
             console.error('Profile Create Error:', profileError);
-            throw new Error(`Failed to create profile: ${profileError.message}`);
+            return errorResponse(res, `Failed to create profile: ${profileError.message}`);
         }
 
         // Customer Record (since role is 'user')
@@ -68,18 +66,14 @@ router.post('/register', logAuditTrail('USER_REGISTER'), async (req, res) => {
             await supabaseAdmin.from('profiles').delete().eq('id', user.id);
             await supabaseAdmin.auth.admin.deleteUser(user.id);
             console.error('Customer Create Error:', customerError);
-            throw new Error(`Failed to create customer record: ${customerError.message}`);
+            return errorResponse(res, `Failed to create customer record: ${customerError.message}`);
         }
 
-        res.status(201).json({
-            success: true,
-            message: 'User registered successfully. Please login.',
-            user: { id: user.id, email: user.email, name, role }
-        });
+        return successResponse(res, { id: user.id, email: user.email, name, role }, 'User registered successfully. Please login.', 201);
 
     } catch (error) {
         console.error('Registration error:', error);
-        res.status(500).json({ error: error.message });
+        return errorResponse(res, error.message);
     }
 });
 
