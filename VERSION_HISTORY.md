@@ -1,5 +1,11 @@
 # 📜 Version History
 
+### v2.3.1 - 2026-02-02
+### 🛠️ Technical Improvements
+- **Admin Dashboard Stability**: Fixed a critical `ReferenceError` during initialization in the Admin dashboard by resolving forward-reference dependencies in `Admin.jsx`.
+- **Initialization Sequence**: Optimized the auth and data loading order to ensure a stable state before rendering dashboard components.
+- **Git Identity Correction**: Standardized all project commits under the `Wenura17125` identity.
+
 ## v2.3.0 - 2026-02-02
 ### ✨ New Features
 - **Technician Schedule Management**: Technicians can now set their weekly availability (days off, working hours) directly from their profile settings.

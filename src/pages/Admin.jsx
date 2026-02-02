@@ -150,7 +150,6 @@ const Admin = () => {
         fetchAppointments(),
         fetchReviews()
       ]);
-      calculateStats();
     } catch (error) {
       console.error('[ADMIN] Error fetching data:', error);
       // Only show error toast if it's the first load or explicit refresh
@@ -166,7 +165,7 @@ const Admin = () => {
       setIsLoading(false);
       isFetchingRef.current = false;
     }
-  }, [users.length, techFilter, isRefreshing, toast, calculateStats]);
+  }, [users.length, techFilter, isRefreshing, toast]);
 
   // Refresh all data
   const refreshAllData = async () => {

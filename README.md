@@ -5,7 +5,7 @@
 ### _Connecting Customers with Expert Technicians_
 
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-success?style=for-the-badge)](https://github.com)
-[![Version](https://img.shields.io/badge/Version-2.2.0-blue?style=for-the-badge)](https://github.com)
+[![Version](https://img.shields.io/badge/Version-2.3.1-blue?style=for-the-badge)](https://github.com)
 [![License](https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge)](LICENSE)
 [![Node](https://img.shields.io/badge/Node-24.x-green?style=for-the-badge&logo=node.js)](https://nodejs.org)
 [![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react)](https://reactjs.org)
@@ -26,6 +26,12 @@
 ---
 
 ## 📅 Version History
+
+### v2.3.1 - Critical Dashboard Performance & Initialization Fix (Feb 02, 2026)
+**Stability & Performance Fixes:**
+- **Admin Dashboard Fix:** Resolved a critical `ReferenceError` (Temporal Dead Zone) in `Admin.jsx` by properly sequencing initialization-dependent functions.
+- **Data Loading Optimization:** Removed redundant state recalculations during Admin data fetching to improve interface responsiveness.
+- **Git Identity Standardization:** Standardized all repository contributions under the `Wenura17125` profile.
 
 ### v2.3.0 - Technician Schedule & Diagnostics Refinement (Feb 02, 2026)
 **Feature Additions & Critical Fixes:**
@@ -297,6 +303,15 @@ erDiagram
         enum tier "bronze|silver|gold|platinum"
     }
     
+    LOYALTY_TRANSACTIONS {
+        uuid id PK
+        uuid loyalty_account_id FK
+        int amount
+        string type "earn|redeem"
+        string reason
+        timestamp created_at
+    }
+    
     NOTIFICATIONS {
         uuid id PK
         uuid user_id FK
@@ -305,6 +320,48 @@ erDiagram
         boolean read
         timestamp created_at
     }
+```
+
+### 🛠️ Repair Booking Lifecycle
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as 👤 Customer
+    participant F as 🖥️ Frontend
+    participant API as ⚙️ Backend API
+    participant STR as 💳 Stripe
+    participant T as 🔧 Technician
+    participant DB as 🗄️ Supabase
+
+    rect rgb(40, 40, 60)
+        Note over C,API: Booking Initiation
+        C->>F: Browse Services & Select Repair
+        F->>API: GET /api/technicians/nearby
+        API->>DB: Fetch verified technicians
+        DB-->>API: Technician list
+        API-->>F: Display Technicians
+    end
+
+    rect rgb(40, 60, 40)
+        Note over C,STR: Payment Processing
+        C->>F: Select Technician & Pay
+        F->>API: POST /api/payment/create-intent
+        API->>STR: Create Payment Intent
+        STR-->>F: Client Secret
+        C->>F: Confirm Payment (Stripe Element)
+        F->>STR: Validate Transaction
+        STR-->>F: Payment Successful
+    end
+
+    rect rgb(60, 40, 40)
+        Note over F,T: Confirmation & Notification
+        F->>API: POST /api/bookings (Payment Token)
+        API->>DB: INSERT booking record
+        API->>DB: INSERT notification for technician
+        DB-->>T: Real-time notification (v1.1.0)
+        T-->>F: Dashboard update via Realtime
+        F->>C: Redirect to Tracker/:id
+    end
 ```
 
 ---
@@ -399,6 +456,35 @@ sequenceDiagram
     D->>L: Update URL: ?tab=earnings
     L->>D: (Synced)
     D->>U: Show Earnings Section
+```
+
+### 👑 Admin Dashboard Data Lifecycle
+```mermaid
+sequenceDiagram
+    participant A as 👑 Admin
+    participant D as 🖥️ Admin Dashboard
+    participant API as ⚙️ Backend API
+    participant S as 🗄️ Supabase
+
+    rect rgb(40, 40, 60)
+        Note over A,S: Initial Load & Stabilization
+        A->>D: Access /admin
+        D->>D: Initialize Auth & Check Session
+        D->>API: Parallel Fetch (Users, Techs, Jobs, Reviews)
+        API->>S: Query Tables
+        S-->>D: Return Data
+        D->>D: calculateStats() (Post-Load Stabilization)
+    end
+
+    rect rgb(60, 40, 40)
+        Note over A,S: Verification Workflow
+        A->>D: Toggle Technician Verification
+        D->>API: PATCH /api/admin/technicians/:id/verify
+        API->>S: Update technicians table
+        S-->>D: Real-time Confirmation
+        D->>D: Refresh Local Stats
+    end
+```
 ```
 
 ### 📅 Booking Flow
@@ -579,67 +665,7 @@ flowchart TB
 | **Manage Users** | ❌ | ❌ | ❌ | ✅ |
 | **System Settings** | ❌ | ❌ | ❌ | ✅ |
 
-### Use Case Diagram
 
-```mermaid
-flowchart LR
-    %% Actors
-    Guest["👤 Guest"]
-    Customer["🛒 Customer"]
-    Technician["🔧 Technician"]
-    Admin["👑 Admin"]
-
-    %% System Boundary
-    subgraph System ["TechCare System"]
-        direction TB
-        UC1(["View Services"])
-        UC2(["Search Technicians"])
-        UC4(["Register/Login"])
-        
-        UC5(["Book Repair"])
-        UC6(["Track Status"])
-        UC7(["Write Review"])
-        UC8(["Manage Profile"])
-        
-        UC9(["View Jobs"])
-        UC10(["Accept/Reject Job"])
-        UC11(["Update Job Status"])
-        UC12(["View Earnings"])
-        
-        UC13(["Manage Users"])
-        UC14(["Verify Technicians"])
-        UC15(["System Settings"])
-        UC16(["Select Conversation"])
-        UC17(["Manage Schedule"])
-    end
-
-    %% Relationships
-    Guest --> UC1
-    Guest --> UC2
-    Guest --> UC4
-
-    Customer --> UC1
-    Customer --> UC2
-    Customer --> UC4
-    Customer --> UC5
-    Customer --> UC6
-    Customer --> UC7
-    Customer --> UC8
-    Customer --> UC16
-
-    Technician --> UC8
-    Technician --> UC9
-    Technician --> UC10
-    Technician --> UC11
-    Technician --> UC12
-    Technician --> UC16
-    Technician --> UC17
-
-    Admin --> UC13
-    Admin --> UC14
-    Admin --> UC15
-    Admin --> UC8
-```
 
 ---
 
