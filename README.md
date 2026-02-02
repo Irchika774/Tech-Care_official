@@ -482,37 +482,40 @@ stateDiagram-v2
 ### System Use Case Diagram
 
 ```mermaid
-usecaseDiagram
-    actor "👤 Guest" as Guest
-    actor "🛒 Customer" as Customer
-    actor "🔧 Technician" as Technician
-    actor "👑 Admin" as Admin
+flowchart LR
+    %% Actors
+    Guest["👤 Guest"]
+    Customer["🛒 Customer"]
+    Technician["🔧 Technician"]
+    Admin["👑 Admin"]
 
-    package "TechCare System" {
-        usecase "View Services" as UC1
-        usecase "Search Technicians" as UC2
-        usecase "Register/Login" as UC4
+    %% System Boundary
+    subgraph System ["TechCare System"]
+        direction TB
+        UC1(["View Services"])
+        UC2(["Search Technicians"])
+        UC4(["Register/Login"])
         
-        usecase "Book Repair" as UC5
-        usecase "Track Status" as UC6
-        usecase "Write Review" as UC7
-        usecase "Manage Profile" as UC8
+        UC5(["Book Repair"])
+        UC6(["Track Status"])
+        UC7(["Write Review"])
+        UC8(["Manage Profile"])
         
-        usecase "View Jobs" as UC9
-        usecase "Accept/Reject Job" as UC10
-        usecase "Update Job Status" as UC11
-        usecase "View Earnings" as UC12
+        UC9(["View Jobs"])
+        UC10(["Accept/Reject Job"])
+        UC11(["Update Job Status"])
+        UC12(["View Earnings"])
         
-        usecase "Manage Users" as UC13
-        usecase "Verify Technicians" as UC14
-        usecase "System Settings" as UC15
-        usecase "Select Conversation" as UC16
-        usecase "Manage Schedule" as UC17
-    }
+        UC13(["Manage Users"])
+        UC14(["Verify Technicians"])
+        UC15(["System Settings"])
+        UC16(["Select Conversation"])
+        UC17(["Manage Schedule"])
+    end
 
+    %% Relationships
     Guest --> UC1
     Guest --> UC2
-
     Guest --> UC4
 
     Customer --> UC1
@@ -624,37 +627,40 @@ flowchart TB
 ### Use Case Diagram
 
 ```mermaid
-usecaseDiagram
-    actor "👤 Guest" as Guest
-    actor "🛒 Customer" as Customer
-    actor "🔧 Technician" as Technician
-    actor "👑 Admin" as Admin
+flowchart LR
+    %% Actors
+    Guest["👤 Guest"]
+    Customer["🛒 Customer"]
+    Technician["🔧 Technician"]
+    Admin["👑 Admin"]
 
-    package "TechCare System" {
-        usecase "View Services" as UC1
-        usecase "Search Technicians" as UC2
-        usecase "Register/Login" as UC4
+    %% System Boundary
+    subgraph System ["TechCare System"]
+        direction TB
+        UC1(["View Services"])
+        UC2(["Search Technicians"])
+        UC4(["Register/Login"])
         
-        usecase "Book Repair" as UC5
-        usecase "Track Status" as UC6
-        usecase "Write Review" as UC7
-        usecase "Manage Profile" as UC8
+        UC5(["Book Repair"])
+        UC6(["Track Status"])
+        UC7(["Write Review"])
+        UC8(["Manage Profile"])
         
-        usecase "View Jobs" as UC9
-        usecase "Accept/Reject Job" as UC10
-        usecase "Update Job Status" as UC11
-        usecase "View Earnings" as UC12
+        UC9(["View Jobs"])
+        UC10(["Accept/Reject Job"])
+        UC11(["Update Job Status"])
+        UC12(["View Earnings"])
         
-        usecase "Manage Users" as UC13
-        usecase "Verify Technicians" as UC14
-        usecase "System Settings" as UC15
-        usecase "Select Conversation" as UC16
-        usecase "Manage Schedule" as UC17
-    }
+        UC13(["Manage Users"])
+        UC14(["Verify Technicians"])
+        UC15(["System Settings"])
+        UC16(["Select Conversation"])
+        UC17(["Manage Schedule"])
+    end
 
+    %% Relationships
     Guest --> UC1
     Guest --> UC2
-
     Guest --> UC4
 
     Customer --> UC1
