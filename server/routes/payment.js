@@ -2,6 +2,7 @@ import express from 'express';
 import Stripe from 'stripe';
 import { supabaseAdmin } from '../lib/supabase.js';
 import { supabaseAuth } from '../middleware/supabaseAuth.js';
+import { createNotification } from './notifications.js';
 
 const router = express.Router();
 
@@ -179,9 +180,32 @@ router.post('/confirm-payment', async (req, res) => {
             })
             .eq('id', bookingId);
 
-        if (error) {
-            console.error('Error updating booking payment status:', error);
-            return res.status(500).json({ error: 'Failed to update booking' });
+
+        const { data: bookingData, error: bookingError } = await supabaseAdmin
+            .from('bookings')
+            .select('*, profiles!technician_id(name)')
+            .eq('id', bookingId)
+            .single();
+
+        if (bookingError) {
+            console.error('Error fetching booking details:', bookingError);
+        } else if (bookingData && bookingData.technician_id) {
+            // Notify Technician
+            try {
+                await createNotification({
+                    userId: bookingData.technician_id,
+                    title: 'Payment Confirmed - New Job Ready',
+                    message: `Payment received for ${bookingData.device_brand || 'Device'} ${bookingData.device_model || 'Repair'}. You can now proceed with the job.`,
+                    type: 'job_assigned',
+                    data: {
+                        bookingId: bookingId,
+                        role: 'technician'
+                    }
+                });
+                console.log(`Notification sent to technician ${bookingData.technician_id}`);
+            } catch (notifError) {
+                console.error('Failed to send technician notification:', notifError);
+            }
         }
 
         res.json({ success: true, message: 'Payment confirmed' });

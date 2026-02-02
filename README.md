@@ -36,6 +36,7 @@
 - 💳 **Secure Payments** - Stripe-powered transaction processing
 - ⚡ **Real-time Updates** - Live booking status and notifications
 - 🏆 **Loyalty Program** - Reward points and tier-based benefits
+- 📅 **Smart Scheduling** - Advanced availability management for technicians
 
 ---
 

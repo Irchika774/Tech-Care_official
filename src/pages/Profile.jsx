@@ -35,7 +35,16 @@ const Profile = () => {
     phone: user?.phone || '',
     address: user?.address || '',
     bio: user?.bio || '',
-    profileImage: user?.avatar || ''
+    profileImage: user?.avatar || '',
+    schedule: {
+      monday: { available: true, hours: { from: '09:00', to: '17:00' } },
+      tuesday: { available: true, hours: { from: '09:00', to: '17:00' } },
+      wednesday: { available: true, hours: { from: '09:00', to: '17:00' } },
+      thursday: { available: true, hours: { from: '09:00', to: '17:00' } },
+      friday: { available: true, hours: { from: '09:00', to: '17:00' } },
+      saturday: { available: true, hours: { from: '09:00', to: '17:00' } },
+      sunday: { available: false, hours: { from: '09:00', to: '17:00' } }
+    }
   });
   const [notifications, setNotifications] = useState({
     email: true,
@@ -89,7 +98,16 @@ const Profile = () => {
             phone: pData.phone || '',
             address: pData.address || '',
             bio: pData.bio || '',
-            profileImage: pData.profile_image || pData.profileImage || ''
+            profileImage: pData.profile_image || pData.profileImage || '',
+            schedule: pData.availability?.schedule || {
+              monday: { available: true, hours: { from: '09:00', to: '17:00' } },
+              tuesday: { available: true, hours: { from: '09:00', to: '17:00' } },
+              wednesday: { available: true, hours: { from: '09:00', to: '17:00' } },
+              thursday: { available: true, hours: { from: '09:00', to: '17:00' } },
+              friday: { available: true, hours: { from: '09:00', to: '17:00' } },
+              saturday: { available: true, hours: { from: '09:00', to: '17:00' } },
+              sunday: { available: false, hours: { from: '09:00', to: '17:00' } }
+            }
           });
         }
 
@@ -124,7 +142,11 @@ const Profile = () => {
         phone: profileForm.phone,
         address: profileForm.address,
         bio: profileForm.bio,
-        profile_image: profileForm.profileImage // Map profileImage to profile_image
+        profile_image: profileForm.profileImage, // Map profileImage to profile_image
+        availability: {
+          status: 'available',
+          schedule: profileForm.schedule
+        }
       };
 
       const response = await fetch(`${API_URL}/api/${userRole}/profile`, {
@@ -499,25 +521,19 @@ const Profile = () => {
                     Edit Profile
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-md">
+                <DialogContent className="max-w-2xl bg-zinc-900 border-zinc-800 text-white">
                   <DialogHeader>
                     <DialogTitle>Edit Profile</DialogTitle>
                   </DialogHeader>
                   <form onSubmit={handleProfileUpdate} className="space-y-4">
                     <div className="flex justify-center mb-6">
-                      <div className="w-32 h-32 relative">
-                        <Avatar className="w-32 h-32">
-                          <AvatarImage src={profileForm.profileImage} />
-                          <AvatarFallback>{profileForm.name?.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <div className="absolute bottom-0 right-0">
-                          <ImageUpload
-                            bucket="avatars"
-                            folder={user.id}
-                            onUploadComplete={(url) => setProfileForm({ ...profileForm, profileImage: url })}
-                          />
-                        </div>
-                      </div>
+                      <ImageUpload
+                        variant="avatar"
+                        bucket="avatars"
+                        folder={user.id}
+                        value={profileForm.profileImage}
+                        onUploadComplete={(url) => setProfileForm({ ...profileForm, profileImage: url })}
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="name" className="text-zinc-300">Full Name</Label>
@@ -539,6 +555,55 @@ const Profile = () => {
                       <Label htmlFor="bio" className="text-zinc-300">Bio</Label>
                       <Textarea id="bio" value={profileForm.bio} onChange={(e) => setProfileForm({ ...profileForm, bio: e.target.value })} rows={3} className="bg-zinc-800 border-zinc-700 text-white focus:border-zinc-500" />
                     </div>
+
+                    {userRole === 'technician' && (
+                      <div className="space-y-4 pt-4 border-t border-zinc-700">
+                        <h3 className="text-lg font-medium text-white">Work Schedule</h3>
+                        <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
+                          {Object.entries(profileForm.schedule || {}).map(([day, data]) => (
+                            <div key={day} className="flex items-center gap-2 p-2 rounded bg-zinc-800/50">
+                              <div className="w-24 capitalize text-zinc-300">{day}</div>
+                              <input
+                                type="checkbox"
+                                checked={data.available}
+                                onChange={(e) => {
+                                  const newSchedule = { ...profileForm.schedule };
+                                  newSchedule[day] = { ...data, available: e.target.checked };
+                                  setProfileForm({ ...profileForm, schedule: newSchedule });
+                                }}
+                                className="w-4 h-4 rounded bg-zinc-700 border-zinc-600"
+                              />
+                              {data.available && (
+                                <div className="flex items-center gap-2 ml-auto">
+                                  <input
+                                    type="time"
+                                    value={data.hours?.from || '09:00'}
+                                    onChange={(e) => {
+                                      const newSchedule = { ...profileForm.schedule };
+                                      newSchedule[day] = { ...data, hours: { ...data.hours, from: e.target.value } };
+                                      setProfileForm({ ...profileForm, schedule: newSchedule });
+                                    }}
+                                    className="bg-zinc-700 border-zinc-600 rounded px-2 py-1 text-xs text-white"
+                                  />
+                                  <span className="text-zinc-500">-</span>
+                                  <input
+                                    type="time"
+                                    value={data.hours?.to || '17:00'}
+                                    onChange={(e) => {
+                                      const newSchedule = { ...profileForm.schedule };
+                                      newSchedule[day] = { ...data, hours: { ...data.hours, to: e.target.value } };
+                                      setProfileForm({ ...profileForm, schedule: newSchedule });
+                                    }}
+                                    className="bg-zinc-700 border-zinc-600 rounded px-2 py-1 text-xs text-white"
+                                  />
+                                </div>
+                              )}
+                              {!data.available && <span className="text-zinc-500 text-sm ml-auto">Off</span>}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     <div className="flex gap-2 pt-4">
                       <Button type="submit" className="flex-1 bg-white text-black hover:bg-gray-100">Save Changes</Button>
                     </div>
