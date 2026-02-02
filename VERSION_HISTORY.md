@@ -4,7 +4,8 @@
 ### ✨ New Features
 - **Technician Schedule Management**: Technicians can now set their weekly availability (days off, working hours) directly from their profile settings.
 - **Enhanced Profile Editing**: Improved UI for profile picture uploads with instant preview and status indicators.
-- **Real-time Job Notifications**: Technicians now receive instant notifications when a payment is confirmed for their job assignment.
+- **Job Notifications**: Technicians receive instant notifications upon payment confirmation.
+- **Feature Cleanup**: Removed AI-Powered Diagnostics to streamline the user workflow.
 
 ### 🐛 Bug Fixes
 - **Profile Picture Upload**: Fixed an issue where the profile picture upload button was invisible or non-functional.
