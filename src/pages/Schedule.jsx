@@ -11,12 +11,9 @@ import { Badge } from '../components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 import { ScrollArea } from '../components/ui/scroll-area';
-<<<<<<< HEAD
 import { cn } from '../lib/utils';
-=======
 import { Input } from '../components/ui/input';
 import { Checkbox } from '../components/ui/checkbox';
->>>>>>> 49a5777f86984470ee9661434bb7e4ebc327f0a0
 import { format, isSameDay, setHours, setMinutes, isAfter } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -379,7 +376,8 @@ const Schedule = () => {
           .update({
             scheduled_date: date.toISOString(),
             time_slot: timeSlot,
-            status: 'confirmed'
+            status: 'confirmed',
+            technician_id: technician // Link the booking to the technician
           })
           .eq('id', bookingId);
 

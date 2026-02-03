@@ -64,14 +64,6 @@ export const AuthProvider = ({ children }) => {
             };
 
             if (isMounted.current) {
-                // Determine the most authoritative role
-                let authoritativeRole = finalProfile.role || authUser.user_metadata?.role || 'user';
-                // Normalize role: map 'user' to 'customer' for consistency
-                if (authoritativeRole === 'user') {
-                    authoritativeRole = 'customer';
-                }
-                finalProfile.role = authoritativeRole;
-
                 setProfile(finalProfile);
 
                 localStorage.setItem(`user_profile_${authUser.id}`, JSON.stringify({
@@ -85,19 +77,15 @@ export const AuthProvider = ({ children }) => {
                         ...authUser,
                         ...finalProfile,
                         extendedProfile,
-                        role: authoritativeRole, // Explicitly set role
                         _id: authUser.id
                     };
 
-                    // Deep comparison for crucial fields to avoid re-render loops
-                    const hasChanged = !prev ||
-                        prev.id !== newUser.id ||
-                        prev.role !== newUser.role ||
-                        prev.email !== newUser.email ||
-                        JSON.stringify(prev.extendedProfile) !== JSON.stringify(newUser.extendedProfile);
-
-                    if (!hasChanged) return prev;
-                    console.log(`[AUTH] User state updated from ${source}`);
+                    // Stabilize user object to prevent unnecessary re-renders
+                    if (prev && prev.id === newUser.id &&
+                        prev.role === newUser.role &&
+                        JSON.stringify(prev.extendedProfile) === JSON.stringify(newUser.extendedProfile)) {
+                        return prev;
+                    }
                     return newUser;
                 });
             }
@@ -198,7 +186,7 @@ export const AuthProvider = ({ children }) => {
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
             console.log('Auth event:', event);
-            // setSession is now handled within specific event blocks for better control
+            if (isMounted.current) setSession(currentSession);
 
             if (event === 'INITIAL_SESSION') {
                 return;
@@ -214,15 +202,8 @@ export const AuthProvider = ({ children }) => {
                 }
 
                 if (isMounted.current) {
-                    // Update session only if changed
-                    setSession(prev => {
-                        if (prev?.access_token === currentSession.access_token) return prev;
-                        return currentSession;
-                    });
-
                     setUser(prev => {
                         if (prev && prev.id === currentSession.user.id) return prev;
-                        console.log('[AUTH] SIGNED_IN event - setting basic user');
                         return {
                             ...currentSession.user,
                             _id: currentSession.user.id,
@@ -233,7 +214,6 @@ export const AuthProvider = ({ children }) => {
                     loadUserProfile(currentSession.user, false, 'event');
                 }
             } else if (event === 'SIGNED_OUT') {
-                setSession(null);
                 setUser(null);
                 setProfile(null);
                 setSession(null);
@@ -325,22 +305,18 @@ export const AuthProvider = ({ children }) => {
             // Clear any local storage if needed
             localStorage.removeItem('supabase.auth.token');
             console.log('[DEBUG] Logout successful, redirecting...');
-            // Use navigate for proper SPA navigation
-            setTimeout(() => {
-                navigate('/', { replace: true });
-            }, 100);
+            // Force reload to clear all state and redirect to home
+            window.location.assign('/');
         } catch (error) {
             console.error('Logout error:', error);
-            setTimeout(() => {
-                navigate('/', { replace: true });
-            }, 100);
+            window.location.assign('/');
         }
     };
 
     const refreshUser = async () => {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
-            await loadUserProfile(session.user, true, 'manual_refresh');
+            await loadUserProfile(session.user);
         }
     };
 
@@ -354,7 +330,7 @@ export const AuthProvider = ({ children }) => {
 
     const isAdmin = () => hasRole('admin');
     const isTechnician = () => hasRole('technician');
-    const isCustomer = () => hasRole(['user', 'customer', 'customer']);
+    const isCustomer = () => hasRole(['user', 'customer']);
     const isAuthenticated = () => !!user;
 
     return (

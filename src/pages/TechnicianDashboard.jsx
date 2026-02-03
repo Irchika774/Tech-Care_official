@@ -551,10 +551,10 @@ const TechnicianDashboard = () => {
             <TabsTrigger value="earnings" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">Earnings</TabsTrigger>
             <TabsTrigger value="analytics" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">Analytics</TabsTrigger>
             <TabsTrigger value="settings" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']"><Settings className="w-4 h-4 mr-2" />Settings</TabsTrigger>
-          </TabsList>
+          </TabsList >
 
           {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-6">
+          < TabsContent value="overview" className="space-y-6" >
             <div className="grid md:grid-cols-2 gap-6">
               {/* Performance Metrics */}
               <Card className="bg-zinc-900 border-zinc-800 shadow-xl">
@@ -653,10 +653,10 @@ const TechnicianDashboard = () => {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
+          </TabsContent >
 
           {/* Jobs Tab */}
-          <TabsContent value="jobs">
+          < TabsContent value="jobs" >
             <Card className="bg-zinc-900 border-zinc-800">
               <CardHeader>
                 <CardTitle className="text-lg font-['Outfit'] font-bold text-white">Active Jobs</CardTitle>
@@ -705,10 +705,10 @@ const TechnicianDashboard = () => {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
+          </TabsContent >
 
           {/* Bids Tab */}
-          <TabsContent value="bids">
+          < TabsContent value="bids" >
             <Card className="bg-zinc-900 border-zinc-800">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-lg font-['Outfit'] font-bold text-white">My Active Bids</CardTitle>
@@ -753,10 +753,10 @@ const TechnicianDashboard = () => {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
+          </TabsContent >
 
           {/* Earnings Tab */}
-          <TabsContent value="earnings" className="space-y-6">
+          < TabsContent value="earnings" className="space-y-6" >
             <div className="grid md:grid-cols-3 gap-4">
               <Card className="bg-zinc-900 border-zinc-800">
                 <CardContent className="p-6">
@@ -790,10 +790,10 @@ const TechnicianDashboard = () => {
                 currency="LKR"
               />
             </div>
-          </TabsContent>
+          </TabsContent >
 
           {/* Analytics Tab */}
-          <TabsContent value="analytics">
+          < TabsContent value="analytics" >
             <Card className="bg-zinc-900 border-zinc-800">
               <CardHeader>
                 <CardTitle className="text-lg font-['Outfit'] font-bold text-white">Performance Analytics</CardTitle>
@@ -816,8 +816,7 @@ const TechnicianDashboard = () => {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-
+          </TabsContent >
 
           {/* Settings Tab */}
           <TabsContent value="settings">
@@ -877,8 +876,8 @@ const TechnicianDashboard = () => {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
+          </TabsContent >
+        </Tabs >
       </main >
     </div >
   );
