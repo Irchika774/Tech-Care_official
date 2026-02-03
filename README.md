@@ -27,14 +27,15 @@
 
 ## 📅 Version History
 
-### v2.5.0 - Technician Empowerment & Scheduling (Feb 02, 2026)
-**New Features & Critical Fixes:**
-- **Technician Custom Pricing:** Added capability for technicians to set individual prices for common services (Battery, Screen, Water Damage, etc.) via their dashboard settings.
-- **Dynamic Booking Price:** The booking process now dynamically fetches and applies technician-specific pricing instead of using global defaults.
-- **Smart Working Hours:** Enhanced the scheduling system to respect technician's custom availability schedule. Appointment slots are strictly limited to technician's working hours.
-- **Booking Flow Stabilization:** Resolved a critical 404 error during schedule confirmation by fixing API response data extraction logic.
-- **UI/UX Consistency:** Fixed missing technician names on the payment page and ensured service amounts are updated correctly based on selection.
-- **Database Schema Expansion:** Added `technician_services` and `technician_availability` tables for granular business management.
+### v2.5.0 - Schema Simplification & Codebase Cleanup (Feb 03, 2026)
+**Architecture & Maintenance Updates:**
+- **Database Schema Simplification:** Consolidated technician schema by removing redundant `TECHNICIAN_SERVICES` and `TECHNICIAN_AVAILABILITY` tables, merging functionality into unified `TECHNICIANS` model.
+- **ER Diagram Update:** Updated Entity Relationship diagrams to reflect the simplified database schema.
+- **Booking Flow Optimization:** Streamlined the booking flow sequence diagram by removing custom pricing complexity.
+- **Use Case Diagram Cleanup:** Removed custom pricing use case from system diagrams for cleaner architecture visualization.
+- **Permissions Matrix Update:** Updated role-based permissions to remove deprecated custom pricing feature.
+- **Codebase Cleanup:** Removed deprecated migration files and optimized dashboard components.
+- **Documentation Sync:** Synchronized all documentation with the current production architecture.
 
 ### v2.4.0 - Global API Standardization (Feb 02, 2026)
 **API Reliability & Consistency Upgrades:**
@@ -267,37 +268,17 @@ erDiagram
     
     TECHNICIANS ||--o{ BOOKINGS : "receives"
     TECHNICIANS ||--o{ REVIEWS : "gets"
-    TECHNICIANS ||--o{ TECHNICIAN_SERVICES : "offers"
-    TECHNICIANS ||--o{ TECHNICIAN_AVAILABILITY : "defines"
     TECHNICIANS {
         uuid id PK
         uuid profile_id FK
-        string name
-        string email
         string business_name
-        string[] specialization
+        string[] services
+        string[] districts
         float rating
         int total_reviews
-        boolean is_verified
+        boolean verified
         jsonb location
-    }
-
-    TECHNICIAN_SERVICES {
-        uuid id PK
-        uuid technician_id FK
-        string name
-        string description
-        decimal price
-        boolean is_active
-    }
-
-    TECHNICIAN_AVAILABILITY {
-        uuid id PK
-        uuid technician_id FK
-        int day_of_week
-        time start_time
-        time end_time
-        boolean is_available
+        jsonb availability
     }
     
     BOOKINGS ||--o{ PAYMENTS : "has"
@@ -376,9 +357,7 @@ sequenceDiagram
         F->>API: GET /api/technicians/nearby
         API->>DB: Fetch verified technicians
         DB-->>API: Technician list
-        F->>API: GET /api/technicians/:id/services
-        API->>DB: Fetch custom prices
-        DB-->>F: Display Technicians with Custom Pricing
+        API-->>F: Display Technicians
     end
 
     rect rgb(40, 60, 40)
@@ -629,7 +608,6 @@ flowchart LR
         UC15(["System Settings"])
         UC16(["Select Conversation"])
         UC17(["Manage Schedule"])
-        UC18(["Manage Custom Pricing"])
     end
 
     %% Relationships
@@ -653,7 +631,6 @@ flowchart LR
     Technician --> UC12
     Technician --> UC16
     Technician --> UC17
-    Technician --> UC18
 
     Admin --> UC13
     Admin --> UC14
@@ -696,10 +673,9 @@ flowchart TB
             T3["Update Job Status"]
             T4["View Earnings"]
             T5["Manage Schedule"]
-            T6["Manage Custom Pricing"]
-            T7["Generate Invoices"]
-            T8["Receive Reviews"]
-            T9["Chat with Customers"]
+            T6["Generate Invoices"]
+            T7["Receive Reviews"]
+            T8["Chat with Customers"]
         end
         
         subgraph AdminRole["👑 ADMIN"]
@@ -744,7 +720,6 @@ flowchart TB
 | **Admin Dashboard** | ❌ | ❌ | ❌ | ✅ |
 | **Manage Users** | ❌ | ❌ | ❌ | ✅ |
 | **System Settings** | ❌ | ❌ | ❌ | ✅ |
-| **Custom Pricing** | ❌ | ❌ | ✅ | ✅ |
 
 
 
@@ -1264,7 +1239,7 @@ If you find TechCare helpful or interesting, please consider:
 
 ---
 
-**Last Updated**: February 02, 2026 | **Version**: 2.3.1 | **Status**: ✅ Production Ready
+**Last Updated**: February 03, 2026 | **Version**: 2.5.0 | **Status**: ✅ Production Ready
 
 [![Made with React](https://img.shields.io/badge/Made%20with-React-61DAFB?style=flat-square&logo=react)](https://reactjs.org)
 [![Powered by Supabase](https://img.shields.io/badge/Powered%20by-Supabase-3ECF8E?style=flat-square&logo=supabase)](https://supabase.io)

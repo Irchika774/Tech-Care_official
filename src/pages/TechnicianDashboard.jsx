@@ -754,59 +754,74 @@ const TechnicianDashboard = () => {
                 <CardHeader>
                   <CardTitle className="text-lg font-['Outfit'] font-bold text-white">My Services & Pricing</CardTitle>
                   <CardDescription className="text-zinc-400">
-                    Manage your services and set custom prices for customers to see.
+                    Manage your services and set custom prices
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-3">
-                    {(data.services || []).length > 0 ? (
-                      data.services.map((service) => (
-                        <div key={service.id} className="flex items-center justify-between p-3 bg-zinc-950 rounded-lg border border-zinc-800">
-                          <div>
-                            <p className="font-medium text-white">{service.name}</p>
-                            <p className="text-sm text-zinc-400">{service.description}</p>
-                          </div>
-                          <div className="text-right">
-                            <Input
-                              type="number"
-                              defaultValue={service.price}
-                              className="w-24 h-8 bg-zinc-900 border-zinc-700 text-right"
-                              onBlur={async (e) => {
-                                const newPrice = parseFloat(e.target.value);
-                                if (newPrice === service.price) return;
-                                try {
-                                  const { data: { session } } = await supabase.auth.getSession();
-                                  const token = session?.access_token;
-                                  await fetch(`${API_URL}/api/technicians/services/${service.id}`, {
-                                    method: 'PATCH',
-                                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ price: newPrice })
-                                  });
-                                  toast({ title: "Price Updated", description: `${service.name} price saved.` });
-                                } catch (err) {
-                                  toast({ title: "Update Failed", variant: "destructive" });
-                                }
-                              }}
-                            />
-                            <p className="text-xs text-zinc-500 mt-1">LKR</p>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-center py-4 text-zinc-500">
-                        <p>No services defined. Add them via the button below.</p>
+                    <div className="flex items-center justify-between p-3 bg-zinc-950 rounded-lg border border-zinc-800">
+                      <div>
+                        <p className="font-medium text-white">Battery Replacement</p>
+                        <p className="text-sm text-zinc-400">Battery diagnostics and replacement</p>
                       </div>
-                    )}
+                      <div className="text-right">
+                        <Input
+                          type="number"
+                          defaultValue="0"
+                          className="w-24 h-8 bg-zinc-900 border-zinc-700 text-right"
+                          id="service-battery"
+                        />
+                        <p className="text-xs text-zinc-500 mt-1">LKR</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-zinc-950 rounded-lg border border-zinc-800">
+                      <div>
+                        <p className="font-medium text-white">Screen Repair</p>
+                        <p className="text-sm text-zinc-400">Screen replacement and repair</p>
+                      </div>
+                      <div className="text-right">
+                        <Input
+                          type="number"
+                          defaultValue="0"
+                          className="w-24 h-8 bg-zinc-900 border-zinc-700 text-right"
+                          id="service-screen"
+                        />
+                        <p className="text-xs text-zinc-500 mt-1">LKR</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-zinc-950 rounded-lg border border-zinc-800">
+                      <div>
+                        <p className="font-medium text-white">Water Damage</p>
+                        <p className="text-sm text-zinc-400">Water damage treatment and repair</p>
+                      </div>
+                      <div className="text-right">
+                        <Input
+                          type="number"
+                          defaultValue="0"
+                          className="w-24 h-8 bg-zinc-900 border-zinc-700 text-right"
+                          id="service-water"
+                        />
+                        <p className="text-xs text-zinc-500 mt-1">LKR</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-zinc-950 rounded-lg border border-zinc-800">
+                      <div>
+                        <p className="font-medium text-white">General Repair</p>
+                        <p className="text-sm text-zinc-400">General diagnostics and repairs</p>
+                      </div>
+                      <div className="text-right">
+                        <Input
+                          type="number"
+                          defaultValue="0"
+                          className="w-24 h-8 bg-zinc-900 border-zinc-700 text-right"
+                          id="service-general"
+                        />
+                        <p className="text-xs text-zinc-500 mt-1">LKR</p>
+                      </div>
+                    </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    className="w-full border-zinc-800 text-zinc-400 hover:text-white"
-                    onClick={() => {
-                      /* Logic to add a new service could go here */
-                      toast({ title: "Coming Soon", description: "Manual service addition will be available in the next update." });
-                    }}
-                  >
-                    Add Custom Service
+                  <Button className="w-full bg-white text-black hover:bg-gray-100">
+                    Update Service Prices
                   </Button>
                 </CardContent>
               </Card>
@@ -816,108 +831,36 @@ const TechnicianDashboard = () => {
                 <CardHeader>
                   <CardTitle className="text-lg font-['Outfit'] font-bold text-white">Availability Schedule</CardTitle>
                   <CardDescription className="text-zinc-400">
-                    Set your working hours for appointments. Empty slots will show as unavailable to customers.
+                    Set your working hours for appointments
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {[
-                      { id: 1, name: 'Monday' },
-                      { id: 2, name: 'Tuesday' },
-                      { id: 3, name: 'Wednesday' },
-                      { id: 4, name: 'Thursday' },
-                      { id: 5, name: 'Friday' },
-                      { id: 6, name: 'Saturday' },
-                      { id: 0, name: 'Sunday' }
-                    ].map((day) => {
-                      const avail = (data.availability || []).find(a => a.day_of_week === day.id) || {
-                        is_available: true,
-                        start_time: '09:00',
-                        end_time: '17:00'
-                      };
-                      return (
-                        <div key={day.id} className="space-y-2 p-3 bg-zinc-950/50 rounded-lg border border-zinc-800/50">
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              id={`day-${day.id}`}
-                              defaultChecked={avail.is_available}
-                              className="rounded border-zinc-600"
-                              onChange={async (e) => {
-                                try {
-                                  const { data: { session } } = await supabase.auth.getSession();
-                                  const token = session?.access_token;
-                                  await fetch(`${API_URL}/api/technicians/availability`, {
-                                    method: 'POST',
-                                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({
-                                      day_of_week: day.id,
-                                      is_available: e.target.checked,
-                                      start_time: avail.start_time,
-                                      end_time: avail.end_time
-                                    })
-                                  });
-                                } catch (err) { }
-                              }}
-                            />
-                            <Label htmlFor={`day-${day.id}`} className="text-white text-sm">{day.name}</Label>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            <Input
-                              type="time"
-                              defaultValue={avail.start_time.slice(0, 5)}
-                              className="h-8 bg-zinc-900 border-zinc-800 text-xs px-1"
-                              onBlur={async (e) => {
-                                try {
-                                  const { data: { session } } = await supabase.auth.getSession();
-                                  const token = session?.access_token;
-                                  await fetch(`${API_URL}/api/technicians/availability`, {
-                                    method: 'POST',
-                                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({
-                                      day_of_week: day.id,
-                                      start_time: e.target.value,
-                                      end_time: avail.end_time,
-                                      is_available: avail.is_available
-                                    })
-                                  });
-                                } catch (err) { }
-                              }}
-                            />
-                            <Input
-                              type="time"
-                              defaultValue={avail.end_time.slice(0, 5)}
-                              className="h-8 bg-zinc-900 border-zinc-800 text-xs px-1"
-                              onBlur={async (e) => {
-                                try {
-                                  const { data: { session } } = await supabase.auth.getSession();
-                                  const token = session?.access_token;
-                                  await fetch(`${API_URL}/api/technicians/availability`, {
-                                    method: 'POST',
-                                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({
-                                      day_of_week: day.id,
-                                      start_time: avail.start_time,
-                                      end_time: e.target.value,
-                                      is_available: avail.is_available
-                                    })
-                                  });
-                                } catch (err) { }
-                              }}
-                            />
-                          </div>
+                    {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => (
+                      <div key={day} className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <input type="checkbox" id={`day-${day}`} defaultChecked className="rounded border-zinc-600" />
+                          <Label htmlFor={`day-${day}`} className="text-white">{day}</Label>
                         </div>
-                      );
-                    })}
+                        <div className="grid grid-cols-2 gap-2">
+                          <Input
+                            type="time"
+                            defaultValue="09:00"
+                            className="h-8 bg-zinc-950 border-zinc-800 text-xs"
+                            id={`start-${day}`}
+                          />
+                          <Input
+                            type="time"
+                            defaultValue="17:00"
+                            className="h-8 bg-zinc-950 border-zinc-800 text-xs"
+                            id={`end-${day}`}
+                          />
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <Button
-                    className="w-full mt-6 bg-white text-black hover:bg-gray-100"
-                    onClick={() => {
-                      fetchDashboardData(true);
-                      toast({ title: "Settings Saved", description: "Your availability has been synchronized." });
-                    }}
-                  >
-                    Refresh & Verify Sync
+                  <Button className="w-full mt-6 bg-white text-black hover:bg-gray-100">
+                    Save Availability
                   </Button>
                 </CardContent>
               </Card>

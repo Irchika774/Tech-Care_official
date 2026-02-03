@@ -1,5 +1,16 @@
 # 📜 Version History
 
+## v2.5.0 - 2026-02-03
+### 🏗️ Architecture & Maintenance
+- **Schema Simplification:** Removed redundant `TECHNICIAN_SERVICES` and `TECHNICIAN_AVAILABILITY` tables, consolidating into unified `TECHNICIANS` model.
+- **ER Diagram Update:** Refreshed Entity Relationship diagrams to reflect simplified database schema.
+- **Use Case Cleanup:** Streamlined system diagrams by removing custom pricing complexity.
+- **Permissions Matrix:** Updated role-based permissions to remove deprecated features.
+- **Codebase Cleanup:** Removed deprecated migration files and optimized dashboard components.
+- **Documentation Sync:** All diagrams and docs synchronized with current production architecture.
+
+---
+
 ### v2.3.1 - 2026-02-02
 ### 🛠️ Technical Improvements
 - **Admin Dashboard Stability**: Fixed a critical `ReferenceError` during initialization in the Admin dashboard by resolving forward-reference dependencies in `Admin.jsx`.

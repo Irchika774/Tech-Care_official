@@ -81,38 +81,6 @@ router.get('/:id', async (req, res, next) => {
     }
 });
 
-// Get technician services (Public)
-router.get('/:id/services', async (req, res) => {
-    try {
-        const { data: services, error } = await supabaseAdmin
-            .from('technician_services')
-            .select('*')
-            .eq('technician_id', req.params.id)
-            .eq('is_active', true);
-
-        if (error) throw error;
-        return successResponse(res, services);
-    } catch (error) {
-        return errorResponse(res, 'Failed to fetch technician services');
-    }
-});
-
-// Get technician availability (Public)
-router.get('/:id/availability', async (req, res) => {
-    try {
-        const { data: availability, error } = await supabaseAdmin
-            .from('technician_availability')
-            .select('*')
-            .eq('technician_id', req.params.id)
-            .eq('is_available', true);
-
-        if (error) throw error;
-        return successResponse(res, availability);
-    } catch (error) {
-        return errorResponse(res, 'Failed to fetch technician availability');
-    }
-});
-
 router.get('/', async (req, res) => {
     try {
         const { data: technicians, error } = await supabaseAdmin
@@ -174,16 +142,6 @@ router.get('/dashboard', supabaseAuth, verifyTechnician, async (req, res) => {
 
         const todayEarnings = (todayBookings || []).reduce((sum, b) => sum + (parseFloat(b.price) || 0), 0);
 
-        const { data: services } = await supabaseAdmin
-            .from('technician_services')
-            .select('*')
-            .eq('technician_id', technician.id);
-
-        const { data: availability } = await supabaseAdmin
-            .from('technician_availability')
-            .select('*')
-            .eq('technician_id', technician.id);
-
         res.json({
             success: true,
             data: {
@@ -208,9 +166,7 @@ router.get('/dashboard', supabaseAuth, verifyTechnician, async (req, res) => {
                     responseTime: `${technician.avg_response_time || 0} mins`
                 },
                 activeJobs: activeJobs || [],
-                activeBids: activeBids || [],
-                services: services || [],
-                availability: availability || []
+                activeBids: activeBids || []
             }
         });
     } catch (error) {

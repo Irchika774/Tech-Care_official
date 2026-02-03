@@ -75,8 +75,6 @@ const Schedule = () => {
     return localStorage.getItem('techcare_booking_tech') || 'pending';
   });
 
-  const [techAvailability, setTechAvailability] = useState([]);
-
   // Schedule States
   const [date, setDate] = useState(new Date());
   const [timeSlot, setTimeSlot] = useState('');
@@ -119,91 +117,32 @@ const Schedule = () => {
 
   // Data Fetching
   useEffect(() => {
-    const fetchServices = async () => {
+    const fetchData = async () => {
       try {
-        const { data: services, error } = await supabase.from('services').select('*').order('created_at', { ascending: false });
-        if (error) throw error;
+        // Fetch Services
+        const { data: services } = await supabase.from('services').select('*').order('created_at', { ascending: false });
         if (services?.length) setAvailableServices(services);
         else {
+          // Fallback defaults
           setAvailableServices([
-            { id: 'battery', name: 'Battery Replacement', price: 1500 },
-            { id: 'screen', name: 'Screen Repair', price: 2500 },
-            { id: 'water-damage', name: 'Water Damage', price: 3000 },
-            { id: 'general', name: 'General Repair', price: 1000 },
+            { id: 'battery', name: 'Battery Replacement', price: 0 },
+            { id: 'screen', name: 'Screen Repair', price: 0 },
+            { id: 'water-damage', name: 'Water Damage', price: 0 },
+            { id: 'general', name: 'General Repair', price: 0 },
           ]);
         }
-      } catch (err) {
-        console.error("Services fetch error:", err);
-      }
-    };
 
-    const fetchTechnicians = async () => {
-      try {
+        // Fetch Technicians
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
         const techRes = await fetch(`${apiUrl}/api/technicians`);
         const techData = await techRes.json();
         setTechnicians(Array.isArray(techData) ? techData : []);
       } catch (err) {
-        console.error("Technician fetch error:", err);
+        console.error("Data fetch error:", err);
       }
     };
-
-    fetchServices();
-    fetchTechnicians();
+    fetchData();
   }, []);
-
-  // Fetch technician specific services when a technician is selected
-  useEffect(() => {
-    const fetchTechServices = async () => {
-      if (!technician || technician === 'pending') {
-        // Reset to global services if no technician selected
-        const { data: services } = await supabase.from('services').select('*');
-        if (services) setAvailableServices(services);
-        return;
-      }
-
-      try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-        const res = await fetch(`${apiUrl}/api/technicians/${technician}/services`);
-        const result = await res.json();
-
-        if (result.success && result.data?.length > 0) {
-          setAvailableServices(result.data);
-          // If current repairService is not in the new list, reset to first or general
-          if (!result.data.find(s => (s.id || s._id) === repairService)) {
-            setRepairService(result.data[0].id || result.data[0]._id);
-          }
-        } else {
-          // Fallback to global services if tech has none defined
-          const { data: services } = await supabase.from('services').select('*');
-          if (services) setAvailableServices(services);
-        }
-      } catch (err) {
-        console.error("Error fetching tech services:", err);
-      }
-    };
-
-    fetchTechServices();
-  }, [technician]);
-
-  // Fetch technician availability
-  useEffect(() => {
-    const fetchTechAvail = async () => {
-      if (!technician || technician === 'pending') {
-        setTechAvailability([]);
-        return;
-      }
-      try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-        const res = await fetch(`${apiUrl}/api/technicians/${technician}/availability`);
-        const result = await res.json();
-        if (result.success) setTechAvailability(result.data);
-      } catch (err) {
-        console.error("Error fetching tech availability:", err);
-      }
-    };
-    fetchTechAvail();
-  }, [technician]);
 
   // Pricing Calculation
   const selectedServiceInfo = availableServices.find(s => (s.id || s._id) === repairService) || availableServices.find(s => (s.id || s._id) === 'general');
@@ -213,42 +152,18 @@ const Schedule = () => {
 
   // Smart Time Slots
   const availableTimeSlots = useMemo(() => {
-    const defaultSlots = ['09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '01:00 PM', '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM'];
-
-    // If technician selected, find their availability for this day of week
-    let daySlots = defaultSlots;
-    if (technician !== 'pending' && techAvailability.length > 0) {
-      const dayOfWeek = date.getDay(); // 0-6
-      const daySetting = techAvailability.find(a => a.day_of_week === dayOfWeek);
-
-      if (daySetting) {
-        if (!daySetting.is_available) return []; // Not working this day
-
-        // Filter slots based on start/end time
-        const start = daySetting.start_time; // HH:mm:ss
-        const end = daySetting.end_time;
-
-        daySlots = defaultSlots.filter(slot => {
-          const [time, period] = slot.split(' ');
-          const [hours, minutes] = time.split(':').map(Number);
-          let hours24 = period === 'PM' && hours !== 12 ? hours + 12 : (period === 'AM' && hours === 12 ? 0 : hours);
-          const slotTime = `${hours24.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-          return slotTime >= start.slice(0, 5) && slotTime < end.slice(0, 5);
-        });
-      }
-    }
-
-    if (!date || !isSameDay(date, new Date())) return daySlots;
+    const slots = ['09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '01:00 PM', '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM'];
+    if (!date || !isSameDay(date, new Date())) return slots;
 
     const now = new Date();
-    return daySlots.filter(slot => {
+    return slots.filter(slot => {
       const [time, period] = slot.split(' ');
       const [hours, minutes] = time.split(':').map(Number);
       let slotDate = setHours(date, period === 'PM' && hours !== 12 ? hours + 12 : (period === 'AM' && hours === 12 ? 0 : hours));
       slotDate = setMinutes(slotDate, minutes);
       return isAfter(slotDate, now);
     });
-  }, [date, technician, techAvailability]);
+  }, [date]);
 
   useEffect(() => {
     // Reset time slot if date changes and current slot becomes invalid
@@ -265,8 +180,6 @@ const Schedule = () => {
       const search = techSearchTerm.toLowerCase();
       filtered = filtered.filter(tech =>
         tech.name?.toLowerCase().includes(search) ||
-        tech.business_name?.toLowerCase().includes(search) ||
-        tech.bio?.toLowerCase().includes(search) ||
         tech.services?.some(s => s.toLowerCase().includes(search)) ||
         tech.specialization?.some(s => s.toLowerCase().includes(search))
       );
@@ -317,12 +230,11 @@ const Schedule = () => {
         });
 
         if (!res.ok) throw new Error('Booking initialization failed');
-        const bookingResponse = await res.json();
-        const bookingData = bookingResponse.data;
+        const bookingData = await res.json();
 
         navigate('/payment', {
           state: {
-            booking: { ...bookingData, total: totalAmount, serviceType: selectedServiceInfo?.name, technicianName: techniciansList.find(t => t.id === (technician === 'pending' ? null : technician))?.name }
+            booking: { ...bookingData, total: totalAmount, serviceType: selectedServiceInfo?.name }
           }
         });
       } else if (step === 2) {

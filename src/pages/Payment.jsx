@@ -318,23 +318,12 @@ const Payment = () => {
 
         setHistoryLoading(true);
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            const token = session?.access_token;
             const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-            const response = await fetch(`${apiUrl}/api/payment/payments/customer/${user.id}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            const result = await response.json();
-            if (result.success && result.data?.payments) {
-                setPaymentHistory(result.data.payments);
-            } else {
-                setPaymentHistory([]);
-            }
+            const response = await fetch(`${apiUrl}/api/payment/payments/customer/${user.id}`);
+            const data = await response.json();
+            setPaymentHistory(Array.isArray(data) ? data : []);
         } catch (err) {
             console.error('Error fetching payment history:', err);
-            setPaymentHistory([]);
         } finally {
             setHistoryLoading(false);
         }

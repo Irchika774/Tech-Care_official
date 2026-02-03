@@ -2,7 +2,7 @@
 
 // Polling Intervals (in milliseconds)
 export const POLLING_INTERVALS = {
-    DASHBOARD: 30000,
+    DASHBOARD: 30000, // 30 seconds (legacy - for backwards compatibility)
     DASHBOARD_REFRESH: 30000, // 30 seconds
     BOOKINGS_REFRESH: 30000,  // 30 seconds
     NOTIFICATIONS_REFRESH: 60000 // 60 seconds
@@ -45,6 +45,7 @@ export const BOOKING_STATUS = {
     CANCELLED: 'cancelled'
 };
 
+// Booking Progress Percentages (for progress bars)
 export const BOOKING_PROGRESS = {
     [BOOKING_STATUS.PENDING]: 20,
     [BOOKING_STATUS.CONFIRMED]: 40,
@@ -54,6 +55,7 @@ export const BOOKING_PROGRESS = {
     [BOOKING_STATUS.CANCELLED]: 0
 };
 
+// Active Booking Status List
 export const ACTIVE_BOOKING_STATUSES = [
     BOOKING_STATUS.PENDING,
     BOOKING_STATUS.CONFIRMED,
@@ -61,6 +63,7 @@ export const ACTIVE_BOOKING_STATUSES = [
     BOOKING_STATUS.IN_PROGRESS
 ];
 
+// Helper function to check if booking status is active
 export const isActiveBookingStatus = (status) => ACTIVE_BOOKING_STATUSES.includes(status);
 
 // Payment Statuses
