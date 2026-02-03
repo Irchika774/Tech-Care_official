@@ -12,6 +12,7 @@ create table if not exists public.messages (
 alter table public.messages enable row level security;
 
 -- Policies
+DROP POLICY IF EXISTS "Users can view messages for their bookings" ON public.messages;
 create policy "Users can view messages for their bookings"
   on public.messages for select
   using (
@@ -23,6 +24,7 @@ create policy "Users can view messages for their bookings"
     )
   );
 
+DROP POLICY IF EXISTS "Users can insert messages for their bookings" ON public.messages;
 create policy "Users can insert messages for their bookings"
   on public.messages for insert
   with check (
@@ -35,4 +37,9 @@ create policy "Users can insert messages for their bookings"
   );
 
 -- Realtime
-alter publication supabase_realtime add table public.messages;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'messages') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;
+  END IF;
+END $$;

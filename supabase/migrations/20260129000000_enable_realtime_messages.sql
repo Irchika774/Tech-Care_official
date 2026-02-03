@@ -1,28 +1,29 @@
--- Enable Realtime for messages table
-alter publication supabase_realtime add table messages;
-
--- Enable Realtime for notifications table
-alter publication supabase_realtime add table notifications;
+-- Enable Realtime for messages and notifications tables
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'messages') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE messages;
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'notifications') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE notifications;
+  END IF;
+END $$;
 
 -- Ensure RLS Policies exist for messages
 -- Policy for inserting messages (Sender can insert)
+DROP POLICY IF EXISTS "Users can insert their own messages" ON messages;
 create policy "Users can insert their own messages"
 on messages for insert
 with check ( auth.uid() = sender_id );
 
 -- Policy for viewing messages (Participants can view)
--- Note: This requires a join with bookings or checking sender_id
--- Simple policy: Users can see messages where they are the sender
+DROP POLICY IF EXISTS "Users can view their own sent messages" ON messages;
 create policy "Users can view their own sent messages"
 on messages for select
 using ( auth.uid() = sender_id );
 
--- Complex policy: Users can see messages for bookings they belong to
--- This is hard to express efficiently in RLS without joining bookings.
--- We'll assume the client filters by booking_id and the policy allows generic access OR 
--- we add a better policy if possible.
--- For now, let's ensure "authenticated" users can read messages if they are linked to the booking.
-
+DROP POLICY IF EXISTS "Users can view messages for their bookings" ON messages;
 create policy "Users can view messages for their bookings"
 on messages for select
 using (

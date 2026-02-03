@@ -78,6 +78,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_generate_referral_code ON loyalty_accounts;
 CREATE TRIGGER trigger_generate_referral_code
     BEFORE INSERT ON loyalty_accounts
     FOR EACH ROW
@@ -151,6 +152,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_update_loyalty_tier ON loyalty_accounts;
 CREATE TRIGGER trigger_update_loyalty_tier
     BEFORE UPDATE OF current_points ON loyalty_accounts
     FOR EACH ROW
@@ -215,12 +217,15 @@ ALTER TABLE loyalty_transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE redeemed_rewards ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
+DROP POLICY IF EXISTS "Users can view own loyalty account" ON loyalty_accounts;
 CREATE POLICY "Users can view own loyalty account" ON loyalty_accounts
     FOR SELECT USING (customer_id IN (SELECT id FROM customers WHERE user_id = auth.uid()));
 
+DROP POLICY IF EXISTS "Users can view own transactions" ON loyalty_transactions;
 CREATE POLICY "Users can view own transactions" ON loyalty_transactions
     FOR SELECT USING (customer_id IN (SELECT id FROM customers WHERE user_id = auth.uid()));
 
+DROP POLICY IF EXISTS "Users can view own redeemed rewards" ON redeemed_rewards;
 CREATE POLICY "Users can view own redeemed rewards" ON redeemed_rewards
     FOR SELECT USING (customer_id IN (SELECT id FROM customers WHERE user_id = auth.uid()));
 

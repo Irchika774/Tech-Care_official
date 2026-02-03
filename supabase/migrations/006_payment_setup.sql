@@ -28,10 +28,12 @@ CREATE TABLE IF NOT EXISTS payments (
 -- Add RLS policies for payments
 ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view their own payments" ON payments;
 CREATE POLICY "Users can view their own payments" 
     ON payments FOR SELECT 
     USING (auth.uid() = customer_id);
 
+DROP POLICY IF EXISTS "Admins can view all payments" ON payments;
 CREATE POLICY "Admins can view all payments" 
     ON payments FOR SELECT 
     USING (

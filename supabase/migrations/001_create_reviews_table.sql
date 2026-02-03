@@ -56,31 +56,37 @@ ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
 -- Anyone can read published reviews
+DROP POLICY IF EXISTS "Public can view published reviews" ON reviews;
 CREATE POLICY "Public can view published reviews" ON reviews
     FOR SELECT
     USING (status = 'published');
 
 -- Customers can insert their own reviews
+DROP POLICY IF EXISTS "Customers can create reviews" ON reviews;
 CREATE POLICY "Customers can create reviews" ON reviews
     FOR INSERT
     WITH CHECK (auth.uid() = customer_id);
 
 -- Customers can update their own reviews
+DROP POLICY IF EXISTS "Customers can update own reviews" ON reviews;
 CREATE POLICY "Customers can update own reviews" ON reviews
     FOR UPDATE
     USING (auth.uid() = customer_id);
 
 -- Customers can delete their own reviews
+DROP POLICY IF EXISTS "Customers can delete own reviews" ON reviews;
 CREATE POLICY "Customers can delete own reviews" ON reviews
     FOR DELETE
     USING (auth.uid() = customer_id);
 
 -- Technicians can view reviews about them
+DROP POLICY IF EXISTS "Technicians can view their reviews" ON reviews;
 CREATE POLICY "Technicians can view their reviews" ON reviews
     FOR SELECT
     USING (auth.uid() = technician_id);
 
 -- Technicians can respond to reviews about them
+DROP POLICY IF EXISTS "Technicians can respond to reviews" ON reviews;
 CREATE POLICY "Technicians can respond to reviews" ON reviews
     FOR UPDATE
     USING (auth.uid() = technician_id)

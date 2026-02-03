@@ -44,27 +44,55 @@ CREATE TABLE IF NOT EXISTS notifications (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Ensure columns exist if table was already created
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS icon VARCHAR(50);
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS image_url TEXT;
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS action_url TEXT;
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS action_label VARCHAR(100);
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS reference_type VARCHAR(50);
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS reference_id UUID;
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS read BOOLEAN DEFAULT false;
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS read_at TIMESTAMPTZ;
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS sent_push BOOLEAN DEFAULT false;
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS sent_email BOOLEAN DEFAULT false;
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS sent_sms BOOLEAN DEFAULT false;
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS priority VARCHAR(20) DEFAULT 'normal';
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ;
+
 -- Indexes for efficient queries
-CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
-CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(user_id, read);
-CREATE INDEX IF NOT EXISTS idx_notifications_type ON notifications(type);
-CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_notifications_priority ON notifications(priority, created_at DESC);
+DROP INDEX IF EXISTS idx_notifications_user_id;
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON public.notifications(user_id);
+
+DROP INDEX IF EXISTS idx_notifications_read;
+CREATE INDEX IF NOT EXISTS idx_notifications_read ON public.notifications(user_id, read);
+
+DROP INDEX IF EXISTS idx_notifications_type;
+CREATE INDEX IF NOT EXISTS idx_notifications_type ON public.notifications(type);
+
+DROP INDEX IF EXISTS idx_notifications_created;
+CREATE INDEX IF NOT EXISTS idx_notifications_created ON public.notifications(created_at DESC);
+
+DROP INDEX IF EXISTS idx_notifications_priority;
+CREATE INDEX IF NOT EXISTS idx_notifications_priority ON public.notifications(priority, created_at DESC);
 
 -- Enable Row Level Security
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
+DROP POLICY IF EXISTS "Users can view own notifications" ON notifications;
 CREATE POLICY "Users can view own notifications" ON notifications
     FOR SELECT USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own notifications" ON notifications;
 CREATE POLICY "Users can update own notifications" ON notifications
     FOR UPDATE USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete own notifications" ON notifications;
 CREATE POLICY "Users can delete own notifications" ON notifications
     FOR DELETE USING (auth.uid() = user_id);
 
 -- System can insert notifications for any user
+DROP POLICY IF EXISTS "Service can insert notifications" ON notifications;
 CREATE POLICY "Service can insert notifications" ON notifications
     FOR INSERT WITH CHECK (true);
 
@@ -176,7 +204,12 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Enable realtime for notifications
-ALTER PUBLICATION supabase_realtime ADD TABLE notifications;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'notifications') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE notifications;
+  END IF;
+END $$;
 
 -- Grants
 GRANT SELECT, UPDATE, DELETE ON notifications TO authenticated;
