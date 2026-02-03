@@ -205,16 +205,28 @@ const MobileRepair = () => {
     const fetchNearbyTechnicians = async (lng, lat) => {
         try {
             setLoading(true);
-            const response = await techniciansAPI.getNearby(lng, lat, 50000);
-            const techData = response.data || [];
-            setTechnicians(techData);
-            setFilteredTechnicians(techData);
+            // Fetch from Supabase directly - since Supabase doesn't have geo queries,
+            // we'll fetch all and filter client-side by distance
+            const supabaseData = await fetchTechniciansFromSupabase();
+            if (supabaseData && supabaseData.length > 0) {
+                // Filter technicians within range (client-side)
+                const nearbyTechs = supabaseData.filter(tech => {
+                    if (!tech.location?.coordinates) return true; // Include techs without coords
+                    const distance = calculateDistance(
+                        lat, lng,
+                        tech.location.coordinates[1],
+                        tech.location.coordinates[0]
+                    );
+                    return distance <= 50; // 50km radius
+                });
+                setTechnicians(nearbyTechs.length > 0 ? nearbyTechs : supabaseData);
+                setFilteredTechnicians(nearbyTechs.length > 0 ? nearbyTechs : supabaseData);
+            }
         } catch (error) {
             console.error('Error fetching nearby technicians:', error);
             toast({
-                title: "Error",
-                description: "Failed to fetch nearby technicians. Loading all technicians...",
-                variant: "destructive",
+                title: "Location Search",
+                description: "Loading all available technicians...",
             });
             fetchAllTechnicians();
         } finally {
@@ -232,16 +244,8 @@ const MobileRepair = () => {
                 return; // Data already set by fetchTechniciansFromSupabase
             }
 
-            // Fallback: Try external API
-            const response = await techniciansAPI.getAll();
-            const techData = response.data || [];
-            if (techData.length > 0) {
-                setTechnicians(techData);
-                setFilteredTechnicians(techData);
-            } else {
-                // Final fallback: Google Sheets data
-                await loadFromGoogleSheets();
-            }
+            // Fallback: Google Sheets data if Supabase is empty
+            await loadFromGoogleSheets();
         } catch (error) {
             console.error('Error fetching technicians, falling back to Google Sheets:', error);
             await loadFromGoogleSheets();

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '../components/ui/label';
 import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
-import { Wallet, TrendingUp, CheckCircle, Star, Briefcase, Gavel, Smartphone, Monitor, Tablet, Loader2, User, Sparkles, ArrowRight, Activity, Calendar, Shield } from 'lucide-react';
+import { Wallet, TrendingUp, CheckCircle, Star, Briefcase, Gavel, Smartphone, Monitor, Tablet, Loader2, User, Sparkles, ArrowRight, Activity, Calendar, Shield, Settings } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import CurrencyDisplay from '../components/CurrencyDisplay';
@@ -33,6 +33,13 @@ const TechnicianDashboard = () => {
     actualCost: '',
     notes: ''
   });
+
+  // Availability State
+  const [availability, setAvailability] = useState({
+    days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+    startTime: '09:00',
+    endTime: '17:00'
+  });
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   const isFetchingRef = useRef(false);
@@ -50,24 +57,122 @@ const TechnicianDashboard = () => {
           setLoading(true);
         }
 
-        // Get the access token from Supabase session
-        const { data: { session } } = await supabase.auth.getSession();
-        const token = session?.access_token;
+        // Fetch technician profile from Supabase
+        const { data: techProfile, error: techError } = await supabase
+          .from('technicians')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
 
-        if (!token) {
-          throw new Error('No authentication token available');
+        if (techError && techError.code !== 'PGRST116') {
+          console.error('Technician profile error:', techError);
         }
 
-        const response = await fetch(`${API_URL}/api/technicians/dashboard`, {
-          headers: { Authorization: `Bearer ${token}` }
+        const technicianId = techProfile?.id;
+
+        // Fetch bookings assigned to this technician
+        let activeJobs = [];
+        let completedJobs = [];
+        if (technicianId) {
+          const { data: bookings, error: bookingsError } = await supabase
+            .from('bookings')
+            .select(`
+              *,
+              customer:customers(id, name, email, phone)
+            `)
+            .eq('technician_id', technicianId)
+            .order('created_at', { ascending: false });
+
+          if (bookingsError) console.error('Bookings error:', bookingsError);
+
+          // Transform bookings to match expected format
+          const formattedBookings = (bookings || []).map(b => ({
+            _id: b.id,
+            id: b.id,
+            status: b.status,
+            customer: b.customer,
+            device: {
+              brand: b.device_brand,
+              model: b.device_model,
+              type: b.device_type
+            },
+            issue: {
+              description: b.issue_description,
+              type: b.issue_type
+            },
+            estimatedCost: b.estimated_cost || b.price,
+            scheduledDate: b.scheduled_date,
+            createdAt: b.created_at
+          }));
+
+          activeJobs = formattedBookings.filter(b => !['completed', 'cancelled'].includes(b.status));
+          completedJobs = formattedBookings.filter(b => b.status === 'completed');
+        }
+
+        // Fetch active bids for this technician
+        let activeBids = [];
+        if (technicianId) {
+          const { data: bids, error: bidsError } = await supabase
+            .from('bids')
+            .select(`
+              *,
+              booking:bookings(
+                *,
+                customer:customers(id, name, email)
+              )
+            `)
+            .eq('technician_id', technicianId)
+            .in('status', ['pending', 'submitted'])
+            .order('created_at', { ascending: false });
+
+          if (bidsError) console.error('Bids error:', bidsError);
+          activeBids = (bids || []).map(bid => ({
+            _id: bid.id,
+            amount: bid.amount,
+            status: bid.status,
+            estimatedDuration: bid.estimated_duration,
+            createdAt: bid.created_at,
+            booking: bid.booking ? {
+              device: {
+                brand: bid.booking.device_brand,
+                model: bid.booking.device_model
+              },
+              customer: bid.booking.customer
+            } : null
+          }));
+        }
+
+        // Calculate stats
+        const totalEarnings = completedJobs.reduce((sum, j) => sum + (Number(j.estimatedCost) || 0), 0);
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        const todayEarnings = completedJobs
+          .filter(j => new Date(j.createdAt) >= todayStart)
+          .reduce((sum, j) => sum + (Number(j.estimatedCost) || 0), 0);
+
+        const stats = {
+          totalEarnings,
+          todayEarnings,
+          completedJobs: completedJobs.length,
+          activeJobs: activeJobs.length,
+          activeBids: activeBids.length,
+          rating: techProfile?.rating || 0,
+          reviewCount: techProfile?.review_count || 0,
+          responseTime: techProfile?.response_time || 'N/A',
+          completionRate: completedJobs.length > 0 ? Math.round((completedJobs.length / (completedJobs.length + activeJobs.length)) * 100) : 0,
+          availableBalance: totalEarnings * 0.85 // Assuming 15% platform fee
+        };
+
+        setData({
+          technician: techProfile,
+          stats,
+          activeJobs,
+          activeBids
         });
 
-        if (!response.ok) {
-          throw new Error(`Failed to fetch dashboard data: ${response.statusText}`);
+        if (techProfile?.availability) {
+          setAvailability(techProfile.availability);
         }
-
-        const result = await response.json();
-        setData(result);
         setError(null);
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
@@ -195,20 +300,13 @@ const TechnicianDashboard = () => {
     }
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
+      // Update directly in Supabase
+      const { error } = await supabase
+        .from('bookings')
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq('id', jobId);
 
-      // Use correct endpoint: /api/bookings/:id (handled by generic route in index.js)
-      const response = await fetch(`${API_URL}/api/bookings/${jobId}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ status: newStatus })
-      });
-
-      if (!response.ok) throw new Error('Failed to update status');
+      if (error) throw error;
 
       // Update local state
       setData(prev => ({
@@ -234,24 +332,19 @@ const TechnicianDashboard = () => {
 
   const handleCompleteJobSubmit = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-
-      const response = await fetch(`${API_URL}/api/technicians/bookings/${completeJob.id}/complete`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          actualCost: parseFloat(completeJob.actualCost),
-          notes: completeJob.notes
+      // Update booking to completed status directly in Supabase
+      const { error } = await supabase
+        .from('bookings')
+        .update({
+          status: 'completed',
+          price: parseFloat(completeJob.actualCost),
+          completion_notes: completeJob.notes,
+          completed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         })
-      });
+        .eq('id', completeJob.id);
 
-      if (!response.ok) throw new Error('Failed to complete job');
-
-      const result = await response.json();
+      if (error) throw error;
 
       // Update local state
       setData(prev => ({
@@ -275,8 +368,26 @@ const TechnicianDashboard = () => {
       toast({
         title: "Completion Failed",
         description: "Could not complete job. Please try again.",
-        variant: "destructive"
       });
+    }
+  };
+
+  const saveSettings = async () => {
+    try {
+      const { error } = await supabase
+        .from('technicians')
+        .update({
+          availability: availability,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      toast({ title: "Settings Saved", description: "Your availability controls have been updated." });
+    } catch (err) {
+      console.error('Save settings error:', err);
+      toast({ title: "Error", description: "Failed to save settings.", variant: "destructive" });
     }
   };
 
@@ -419,6 +530,7 @@ const TechnicianDashboard = () => {
             <TabsTrigger value="bids" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">Bids</TabsTrigger>
             <TabsTrigger value="earnings" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">Earnings</TabsTrigger>
             <TabsTrigger value="analytics" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">Analytics</TabsTrigger>
+            <TabsTrigger value="settings" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']"><Settings className="w-4 h-4 mr-2" />Settings</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -685,9 +797,70 @@ const TechnicianDashboard = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+
+          {/* Settings Tab */}
+          <TabsContent value="settings">
+            <Card className="bg-zinc-900 border-zinc-800">
+              <CardHeader><CardTitle className="text-lg font-['Outfit'] font-bold text-white flex items-center gap-2"><Calendar className="w-5 h-5 text-primary" /> Availability Settings</CardTitle></CardHeader>
+              <CardContent className="space-y-8">
+                <div className="space-y-4">
+                  <Label className="text-base">Working Days</Label>
+                  <div className="flex gap-3 flex-wrap">
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                      <label key={day} className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-all ${availability.days.includes(day) ? 'bg-primary/20 border-primary text-white' : 'border-zinc-700 bg-zinc-950 text-zinc-400 hover:bg-zinc-900'}`}>
+                        <input type="checkbox"
+                          checked={availability.days.includes(day)}
+                          onChange={(e) => {
+                            if (e.target.checked) setAvailability(prev => ({ ...prev, days: [...prev.days, day] }));
+                            else setAvailability(prev => ({ ...prev, days: prev.days.filter(d => d !== day) }));
+                          }}
+                          className="hidden" // rounded border-zinc-600 bg-zinc-800
+                        />
+                        <span className="font-medium">{day}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label>Shift Start Time</Label>
+                    <div className="relative">
+                      <Activity className="absolute left-3 top-3 h-4 w-4 text-zinc-500" />
+                      <Input
+                        type="time"
+                        value={availability.startTime}
+                        onChange={e => setAvailability({ ...availability, startTime: e.target.value })}
+                        className="pl-10 bg-zinc-950 border-zinc-700"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Shift End Time</Label>
+                    <div className="relative">
+                      <Activity className="absolute left-3 top-3 h-4 w-4 text-zinc-500" />
+                      <Input
+                        type="time"
+                        value={availability.endTime}
+                        onChange={e => setAvailability({ ...availability, endTime: e.target.value })}
+                        className="pl-10 bg-zinc-950 border-zinc-700"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-zinc-800">
+                  <Button onClick={saveSettings} className="w-full md:w-auto bg-white text-black hover:bg-zinc-200 font-semibold h-11 px-8">
+                    Save Availability
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </main>
-    </div>
+    </div >
   );
 };
 

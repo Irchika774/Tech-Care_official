@@ -186,6 +186,7 @@ erDiagram
         int total_reviews
         boolean verified
         jsonb location
+        jsonb availability
     }
     
     BOOKINGS ||--o{ PAYMENTS : "has"
@@ -535,6 +536,7 @@ usecaseDiagram
         usecase "Manage Users" as UC13
         usecase "Verify Technicians" as UC14
         usecase "System Settings" as UC15
+        usecase "Manage Availability" as UC16
     }
 
     Guest --> UC1
@@ -555,6 +557,7 @@ usecaseDiagram
     Technician --> UC10
     Technician --> UC11
     Technician --> UC12
+    Technician --> UC16
 
     Admin --> UC13
     Admin --> UC14
@@ -1100,6 +1103,14 @@ If you find TechCare helpful or interesting, please consider:
 - **Auth Robustness**: Overhauled `AuthContext.jsx` initialization to handle rapid state changes and slow network conditions gracefully.
 - **Intelligent Loading**: Replaced full-screen loaders with background synchronization for all authenticated dashboards.
 - **Database Fallbacks**: Optimized Supabase client timeouts and added local storage caching for user profiles to ensure instant UI responsiveness.
+
+### v2.3.0 - The Reliability & Availability Update (Feb 03, 2026)
+**New Features & Critical Fixes:**
+- **Technician Availability**: Added full scheduling controls (Days/Hours) in Technician Dashboard (Settings Tab).
+- **Smart Scheduling**: Booking system now respects technician's specific working hours and prevents double-booking with dynamic time slots.
+- **Notification Reliability**: Implemented fail-safe Payment Notifications in `Payment.jsx` ensuring technicians never miss a confirmed job.
+- **Profile Persistence**: Fixed `AuthContext` to forcefully refresh user data after profile updates, solving the "missing avatar" issue.
+- **UX Enhancements**: Added direct "Manage Availability" access from Profile Edit dialog and improved Schedule UI with Popover calendars.
 
 ### v2.1.0 - Global Production Stability (Jan 29, 2026)
 **Critical Fixes & Optimization:**

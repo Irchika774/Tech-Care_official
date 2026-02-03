@@ -22,7 +22,7 @@ import {
 import { useToast } from '../hooks/use-toast';
 
 const Profile = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -135,6 +135,7 @@ const Profile = () => {
 
       if (response.ok) {
         await fetchProfileData(); // Refresh data
+        await refreshUser(); // Force auth context update
         toast({
           title: "Profile Updated",
           description: "Your profile has been updated successfully.",
@@ -539,6 +540,20 @@ const Profile = () => {
                       <Label htmlFor="bio" className="text-zinc-300">Bio</Label>
                       <Textarea id="bio" value={profileForm.bio} onChange={(e) => setProfileForm({ ...profileForm, bio: e.target.value })} rows={3} className="bg-zinc-800 border-zinc-700 text-white focus:border-zinc-500" />
                     </div>
+                    {user.role === 'technician' && (
+                      <div className="space-y-2 pt-2 pb-2">
+                        <Label className="text-zinc-300">Availability Schedule</Label>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => navigate('/technician-dashboard')}
+                          className="w-full border-dashed border-zinc-600 bg-zinc-900/50 text-zinc-300 hover:text-white hover:bg-zinc-800"
+                        >
+                          <Calendar className="mr-2 h-4 w-4" />
+                          Manage Working Hours
+                        </Button>
+                      </div>
+                    )}
                     <div className="flex gap-2 pt-4">
                       <Button type="submit" className="flex-1 bg-white text-black hover:bg-gray-100">Save Changes</Button>
                     </div>

@@ -9,7 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Calendar } from '../components/ui/calendar';
 import { Badge } from '../components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
+import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 import { ScrollArea } from '../components/ui/scroll-area';
+import { cn } from '../lib/utils';
 import { format, isSameDay, setHours, setMinutes, isAfter } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -77,6 +79,7 @@ const Schedule = () => {
   // Data States
   const [techniciansList, setTechnicians] = useState([]);
   const [availableServices, setAvailableServices] = useState([]);
+  const [existingBookings, setExistingBookings] = useState([]);
   const [loading, setLoading] = useState(false);
 
   // Persistence
@@ -103,15 +106,29 @@ const Schedule = () => {
     }
   }, [user, navigate, toast]);
 
-  // Data Fetching
+  // Data Fetching - Direct Supabase connection
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch Services
-        const { data: services } = await supabase.from('services').select('*').order('created_at', { ascending: false });
-        if (services?.length) setAvailableServices(services);
-        else {
-          // Fallback defaults
+        // 1. Fetch Services from Supabase
+        const { data: services, error: servicesError } = await supabase
+          .from('services')
+          .select('*')
+          .order('name', { ascending: true });
+
+        if (servicesError) console.error('Services fetch error:', servicesError);
+
+        if (services?.length) {
+          // Map to consistent format
+          setAvailableServices(services.map(s => ({
+            id: s.id,
+            _id: s.id,
+            name: s.name,
+            price: Number(s.price) || 0,
+            description: s.description
+          })));
+        } else {
+          // Fallback defaults if no services in database
           setAvailableServices([
             { id: 'battery', name: 'Battery Replacement', price: 5000 },
             { id: 'screen', name: 'Screen Repair', price: 12000 },
@@ -120,17 +137,62 @@ const Schedule = () => {
           ]);
         }
 
-        // Fetch Technicians
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-        const techRes = await fetch(`${apiUrl}/api/technicians`);
-        const techData = await techRes.json();
-        setTechnicians(Array.isArray(techData) ? techData : []);
+        // 2. Fetch Technicians directly from Supabase
+        const { data: techData, error: techError } = await supabase
+          .from('technicians')
+          .select('*')
+          .order('rating', { ascending: false });
+
+        if (techError) console.error('Technicians fetch error:', techError);
+
+        if (techData?.length) {
+          // Transform to expected format
+          const transformedTechs = techData.map(tech => ({
+            id: tech.id,
+            _id: tech.id,
+            userId: tech.user_id, // Map the user_id for notifications
+            name: tech.name,
+            email: tech.email,
+            phone: tech.phone,
+            rating: tech.rating || 0,
+            avatar_url: tech.profile_image,
+            specialization: tech.services || tech.specialization || ['General Repair'],
+            location: tech.address || tech.location,
+            priceRange: tech.price_range || { min: 1000, max: 15000 },
+            services: tech.technician_services || [],
+            availability: tech.availability || { days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], startTime: '09:00', endTime: '18:00' }
+          }));
+          setTechnicians(transformedTechs);
+        }
       } catch (err) {
         console.error("Data fetch error:", err);
       }
     };
     fetchData();
   }, []);
+
+  // Fetch Existing Bookings for conflict detection
+  useEffect(() => {
+    const fetchBookings = async () => {
+      if (!date || technician === 'pending') return;
+
+      const startOfDay = new Date(date);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('scheduled_date, time_slot')
+        .eq('technician_id', technician)
+        .gte('scheduled_date', startOfDay.toISOString())
+        .lte('scheduled_date', endOfDay.toISOString())
+        .neq('status', 'cancelled');
+
+      if (data) setExistingBookings(data);
+    };
+    fetchBookings();
+  }, [date, technician]);
 
   // Pricing Calculation
   const selectedServiceInfo = availableServices.find(s => (s.id || s._id) === repairService) || availableServices.find(s => (s.id || s._id) === 'general');
@@ -140,18 +202,50 @@ const Schedule = () => {
 
   // Smart Time Slots
   const availableTimeSlots = useMemo(() => {
-    const slots = ['09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '01:00 PM', '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM'];
-    if (!date || !isSameDay(date, new Date())) return slots;
+    if (!date) return [];
 
+    // Get selected technician availability
+    // Get selected technician availability
+    const selectedTech = techniciansList.find(t => t.id === technician);
+
+    // Use tech availability or defaults
+    const techAvail = selectedTech?.availability || {};
+    const days = techAvail.days || ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const startTime = techAvail.startTime || '09:00';
+    const endTime = techAvail.endTime || '18:00';
+
+    // Check if working day
+    const dayName = format(date, 'EEE'); // Mon, Tue...
+    if (!days.includes(dayName)) return [];
+
+    // Generate slots based on start/end time
+    const slots = [];
+    const startHour = parseInt(startTime.split(':')[0]);
+    const endHour = parseInt(endTime.split(':')[0]);
+
+    for (let i = startHour; i < endHour; i++) {
+      const hour12 = i > 12 ? i - 12 : (i === 0 ? 12 : i);
+      const ampm = i >= 12 ? 'PM' : 'AM';
+      slots.push(`${hour12.toString().padStart(2, '0')}:00 ${ampm}`);
+    }
+
+    // Filter past slots if today
     const now = new Date();
-    return slots.filter(slot => {
-      const [time, period] = slot.split(' ');
-      const [hours, minutes] = time.split(':').map(Number);
-      let slotDate = setHours(date, period === 'PM' && hours !== 12 ? hours + 12 : (period === 'AM' && hours === 12 ? 0 : hours));
-      slotDate = setMinutes(slotDate, minutes);
-      return isAfter(slotDate, now);
-    });
-  }, [date]);
+    let validSlots = slots;
+    if (isSameDay(date, now)) {
+      validSlots = slots.filter(slot => {
+        const [time, period] = slot.split(' ');
+        const [hours, minutes] = time.split(':').map(Number);
+        let slotDate = setHours(date, period === 'PM' && hours !== 12 ? hours + 12 : (period === 'AM' && hours === 12 ? 0 : hours));
+        slotDate = setMinutes(slotDate, minutes);
+        return isAfter(slotDate, now);
+      });
+    }
+
+    // Filter booked slots
+    const bookedSlots = existingBookings.map(b => b.time_slot);
+    return validSlots.filter(slot => !bookedSlots.includes(slot));
+  }, [date, technician, techniciansList, existingBookings]);
 
   useEffect(() => {
     // Reset time slot if date changes and current slot becomes invalid
@@ -159,6 +253,7 @@ const Schedule = () => {
       setTimeSlot('');
     }
   }, [date, availableTimeSlots, timeSlot]);
+
 
 
   const handleSubmit = async (e) => {
@@ -169,53 +264,120 @@ const Schedule = () => {
     }
 
     setLoading(true);
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token;
 
     try {
       if (step === 1) {
-        // Initialize Booking & Payment
-        const payload = {
+        // Step 1: Get customer ID first
+        let customerId = null;
+        const { data: customerData } = await supabase
+          .from('customers')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+
+        if (customerData) {
+          customerId = customerData.id;
+        } else {
+          // Create customer record if doesn't exist
+          const { data: newCustomer, error: customerError } = await supabase
+            .from('customers')
+            .insert({
+              user_id: user.id,
+              name: user.user_metadata?.name || user.email,
+              email: user.email,
+              phone: user.user_metadata?.phone || null
+            })
+            .select('id')
+            .single();
+
+          if (customerError) throw new Error('Failed to create customer profile');
+          customerId = newCustomer?.id;
+        }
+
+        // Create booking directly in Supabase
+        const bookingPayload = {
+          customer_id: customerId,
           technician_id: technician === 'pending' ? null : technician,
           device_type: deviceType,
           device_brand: deviceBrand || 'Generic',
           device_model: deviceModel || 'Unknown',
-          issue_description: issueDescription || selectedServiceInfo?.name,
+          issue_description: issueDescription || selectedServiceInfo?.name || 'General Repair',
+          issue_type: repairService || 'general',
           status: 'pending',
           estimated_cost: totalAmount
         };
 
-        const res = await fetch(`${apiUrl}/api/bookings`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify(payload)
-        });
+        const { data: bookingData, error: bookingError } = await supabase
+          .from('bookings')
+          .insert(bookingPayload)
+          .select('*')
+          .single();
 
-        if (!res.ok) throw new Error('Booking initialization failed');
-        const bookingData = await res.json();
+        if (bookingError) {
+          console.error('Booking creation error:', bookingError);
+          throw new Error(bookingError.message || 'Failed to create booking');
+        }
 
+        // Navigate to payment with booking info
         navigate('/payment', {
           state: {
-            booking: { ...bookingData, total: totalAmount, serviceType: selectedServiceInfo?.name }
+            booking: {
+              ...bookingData,
+              total: totalAmount,
+              serviceType: selectedServiceInfo?.name
+            }
           }
         });
+
       } else if (step === 2) {
-        // Finalize Schedule
+        // Step 2: Update booking with schedule
         const bookingId = initialData.booking?.id || initialData.booking?._id;
         if (!bookingId) throw new Error('Missing booking reference');
 
-        const res = await fetch(`${apiUrl}/api/bookings/${bookingId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({
+        const { error: updateError } = await supabase
+          .from('bookings')
+          .update({
             scheduled_date: date.toISOString(),
             time_slot: timeSlot,
             status: 'confirmed'
           })
+          .eq('id', bookingId);
+
+        if (updateError) {
+          console.error('Booking update error:', updateError);
+          throw new Error('Failed to confirm schedule');
+        }
+
+        // Send Notifications
+        const selectedTech = techniciansList.find(t => t.id === technician);
+        const notifications = [];
+
+        // 1. Notify Customer
+        notifications.push({
+          user_id: user.id,
+          title: 'Booking Confirmed',
+          message: `Your appointment is scheduled for ${format(date, 'PPP')} at ${timeSlot}.`,
+          type: 'booking_confirmed',
+          read: false
         });
 
-        if (!res.ok) throw new Error('Failed to confirm schedule');
+        // 2. Notify Technician
+        if (selectedTech?.userId) {
+          notifications.push({
+            user_id: selectedTech.userId,
+            title: 'New Job Assigned',
+            message: `New booking: ${deviceBrand} ${deviceModel} on ${format(date, 'PPP')} at ${timeSlot}.`,
+            type: 'new_job',
+            read: false
+          });
+        }
+
+        // 3. Notify Admin (Optional: Broadcast or finding admin IDs)
+        // For now, skipping broadcast to complex admin logic unless requested specifics
+
+        if (notifications.length > 0) {
+          await supabase.from('notifications').insert(notifications);
+        }
 
         setIsSuccess(true);
         // Clean up storage
@@ -416,13 +578,36 @@ const Schedule = () => {
                     <div className="flex flex-col md:flex-row gap-8">
                       <div className="flex-1">
                         <Label className="block text-lg font-semibold mb-4 flex items-center gap-2"><CalendarIcon className="w-5 h-5 text-primary" /> Select Date</Label>
-                        <Calendar
-                          mode="single"
-                          selected={date}
-                          onSelect={(d) => d && setDate(d)}
-                          disabled={(d) => d < new Date().setHours(0, 0, 0, 0)}
-                          className="rounded-lg border border-zinc-800 bg-zinc-950"
-                        />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full min-h-[50px] justify-start text-left font-normal bg-zinc-950 border-zinc-800 hover:bg-zinc-900 text-zinc-300 hover:text-white transition-colors",
+                                !date && "text-muted-foreground"
+                              )}
+                            >
+                              <CalendarIcon className="mr-3 h-5 w-5 text-primary" />
+                              {date ? format(date, "PPP") : <span>Pick a date</span>}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0 bg-zinc-950 border-zinc-800" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={date}
+                              onSelect={(d) => d && setDate(d)}
+                              disabled={(d) => d < new Date().setHours(0, 0, 0, 0)}
+                              className="rounded-md border-0 bg-zinc-950 text-white"
+                              classNames={{
+                                day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+                                day_today: "bg-zinc-800 text-zinc-50",
+                                day: cn("h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-zinc-800 rounded-md transition-colors"),
+                                head_cell: "text-zinc-500 rounded-md w-9 font-normal text-[0.8rem]",
+                              }}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </div>
                       <div className="flex-1">
                         <Label className="block text-lg font-semibold mb-4 flex items-center gap-2"><Clock className="w-5 h-5 text-primary" /> Available Time</Label>

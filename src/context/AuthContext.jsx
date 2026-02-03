@@ -316,7 +316,7 @@ export const AuthProvider = ({ children }) => {
     const refreshUser = async () => {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
-            await loadUserProfile(session.user);
+            await loadUserProfile(session.user, true, 'manual_refresh');
         }
     };
 
