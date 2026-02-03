@@ -31,7 +31,6 @@
 
 **TechCare** is a modern, enterprise-grade full-stack web application that revolutionizes the device repair industry in Sri Lanka. It connects customers with verified technicians through an intelligent matching system, featuring:
 
-- 🤖 **AI-Powered Diagnostics** - Smart issue detection and cost estimation
 - 🗺️ **Location-Based Services** - Find nearby technicians with Google Maps integration
 - 💳 **Secure Payments** - Stripe-powered transaction processing
 - ⚡ **Real-time Updates** - Live booking status and notifications
@@ -54,14 +53,14 @@ flowchart TB
     subgraph Frontend["🎨 FRONTEND (React + Vite)"]
         direction TB
         subgraph Pages["📄 Pages"]
-            PUB["Public Pages<br/>• Home • Services<br/>• Technicians • AI Diagnostics"]
+            PUB["Public Pages<br/>• Home • Services<br/>• Technicians"]
             CUST["Customer Dashboard<br/>• Bookings • Profile<br/>• History • Loyalty"]
             TECH["Technician Dashboard<br/>• Jobs • Earnings<br/>• Schedule • Reviews"]
             ADM["Admin Dashboard<br/>• Users • Analytics<br/>• Settings • Payments"]
         end
         subgraph Components["🧩 Components"]
             UI["UI Components<br/>• Header • Footer<br/>• Cards • Modals"]
-            FEAT["Feature Components<br/>• AI Diagnostics • Maps<br/>• Charts • Invoices"]
+            FEAT["Feature Components<br/>• Maps • Charts<br/>• Invoices"]
         end
         subgraph State["🔄 State Management"]
             CTX["Context Providers<br/>• AuthContext (v2.2 Stable)<br/>• ThemeContext<br/>• NotificationContext"]
@@ -131,7 +130,6 @@ graph LR
         J --> J1[Home]
         J --> J2[Services]
         J --> J3[Technicians]
-        J --> J4[AI Diagnostics]
         
         K --> K1[Customer Dashboard]
         K --> K2[Technician Dashboard]
@@ -323,76 +321,21 @@ stateDiagram-v2
     Rejected --> ChooseTechnician: Select different technician
 ```
 
-### 🤖 AI Diagnostics Flow
-
-```mermaid
-flowchart TD
-    START([🚀 Start Diagnostics]) --> SELECT_DEVICE
-    
-    subgraph Input["📱 Device Selection"]
-        SELECT_DEVICE[Select Device Type] --> DEVICE_MOBILE{Mobile?}
-        DEVICE_MOBILE -->|Yes| MOBILE_BRAND[Select Brand]
-        DEVICE_MOBILE -->|No| DEVICE_PC{PC/Laptop?}
-        DEVICE_PC -->|Yes| PC_TYPE[Select Type]
-        DEVICE_PC -->|No| OTHER[Other Device]
-    end
-    
-    MOBILE_BRAND --> SYMPTOMS
-    PC_TYPE --> SYMPTOMS
-    OTHER --> SYMPTOMS
-    
-    subgraph Analysis["🔍 Symptom Analysis"]
-        SYMPTOMS[Select Symptoms] --> MULTI_SELECT{Multiple Issues?}
-        MULTI_SELECT -->|Yes| ADD_MORE[Add More Symptoms]
-        ADD_MORE --> MULTI_SELECT
-        MULTI_SELECT -->|No| ADDITIONAL[Additional Details]
-        ADDITIONAL --> AI_PROCESS
-    end
-    
-    subgraph AI["🤖 AI Processing"]
-        AI_PROCESS[Process with AI] --> MATCH[Match Patterns]
-        MATCH --> CALCULATE[Calculate Estimates]
-        CALCULATE --> GENERATE[Generate Report]
-    end
-    
-    GENERATE --> RESULT
-    
-    subgraph Output["📊 Results"]
-        RESULT[Display Diagnosis] --> SHOW_ISSUE[Issue Identified]
-        RESULT --> SHOW_COST[Cost Estimate]
-        RESULT --> SHOW_TIME[Repair Time]
-        RESULT --> SHOW_TIPS[Care Tips]
-    end
-    
-    SHOW_ISSUE --> ACTION
-    SHOW_COST --> ACTION
-    SHOW_TIME --> ACTION
-    SHOW_TIPS --> ACTION
-    
-    ACTION{User Action} -->|Book Now| BOOKING([📅 Go to Booking])
-    ACTION -->|Start Over| START
-    ACTION -->|Close| END([✅ End])
-
-    style START fill:#22c55e,stroke:#16a34a,color:#fff
-    style END fill:#22c55e,stroke:#16a34a,color:#fff
-    style BOOKING fill:#3b82f6,stroke:#2563eb,color:#fff
-    style AI_PROCESS fill:#8b5cf6,stroke:#7c3aed,color:#fff
-```
-
 ### 👥 System Use Case Diagram
 
 ```mermaid
 graph TD
-    classDef actor fill:#f9f,stroke:#333,stroke-width:2px;
-    classDef usecase fill:#fff,stroke:#333,stroke-width:2px,rx:20,ry:20;
+    %% Use clearer styling for better text visibility
+    classDef actor fill:#000,stroke:#22C55E,stroke-width:2px,color:#fff;
+    classDef usecase fill:#18181B,stroke:#3F3F46,stroke-width:2px,color:#fff,rx:20,ry:20;
 
-    Customer((👤 Customer)):::actor
-    Technician((🛠️ Technician)):::actor
-    Admin((👤 Admin)):::actor
+    CUS((👤 Customer)):::actor
+    TEC((🛠️ Technician)):::actor
+    ADM((👑 Admin)):::actor
 
     subgraph Platform["🛡️ TechCare Platform"]
+        direction TB
         UC1([Browse Services]):::usecase
-        UC2([AI Diagnostics]):::usecase
         UC3([Book Repair]):::usecase
         UC4([Make Payment]):::usecase
         UC5([Real-time Chat]):::usecase
@@ -404,22 +347,21 @@ graph TD
         UC11([Platform Analytics]):::usecase
     end
 
-    Customer --> UC1
-    Customer --> UC2
-    Customer --> UC3
-    Customer --> UC4
-    Customer --> UC5
-    Customer --> UC6
+    CUS --- UC1
+    CUS --- UC3
+    CUS --- UC4
+    CUS --- UC5
+    CUS --- UC6
 
-    Technician --> UC7
-    Technician --> UC8
-    Technician --> UC9
-    Technician --> UC5
-    Technician --> UC6
+    TEC --- UC7
+    TEC --- UC8
+    TEC --- UC9
+    TEC --- UC5
+    TEC --- UC6
 
-    Admin --> UC10
-    Admin --> UC11
-    Admin --> UC6
+    ADM --- UC10
+    ADM --- UC11
+    ADM --- UC6
 ```
 
 ---
@@ -436,7 +378,6 @@ flowchart TB
         subgraph GuestRole["👤 GUEST"]
             G1["View Services"]
             G2["Browse Technicians"]
-            G3["Use AI Diagnostics"]
             G4["View Reviews"]
             G5["Register/Login"]
         end
@@ -493,7 +434,6 @@ flowchart TB
 |---------|:--------:|:-----------:|:-------------:|:--------:|
 | **View Services** | ✅ | ✅ | ✅ | ✅ |
 | **Browse Technicians** | ✅ | ✅ | ✅ | ✅ |
-| **AI Diagnostics** | ✅ | ✅ | ✅ | ✅ |
 | **Book Repairs** | ❌ | ✅ | ❌ | ✅ |
 | **Customer Dashboard** | ❌ | ✅ | ❌ | ✅ |
 | **Track Bookings** | ❌ | ✅ | ❌ | ✅ |
@@ -510,56 +450,54 @@ flowchart TB
 ### Use Case Diagram
 
 ```mermaid
-usecaseDiagram
-    actor Guest as "👤 Guest"
-    actor Customer as "🛒 Customer"
-    actor Technician as "🔧 Technician"
-    actor Admin as "👑 Admin"
+graph TD
+    %% Standard graph version for broader compatibility
+    Guest("👤 Guest")
+    Customer("🛒 Customer")
+    Technician("🔧 Technician")
+    Admin("👑 Admin")
 
-    package "TechCare System" {
-        usecase "View Services" as UC1
-        usecase "Search Technicians" as UC2
-        usecase "AI Diagnostics" as UC3
-        usecase "Register/Login" as UC4
+    subgraph Platform["TechCare System"]
+        UC1([View Services])
+        UC2([Search Technicians])
+        UC4([Register/Login])
         
-        usecase "Book Repair" as UC5
-        usecase "Track Status" as UC6
-        usecase "Write Review" as UC7
-        usecase "Manage Profile" as UC8
+        UC5([Book Repair])
+        UC6([Track Status])
+        UC7([Write Review])
+        UC8([Manage Profile])
         
-        usecase "View Jobs" as UC9
-        usecase "Accept/Reject Job" as UC10
-        usecase "Update Job Status" as UC11
-        usecase "View Earnings" as UC12
+        UC9([View Jobs])
+        UC10([Accept/Reject Job])
+        UC11([Update Job Status])
+        UC12([View Earnings])
         
-        usecase "Manage Users" as UC13
-        usecase "Verify Technicians" as UC14
-        usecase "System Settings" as UC15
-    }
+        UC13([Manage Users])
+        UC14([Verify Technicians])
+        UC15([System Settings])
+    end
 
-    Guest --> UC1
-    Guest --> UC2
-    Guest --> UC3
-    Guest --> UC4
+    Guest --- UC1
+    Guest --- UC2
+    Guest --- UC4
 
-    Customer --> UC1
-    Customer --> UC2
-    Customer --> UC3
-    Customer --> UC5
-    Customer --> UC6
-    Customer --> UC7
-    Customer --> UC8
+    Customer --- UC1
+    Customer --- UC2
+    Customer --- UC5
+    Customer --- UC6
+    Customer --- UC7
+    Customer --- UC8
 
-    Technician --> UC8
-    Technician --> UC9
-    Technician --> UC10
-    Technician --> UC11
-    Technician --> UC12
+    Technician --- UC8
+    Technician --- UC9
+    Technician --- UC10
+    Technician --- UC11
+    Technician --- UC12
 
-    Admin --> UC13
-    Admin --> UC14
-    Admin --> UC15
-    Admin --> UC8
+    Admin --- UC13
+    Admin --- UC14
+    Admin --- UC15
+    Admin --- UC8
 ```
 
 ---
@@ -732,7 +670,6 @@ Tech-Care_official/
 │   │   ├── 📁 ui/                # Base UI components
 │   │   ├── Header.jsx            # Navigation header
 │   │   ├── Footer.jsx            # Site footer
-│   │   ├── AIDiagnostics.jsx     # AI chat interface
 │   │   ├── EarningsChart.jsx     # Earnings visualization
 │   │   ├── InvoiceGenerator.jsx  # PDF invoice creation
 │   │   └── LoyaltyPoints.jsx     # Rewards system
@@ -822,7 +759,6 @@ pie title Technology Distribution
 | **📅 Easy Booking** | Calendar-based appointment scheduling |
 | **📱 Real-time Tracking** | Live status updates on repairs |
 | **💬 In-app Chat** | Direct communication with technicians |
-| **🤖 AI Diagnostics** | Get instant repair estimates |
 | **🏆 Loyalty Rewards** | Earn points on every booking |
 | **📜 Booking History** | Complete service records |
 
@@ -936,7 +872,7 @@ gantt
     Payment Integration         :done, 2025-12, 2025-12
     
     section Phase 2 ✅
-    AI Diagnostics              :done, 2025-12, 2025-12
+    Service Areas Map           :done, 2025-12, 2025-12
     Service Areas Map           :done, 2025-12, 2025-12
     Earnings Dashboard          :done, 2025-12, 2025-12
     Loyalty System              :done, 2025-12, 2025-12
@@ -1143,5 +1079,4 @@ If you find TechCare helpful or interesting, please consider:
 
 ### v1.0.0 - Initial Release
 - Complete Customer, Technician, and Admin portals.
-- AI Diagnostics implementation.
 - Basic Booking and Payment flows.
