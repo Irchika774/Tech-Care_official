@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatCurrency } from '../utils/currency';
 import SEO from '../components/SEO';
+import { useToast } from '../hooks/use-toast';
 
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -10,6 +11,7 @@ const Reviews = () => {
     const { user } = useAuth();
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
     const navigate = useNavigate();
+    const { toast } = useToast();
     const [activeTab, setActiveTab] = useState('all'); // all, submit, my
     const [reviews, setReviews] = useState([]);
     const [myReviews, setMyReviews] = useState([]);
@@ -125,10 +127,14 @@ const Reviews = () => {
             // If this page is standalone, how do we notify which technician?
             // Assuming this is opened from a booking context or selectedBooking is set.
             // If selectedBooking is null, we can't submit.
-            if (!selectedBooking && !activeTab === 'submit') {
+            if (!selectedBooking && activeTab === 'submit') {
                 // For standalone submit, we need UI to select booking.
                 // If mocking, we hardcode, but for real we should error.
-                alert("Please select a booking to review from your history.");
+                toast({
+                    title: "Selection Required",
+                    description: "Please select a booking to review from your history.",
+                    variant: "destructive"
+                });
                 return;
             }
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
@@ -18,12 +18,14 @@ import CurrencyDisplay from '../components/CurrencyDisplay';
 import { formatDistanceToNow } from 'date-fns';
 import SEO from '../components/SEO';
 import EarningsChart from '../components/EarningsChart';
+import { POLLING_INTERVALS } from '../lib/constants';
 
 const TechnicianDashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'overview');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [data, setData] = useState(null);
@@ -49,12 +51,16 @@ const TechnicianDashboard = () => {
       if (!user) return;
       if (isFetchingRef.current) return;
 
+      let loadingTimeout;
       try {
         isFetchingRef.current = true;
 
-        // Only show full-screen loading on the very first load
+        // Only show full-screen loading on the very first load if we have no data
+        // and add a tiny delay to avoid flashing if data comes from cache/fast network
         if (isInitial && !data) {
-          setLoading(true);
+          loadingTimeout = setTimeout(() => {
+            if (isFetchingRef.current) setLoading(true);
+          }, 300);
         }
 
         // Fetch technician profile from Supabase
@@ -181,6 +187,7 @@ const TechnicianDashboard = () => {
           setError(err.message);
         }
       } finally {
+        if (loadingTimeout) clearTimeout(loadingTimeout);
         setLoading(false);
         isFetchingRef.current = false;
       }
@@ -189,11 +196,24 @@ const TechnicianDashboard = () => {
     fetchDashboardData(true);
 
     // Refresh data every 30 seconds for real-time updates
-    const interval = setInterval(() => fetchDashboardData(false), 30000);
+    const interval = setInterval(() => fetchDashboardData(false), POLLING_INTERVALS.DASHBOARD_REFRESH);
     return () => clearInterval(interval);
   }, [user?.id]); // Use user.id specifically for more stable dependency
 
-  if (loading) {
+  // Synchronize activeTab with search params
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && tab !== activeTab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+
+  const handleTabChange = (value) => {
+    setActiveTab(value);
+    setSearchParams({ tab: value });
+  };
+
+  if (loading && !data) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
@@ -523,8 +543,8 @@ const TechnicianDashboard = () => {
         </div>
 
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 h-auto p-1 bg-zinc-900 border border-zinc-800 rounded-xl">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-6 h-auto p-1 bg-zinc-900 border border-zinc-800 rounded-xl">
             <TabsTrigger value="overview" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">Overview</TabsTrigger>
             <TabsTrigger value="jobs" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">Jobs</TabsTrigger>
             <TabsTrigger value="bids" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">Bids</TabsTrigger>
@@ -859,7 +879,7 @@ const TechnicianDashboard = () => {
             </Card>
           </TabsContent>
         </Tabs>
-      </main>
+      </main >
     </div >
   );
 };

@@ -28,14 +28,28 @@ apiClient.interceptors.request.use(
 
 // Response interceptor
 apiClient.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        // If the server returns our standard wrapper { success, data }
+        if (response.data && typeof response.data === 'object' && 'success' in response.data) {
+            if (response.data.success) {
+                return response.data.data !== undefined ? response.data.data : response.data;
+            } else {
+                return Promise.reject(new Error(response.data.error || 'Server reported failure'));
+            }
+        }
+        return response.data;
+    },
     (error) => {
         if (error.response?.status === 401) {
             // Handle unauthorized
             localStorage.removeItem('token');
-            window.location.href = '/';
+            // Avoid infinite loops if already on landing page
+            if (window.location.pathname !== '/') {
+                window.location.href = '/';
+            }
         }
-        return Promise.reject(error);
+        const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message;
+        return Promise.reject(new Error(errorMessage));
     }
 );
 

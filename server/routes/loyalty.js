@@ -1,6 +1,7 @@
 import express from 'express';
 import { supabaseAdmin } from '../lib/supabase.js';
 import { supabaseAuth } from '../middleware/supabaseAuth.js';
+import { successResponse, errorResponse } from '../lib/response.js';
 
 const router = express.Router();
 
@@ -54,14 +55,14 @@ router.get('/account', supabaseAuth, async (req, res) => {
             }
         }
 
-        res.json({
+        return successResponse(res, {
             ...account,
             pointsToNextTier,
             nextTierName: nextTier
         });
     } catch (error) {
         console.error('Get loyalty account error:', error);
-        res.status(500).json({ error: error.message || 'Failed to fetch loyalty account' });
+        return errorResponse(res, 'Failed to fetch loyalty account');
     }
 });
 
@@ -75,32 +76,28 @@ router.get('/tiers', async (req, res) => {
 
         if (error) throw error;
 
-        res.json(tiers || []);
+        return successResponse(res, tiers || []);
     } catch (error) {
         console.error('Get tiers error:', error);
-        res.status(500).json({ error: error.message || 'Failed to fetch tiers' });
+        return errorResponse(res, 'Failed to fetch tiers');
     }
 });
 
 // Get available rewards
 router.get('/rewards', async (req, res) => {
     try {
-        const { min_tier } = req.query;
-
-        let query = supabaseAdmin
+        const { data: rewards, error } = await supabaseAdmin
             .from('rewards')
             .select('*')
             .eq('is_active', true)
             .order('points_required', { ascending: true });
 
-        const { data: rewards, error } = await query;
-
         if (error) throw error;
 
-        res.json(rewards || []);
+        return successResponse(res, rewards || []);
     } catch (error) {
         console.error('Get rewards error:', error);
-        res.status(500).json({ error: error.message || 'Failed to fetch rewards' });
+        return errorResponse(res, 'Failed to fetch rewards');
     }
 });
 
@@ -111,7 +108,7 @@ router.post('/redeem', supabaseAuth, async (req, res) => {
         const customerId = req.user.customerId || req.user.id;
 
         if (!reward_id) {
-            return res.status(400).json({ error: 'reward_id is required' });
+            return errorResponse(res, 'reward_id is required', 400);
         }
 
         // Get user's account
@@ -122,7 +119,7 @@ router.post('/redeem', supabaseAuth, async (req, res) => {
             .single();
 
         if (accountError || !account) {
-            return res.status(404).json({ error: 'Loyalty account not found' });
+            return errorResponse(res, 'Loyalty account not found', 404);
         }
 
         // Get reward details
@@ -134,21 +131,17 @@ router.post('/redeem', supabaseAuth, async (req, res) => {
             .single();
 
         if (rewardError || !reward) {
-            return res.status(404).json({ error: 'Reward not found or not available' });
+            return errorResponse(res, 'Reward not found or not available', 404);
         }
 
         // Check if user has enough points
         if (account.current_points < reward.points_required) {
-            return res.status(400).json({
-                error: 'Insufficient points',
-                required: reward.points_required,
-                available: account.current_points
-            });
+            return errorResponse(res, `Insufficient points. Required: ${reward.points_required}, Available: ${account.current_points}`, 400);
         }
 
         // Check stock
         if (reward.stock !== null && reward.stock <= 0) {
-            return res.status(400).json({ error: 'Reward out of stock' });
+            return errorResponse(res, 'Reward out of stock', 400);
         }
 
         // Generate unique redemption code
@@ -208,8 +201,7 @@ router.post('/redeem', supabaseAuth, async (req, res) => {
                 .eq('id', reward.id);
         }
 
-        res.json({
-            success: true,
+        return successResponse(res, {
             redemption: {
                 ...redemption,
                 reward_name: reward.name,
@@ -218,10 +210,10 @@ router.post('/redeem', supabaseAuth, async (req, res) => {
                 discount_percent: reward.discount_percent
             },
             newBalance: newPoints
-        });
+        }, 'Reward redeemed successfully');
     } catch (error) {
         console.error('Redeem reward error:', error);
-        res.status(500).json({ error: error.message || 'Failed to redeem reward' });
+        return errorResponse(res, 'Failed to redeem reward');
     }
 });
 
@@ -248,10 +240,10 @@ router.get('/redeemed', supabaseAuth, async (req, res) => {
 
         if (error) throw error;
 
-        res.json(redeemed || []);
+        return successResponse(res, redeemed || []);
     } catch (error) {
         console.error('Get redeemed rewards error:', error);
-        res.status(500).json({ error: error.message || 'Failed to fetch redeemed rewards' });
+        return errorResponse(res, 'Failed to fetch redeemed rewards');
     }
 });
 
@@ -276,14 +268,14 @@ router.get('/transactions', supabaseAuth, async (req, res) => {
 
         if (error) throw error;
 
-        res.json({
+        return successResponse(res, {
             transactions: transactions || [],
             total: count || 0,
             hasMore: (count || 0) > parseInt(offset) + parseInt(limit)
         });
     } catch (error) {
         console.error('Get transactions error:', error);
-        res.status(500).json({ error: error.message || 'Failed to fetch transactions' });
+        return errorResponse(res, 'Failed to fetch transactions');
     }
 });
 
@@ -294,7 +286,7 @@ router.post('/use-reward', supabaseAuth, async (req, res) => {
         const customerId = req.user.customerId || req.user.id;
 
         if (!code) {
-            return res.status(400).json({ error: 'Redemption code is required' });
+            return errorResponse(res, 'Redemption code is required', 400);
         }
 
         // Find the redemption
@@ -310,7 +302,7 @@ router.post('/use-reward', supabaseAuth, async (req, res) => {
             .single();
 
         if (findError || !redemption) {
-            return res.status(404).json({ error: 'Invalid or expired redemption code' });
+            return errorResponse(res, 'Invalid or expired redemption code', 404);
         }
 
         // Check if expired
@@ -320,7 +312,7 @@ router.post('/use-reward', supabaseAuth, async (req, res) => {
                 .update({ status: 'expired' })
                 .eq('id', redemption.id);
 
-            return res.status(400).json({ error: 'Redemption code has expired' });
+            return errorResponse(res, 'Redemption code has expired', 400);
         }
 
         // Mark as used
@@ -335,14 +327,10 @@ router.post('/use-reward', supabaseAuth, async (req, res) => {
 
         if (useError) throw useError;
 
-        res.json({
-            success: true,
-            reward: redemption.reward,
-            message: 'Reward applied successfully'
-        });
+        return successResponse(res, redemption.reward, 'Reward applied successfully');
     } catch (error) {
         console.error('Use reward error:', error);
-        res.status(500).json({ error: error.message || 'Failed to use reward' });
+        return errorResponse(res, 'Failed to use reward');
     }
 });
 
@@ -350,13 +338,13 @@ router.post('/use-reward', supabaseAuth, async (req, res) => {
 router.post('/add-points', supabaseAuth, async (req, res) => {
     try {
         if (req.user.role !== 'admin') {
-            return res.status(403).json({ error: 'Admin access required' });
+            return errorResponse(res, 'Admin access required', 403);
         }
 
         const { customer_id, points, reason, reference_type, reference_id } = req.body;
 
         if (!customer_id || !points) {
-            return res.status(400).json({ error: 'customer_id and points are required' });
+            return errorResponse(res, 'customer_id and points are required', 400);
         }
 
         // Get or create account
@@ -402,14 +390,13 @@ router.post('/add-points', supabaseAuth, async (req, res) => {
                 description: reason || (points > 0 ? 'Bonus points added' : 'Points adjustment')
             });
 
-        res.json({
-            success: true,
+        return successResponse(res, {
             newBalance: newPoints,
             lifetimePoints: newLifetime
-        });
+        }, 'Points added successfully');
     } catch (error) {
         console.error('Add points error:', error);
-        res.status(500).json({ error: error.message || 'Failed to add points' });
+        return errorResponse(res, 'Failed to add points');
     }
 });
 

@@ -1,6 +1,7 @@
 import express from 'express';
 import { supabaseAdmin } from '../lib/supabase.js';
 import { supabaseAuth } from '../middleware/supabaseAuth.js';
+import { successResponse, errorResponse } from '../lib/response.js';
 
 const router = express.Router();
 
@@ -27,19 +28,19 @@ router.get('/', async (req, res) => {
         if (error) {
             console.error('Error fetching services from DB:', error);
             // Return default services if database fails
-            return res.json(defaultServices);
+            return successResponse(res, defaultServices);
         }
 
         // If no services in DB, return defaults
         if (!services || services.length === 0) {
-            return res.json(defaultServices);
+            return successResponse(res, defaultServices);
         }
 
-        res.json(services);
+        return successResponse(res, services);
     } catch (err) {
         console.error('Services fetch error:', err);
         // Return fallback data on error
-        res.json(defaultServices);
+        return successResponse(res, defaultServices);
     }
 });
 
@@ -56,15 +57,15 @@ router.get('/:id', async (req, res) => {
             // Check default services
             const defaultService = defaultServices.find(s => s.id === req.params.id);
             if (defaultService) {
-                return res.json(defaultService);
+                return successResponse(res, defaultService);
             }
-            return res.status(404).json({ error: 'Service not found' });
+            return errorResponse(res, 'Service not found', 404);
         }
 
-        res.json(service);
+        return successResponse(res, service);
     } catch (err) {
         console.error('Service fetch error:', err);
-        res.status(500).json({ error: 'Failed to fetch service' });
+        return errorResponse(res, 'Failed to fetch service');
     }
 });
 
@@ -72,7 +73,7 @@ router.get('/:id', async (req, res) => {
 router.post('/', supabaseAuth, async (req, res) => {
     try {
         if (req.user.role !== 'admin') {
-            return res.status(403).json({ error: 'Admin access required' });
+            return errorResponse(res, 'Admin access required', 403);
         }
 
         const { name, price, category, description, duration, image } = req.body;
@@ -92,10 +93,10 @@ router.post('/', supabaseAuth, async (req, res) => {
             .single();
 
         if (error) throw error;
-        res.status(201).json(service);
+        return successResponse(res, service, 'Service created successfully', 201);
     } catch (err) {
         console.error('Service creation error:', err);
-        res.status(500).json({ error: 'Failed to create service' });
+        return errorResponse(res, 'Failed to create service');
     }
 });
 
@@ -103,7 +104,7 @@ router.post('/', supabaseAuth, async (req, res) => {
 router.put('/:id', supabaseAuth, async (req, res) => {
     try {
         if (req.user.role !== 'admin') {
-            return res.status(403).json({ error: 'Admin access required' });
+            return errorResponse(res, 'Admin access required', 403);
         }
 
         const { name, price, category, description, duration, image } = req.body;
@@ -124,10 +125,10 @@ router.put('/:id', supabaseAuth, async (req, res) => {
             .single();
 
         if (error) throw error;
-        res.json(service);
+        return successResponse(res, service, 'Service updated successfully');
     } catch (err) {
         console.error('Service update error:', err);
-        res.status(500).json({ error: 'Failed to update service' });
+        return errorResponse(res, 'Failed to update service');
     }
 });
 
@@ -135,7 +136,7 @@ router.put('/:id', supabaseAuth, async (req, res) => {
 router.delete('/:id', supabaseAuth, async (req, res) => {
     try {
         if (req.user.role !== 'admin') {
-            return res.status(403).json({ error: 'Admin access required' });
+            return errorResponse(res, 'Admin access required', 403);
         }
 
         const { error } = await supabaseAdmin
@@ -144,10 +145,10 @@ router.delete('/:id', supabaseAuth, async (req, res) => {
             .eq('id', req.params.id);
 
         if (error) throw error;
-        res.json({ message: 'Service deleted successfully' });
+        return successResponse(res, null, 'Service deleted successfully');
     } catch (err) {
         console.error('Service deletion error:', err);
-        res.status(500).json({ error: 'Failed to delete service' });
+        return errorResponse(res, 'Failed to delete service');
     }
 });
 

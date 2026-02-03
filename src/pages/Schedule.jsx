@@ -11,7 +11,12 @@ import { Badge } from '../components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 import { ScrollArea } from '../components/ui/scroll-area';
+<<<<<<< HEAD
 import { cn } from '../lib/utils';
+=======
+import { Input } from '../components/ui/input';
+import { Checkbox } from '../components/ui/checkbox';
+>>>>>>> 49a5777f86984470ee9661434bb7e4ebc327f0a0
 import { format, isSameDay, setHours, setMinutes, isAfter } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -35,11 +40,14 @@ import {
   Star,
   Zap,
   ChevronLeft,
-  Loader2
+  Loader2,
+  Search,
+  Filter
 } from 'lucide-react';
 import SEO from '../components/SEO';
 import CurrencyDisplay from '../components/CurrencyDisplay';
 import { useToast } from '../hooks/use-toast';
+import { PLATFORM_FEES } from '../lib/constants';
 
 const Schedule = () => {
   const navigate = useNavigate();
@@ -78,9 +86,16 @@ const Schedule = () => {
 
   // Data States
   const [techniciansList, setTechnicians] = useState([]);
+  const [filteredTechnicians, setFilteredTechnicians] = useState([]);
   const [availableServices, setAvailableServices] = useState([]);
   const [existingBookings, setExistingBookings] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // Filter States
+  const [techSearchTerm, setTechSearchTerm] = useState('');
+  const [techMinRating, setTechMinRating] = useState('0');
+  const [techShowOnlyVerified, setTechShowOnlyVerified] = useState(false);
+  const [showTechFilters, setShowTechFilters] = useState(false);
 
   // Persistence
   useEffect(() => {
@@ -130,10 +145,10 @@ const Schedule = () => {
         } else {
           // Fallback defaults if no services in database
           setAvailableServices([
-            { id: 'battery', name: 'Battery Replacement', price: 5000 },
-            { id: 'screen', name: 'Screen Repair', price: 12000 },
-            { id: 'water-damage', name: 'Water Damage', price: 8500 },
-            { id: 'general', name: 'General Repair', price: 4000 },
+            { id: 'battery', name: 'Battery Replacement', price: 0 },
+            { id: 'screen', name: 'Screen Repair', price: 0 },
+            { id: 'water-damage', name: 'Water Damage', price: 0 },
+            { id: 'general', name: 'General Repair', price: 0 },
           ]);
         }
 
@@ -196,8 +211,8 @@ const Schedule = () => {
 
   // Pricing Calculation
   const selectedServiceInfo = availableServices.find(s => (s.id || s._id) === repairService) || availableServices.find(s => (s.id || s._id) === 'general');
-  const serviceAmount = Number(selectedServiceInfo?.price || 4000);
-  const platformFee = 500;
+  const serviceAmount = Number(selectedServiceInfo?.price || 0);
+  const platformFee = PLATFORM_FEES.BOOKING_FEE;
   const totalAmount = serviceAmount + platformFee;
 
   // Smart Time Slots
@@ -253,6 +268,31 @@ const Schedule = () => {
       setTimeSlot('');
     }
   }, [date, availableTimeSlots, timeSlot]);
+
+  // Apply technician filters
+  useEffect(() => {
+    let filtered = [...techniciansList];
+
+    if (techSearchTerm.trim()) {
+      const search = techSearchTerm.toLowerCase();
+      filtered = filtered.filter(tech =>
+        tech.name?.toLowerCase().includes(search) ||
+        tech.services?.some(s => s.toLowerCase().includes(search)) ||
+        tech.specialization?.some(s => s.toLowerCase().includes(search))
+      );
+    }
+
+    const minRating = parseFloat(techMinRating);
+    if (minRating > 0) {
+      filtered = filtered.filter(tech => (tech.rating || 0) >= minRating);
+    }
+
+    if (techShowOnlyVerified) {
+      filtered = filtered.filter(tech => tech.is_verified === true);
+    }
+
+    setFilteredTechnicians(filtered);
+  }, [techniciansList, techSearchTerm, techMinRating, techShowOnlyVerified]);
 
 
 
@@ -491,9 +531,8 @@ const Schedule = () => {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label className="text-zinc-400">Brand</Label>
-                        <input
+                        <Input
                           required
-                          className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 focus:outline-none focus:border-primary transition-colors"
                           placeholder="e.g. Apple"
                           value={deviceBrand}
                           onChange={e => setDeviceBrand(e.target.value)}
@@ -501,9 +540,8 @@ const Schedule = () => {
                       </div>
                       <div className="space-y-2">
                         <Label className="text-zinc-400">Model</Label>
-                        <input
+                        <Input
                           required
-                          className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 focus:outline-none focus:border-primary transition-colors"
                           placeholder="e.g. iPhone 13"
                           value={deviceModel}
                           onChange={e => setDeviceModel(e.target.value)}
@@ -533,8 +571,62 @@ const Schedule = () => {
 
                 {/* Technician Selection */}
                 <Card className="bg-zinc-900 border-zinc-800">
-                  <CardHeader><CardTitle className="flex items-center gap-2"><User className="w-5 h-5 text-primary" /> Select Technician</CardTitle></CardHeader>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><User className="w-5 h-5 text-primary" /> Select Technician</CardTitle>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowTechFilters(!showTechFilters)}
+                      className="text-zinc-400 hover:text-white mt-2"
+                    >
+                      <Filter className="w-4 h-4 mr-1" />
+                      {showTechFilters ? 'Hide Filters' : 'Show Filters'}
+                    </Button>
+                  </CardHeader>
                   <CardContent>
+                    {/* Filter Controls */}
+                    {showTechFilters && (
+                      <div className="mb-4 p-3 bg-zinc-950 rounded-lg border border-zinc-800 space-y-3 animate-in slide-in-from-top-2">
+                        <div className="flex items-center gap-2">
+                          <Search className="w-4 h-4 text-zinc-500" />
+                          <Input
+                            placeholder="Search technicians..."
+                            value={techSearchTerm}
+                            onChange={(e) => setTechSearchTerm(e.target.value)}
+                            className="bg-zinc-900 border-zinc-800"
+                          />
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-2">
+                            <Label className="text-zinc-400 text-xs">Min Rating:</Label>
+                            <Select value={techMinRating} onValueChange={setTechMinRating}>
+                              <SelectTrigger className="w-20 h-8 bg-zinc-900 border-zinc-800">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
+                                <SelectItem value="0">Any</SelectItem>
+                                <SelectItem value="3">3+ ⭐</SelectItem>
+                                <SelectItem value="4">4+ ⭐</SelectItem>
+                                <SelectItem value="4.5">4.5+ ⭐</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              id="verify-filter"
+                              checked={techShowOnlyVerified}
+                              onCheckedChange={(checked) => setTechShowOnlyVerified(checked === true)}
+                            />
+                            <Label htmlFor="verify-filter" className="text-zinc-400 text-xs">Verified Only</Label>
+                          </div>
+                        </div>
+                        {filteredTechnicians.length !== techniciansList.length && (
+                          <p className="text-xs text-zinc-500">
+                            Showing {filteredTechnicians.length} of {techniciansList.length} technicians
+                          </p>
+                        )}
+                      </div>
+                    )}
                     <RadioGroup value={technician} onValueChange={setTechnician} className="space-y-3">
                       <div className="flex items-center space-x-2 p-3 rounded-lg border border-zinc-800 bg-zinc-950 hover:bg-zinc-900/80 cursor-pointer">
                         <RadioGroupItem value="pending" id="tech-auto" />
@@ -548,21 +640,46 @@ const Schedule = () => {
                       </div>
                       <ScrollArea className="h-[300px] pr-4">
                         <div className="space-y-3">
-                          {techniciansList.map(tech => (
-                            <div key={tech.id} className="flex items-center space-x-2 p-3 rounded-lg border border-zinc-800 bg-zinc-950 hover:bg-zinc-900/80 cursor-pointer">
-                              <RadioGroupItem value={tech.id} id={`tech-${tech.id}`} />
-                              <Label htmlFor={`tech-${tech.id}`} className="flex-1 cursor-pointer flex items-center gap-3">
-                                <Avatar>
-                                  <AvatarImage src={tech.avatar_url} />
-                                  <AvatarFallback>{tech.name?.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1">
-                                  <p className="font-medium">{tech.name}</p>
-                                  <p className="text-xs text-amber-500 flex items-center gap-1"><Star className="w-3 h-3 fill-current" /> {tech.rating || 'New'}</p>
-                                </div>
-                              </Label>
+                          {filteredTechnicians.length > 0 ? (
+                            filteredTechnicians.map(tech => (
+                              <div key={tech.id} className="flex items-center space-x-2 p-3 rounded-lg border border-zinc-800 bg-zinc-950 hover:bg-zinc-900/80 cursor-pointer">
+                                <RadioGroupItem value={tech.id} id={`tech-${tech.id}`} />
+                                <Label htmlFor={`tech-${tech.id}`} className="flex-1 cursor-pointer flex items-center gap-3">
+                                  <Avatar>
+                                    <AvatarImage src={tech.avatar_url} />
+                                    <AvatarFallback>{tech.name?.charAt(0)}</AvatarFallback>
+                                  </Avatar>
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <p className="font-medium">{tech.name}</p>
+                                      {tech.is_verified && (
+                                        <Badge variant="secondary" className="text-xs bg-emerald-900/50 text-emerald-300 border-emerald-700">
+                                          ✓ Verified
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <p className="text-xs text-amber-500 flex items-center gap-1"><Star className="w-3 h-3 fill-current" /> {tech.rating || 'New'}</p>
+                                  </div>
+                                </Label>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="text-center py-8 text-zinc-500">
+                              <p>No technicians match your filters</p>
+                              <Button
+                                variant="link"
+                                size="sm"
+                                onClick={() => {
+                                  setTechSearchTerm('');
+                                  setTechMinRating('0');
+                                  setTechShowOnlyVerified(false);
+                                }}
+                                className="text-primary"
+                              >
+                                Clear filters
+                              </Button>
                             </div>
-                          ))}
+                          )}
                         </div>
                       </ScrollArea>
                     </RadioGroup>

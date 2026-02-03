@@ -1,6 +1,7 @@
 import express from 'express';
 import { supabaseAdmin } from '../lib/supabase.js';
 import { supabaseAuth } from '../middleware/supabaseAuth.js';
+import { successResponse, errorResponse } from '../lib/response.js';
 
 const router = express.Router();
 
@@ -48,14 +49,14 @@ router.get('/', async (req, res) => {
         if (error) {
             if (error.code === 'PGRST205' || error.message.includes('does not exist')) {
                 console.log('Blog table missing, using mock data');
-                return res.json(mockPosts);
+                return successResponse(res, mockPosts);
             }
             throw error;
         }
-        res.json(posts);
+        return successResponse(res, posts);
     } catch (error) {
         console.error('Blog fetch error:', error);
-        res.status(500).json({ error: 'Failed to fetch blog posts' });
+        return errorResponse(res, 'Failed to fetch blog posts');
     }
 });
 
@@ -71,15 +72,15 @@ router.get('/:id', async (req, res) => {
         if (error) {
             if (error.code === 'PGRST205' || error.message.includes('does not exist')) {
                 const post = mockPosts.find(p => p.id === req.params.id);
-                if (post) return res.json(post);
-                return res.status(404).json({ error: 'Post not found' });
+                if (post) return successResponse(res, post);
+                return errorResponse(res, 'Post not found', 404);
             }
             throw error;
         }
-        res.json(post);
+        return successResponse(res, post);
     } catch (error) {
         console.error('Blog post fetch error:', error);
-        res.status(500).json({ error: 'Failed to fetch blog post' });
+        return errorResponse(res, 'Failed to fetch blog post');
     }
 });
 
@@ -87,7 +88,7 @@ router.get('/:id', async (req, res) => {
 router.post('/', supabaseAuth, async (req, res) => {
     try {
         if (req.user.role !== 'admin') {
-            return res.status(403).json({ error: 'Only admins can create blog posts' });
+            return errorResponse(res, 'Only admins can create blog posts', 403);
         }
 
         const { title, content, author, image_url, category, tags } = req.body;
@@ -107,10 +108,10 @@ router.post('/', supabaseAuth, async (req, res) => {
             .single();
 
         if (error) throw error;
-        res.status(201).json(post);
+        return successResponse(res, post, 'Blog post created successfully', 201);
     } catch (error) {
         console.error('Blog creation error:', error);
-        res.status(500).json({ error: 'Failed to create blog post' });
+        return errorResponse(res, 'Failed to create blog post');
     }
 });
 

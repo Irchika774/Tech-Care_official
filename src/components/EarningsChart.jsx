@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { TrendingUp, TrendingDown, DollarSign, Calendar } from 'lucide-react';
@@ -23,13 +23,18 @@ const EarningsChart = ({
     const [chartData, setChartData] = useState([]);
 
     // Generate sample data if none provided
+    // Use a ref to store generated mock data so it doesn't change on every re-render
+    const mockDataRef = useRef(null);
+
     useEffect(() => {
-        if (data.length > 0) {
+        if (data && data.length > 0) {
             setChartData(data);
-        } else {
-            // Generate mock data for demonstration
-            const mockData = generateMockData(period);
-            setChartData(mockData);
+        } else if (!chartData.length || !mockDataRef.current) {
+            // Only generate mock data if we don't have any data yet
+            if (!mockDataRef.current) {
+                mockDataRef.current = generateMockData(period);
+            }
+            setChartData(mockDataRef.current);
         }
     }, [data, period]);
 
@@ -96,8 +101,9 @@ const EarningsChart = ({
         return (amount / stats.max) * 100;
     };
 
-    // Skeleton loader
-    if (loading) {
+    // Skeleton loader - ONLY show if we have zero data. 
+    // If we have chartData (stale), keep showing it during background refreshes.
+    if (loading && chartData.length === 0) {
         return (
             <Card className="bg-zinc-900/50 border-zinc-800">
                 <CardHeader className="pb-2">

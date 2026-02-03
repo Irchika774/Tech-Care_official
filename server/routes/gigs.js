@@ -1,6 +1,7 @@
 import express from 'express';
 import { supabaseAdmin } from '../lib/supabase.js';
 import { supabaseAuth } from '../middleware/supabaseAuth.js';
+import { successResponse, errorResponse } from '../lib/response.js';
 
 const router = express.Router();
 
@@ -17,9 +18,10 @@ router.get('/approved', async (req, res) => {
             .order('created_at', { ascending: false });
 
         if (error) throw error;
-        res.json(gigs || []);
+        return successResponse(res, gigs || []);
     } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch marketplace services' });
+        console.error('Fetch approved gigs error:', error);
+        return errorResponse(res, 'Failed to fetch marketplace services');
     }
 });
 
@@ -44,9 +46,10 @@ router.post('/:id/bid', supabaseAuth, async (req, res) => {
             .single();
 
         if (error) throw error;
-        res.status(201).json(bid);
+        return successResponse(res, bid, 'Bid placed successfully', 201);
     } catch (error) {
-        res.status(500).json({ error: 'Failed to place bid' });
+        console.error('Place bid error:', error);
+        return errorResponse(res, 'Failed to place bid');
     }
 });
 

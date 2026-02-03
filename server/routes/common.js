@@ -1,5 +1,6 @@
 import express from 'express';
 import { supabaseAdmin } from '../lib/supabase.js';
+import { successResponse, errorResponse } from '../lib/response.js';
 
 const router = express.Router();
 
@@ -24,10 +25,10 @@ router.post('/apply', async (req, res) => {
             .single();
 
         if (error) throw error;
-        res.status(201).json({ message: 'Application submitted successfully', data });
+        return successResponse(res, data, 'Application submitted successfully', 201);
     } catch (error) {
         console.error('Job application error:', error);
-        res.status(500).json({ error: 'Failed to submit application' });
+        return errorResponse(res, 'Failed to submit application');
     }
 });
 
@@ -53,10 +54,10 @@ router.post('/partner-request', async (req, res) => {
             .single();
 
         if (error) throw error;
-        res.status(201).json({ message: 'Partnership request submitted successfully', data });
+        return successResponse(res, data, 'Partnership request submitted successfully', 201);
     } catch (error) {
         console.error('Partner request error:', error);
-        res.status(500).json({ error: 'Failed to submit partner request' });
+        return errorResponse(res, 'Failed to submit partner request');
     }
 });
 
