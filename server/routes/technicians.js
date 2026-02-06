@@ -485,7 +485,13 @@ router.get('/analytics', supabaseAuth, verifyTechnician, async (req, res) => {
 router.get('/profile', supabaseAuth, verifyTechnician, async (req, res) => {
     try {
         const userId = req.user.id;
+        const { data: technician, error } = await supabaseAdmin
+            .from('technicians')
+            .select('*')
+            .eq('user_id', userId)
+            .single();
 
+        if (error) throw error;
         return successResponse(res, technician);
     } catch (error) {
         console.error('Profile fetch error:', error);

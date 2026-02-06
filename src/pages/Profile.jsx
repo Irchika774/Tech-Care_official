@@ -65,37 +65,47 @@ const Profile = () => {
       const userRole = user.role === 'user' ? 'customers' : user.role === 'technician' ? 'technicians' : 'admin';
 
       if (userRole === 'admin') {
-        // Admin gets data from admin dashboard
         const adminRes = await fetch(`${API_URL}/api/admin/dashboard`, { headers });
         if (adminRes.ok) {
-          const adminData = await adminRes.json();
-          setDashboardData(adminData);
-          setProfileData({ name: user.name, email: user.email, phone: user.phone });
+          const adminJson = await adminRes.json();
+          // Unwrap the data property from successResponse
+          const data = adminJson.data || adminJson;
+          setDashboardData(data);
+          setProfileData({
+            name: user.name || data.name || '',
+            email: user.email || data.email || '',
+            phone: user.phone || data.phone || ''
+          });
         }
       } else {
-        // Fetch profile and dashboard data
         const [profileRes, dashboardRes] = await Promise.all([
           fetch(`${API_URL}/api/${userRole}/profile`, { headers }),
           fetch(`${API_URL}/api/${userRole}/dashboard`, { headers })
         ]);
 
         if (profileRes.ok) {
-          const profile = await profileRes.json();
-          const pData = userRole === 'customers' ? profile.customer : profile.technician;
-          setProfileData(pData);
-          setProfileForm({
-            name: pData.name || '',
-            email: pData.email || '',
-            phone: pData.phone || '',
-            address: pData.address || '',
-            bio: pData.bio || '',
-            profileImage: pData.profile_image || pData.profileImage || ''
-          });
+          const profileJson = await profileRes.json();
+          // Handle both wrapped and unwrapped response structures
+          const profile = profileJson.data || profileJson;
+          const pData = (userRole === 'customers' ? profile.customer : profile.technician) || profile;
+
+          if (pData) {
+            setProfileData(pData);
+            setProfileForm({
+              name: pData.name || user.name || '',
+              email: pData.email || user.email || '',
+              phone: pData.phone || user.phone || '',
+              address: pData.address || user.address || '',
+              bio: pData.bio || user.bio || '',
+              profileImage: pData.profile_image || pData.profileImage || user.avatar || ''
+            });
+          }
         }
 
         if (dashboardRes.ok) {
-          const dashboard = await dashboardRes.json();
-          setDashboardData(dashboard);
+          const dashboardJson = await dashboardRes.json();
+          // Unwrap the data property from successResponse
+          setDashboardData(dashboardJson.data || dashboardJson);
         }
       }
     } catch (err) {
@@ -476,10 +486,10 @@ const Profile = () => {
             <div className="flex items-center gap-6">
               <Avatar className="h-24 w-24 ring-4 ring-zinc-700 border-4 border-zinc-800">
                 <AvatarImage src={profileData?.profileImage || user.avatar} />
-                <AvatarFallback className="text-2xl bg-zinc-800 text-white">{(profileData?.name || user.name)?.charAt(0)}</AvatarFallback>
+                <AvatarFallback className="text-2xl bg-zinc-800 text-white">{(profileData?.name || user?.name || 'U').charAt(0)}</AvatarFallback>
               </Avatar>
               <div>
-                <h1 className="text-4xl font-bold">{profileData?.name || user.name}</h1>
+                <h1 className="text-4xl font-bold">{profileData?.name || user?.name || 'User'}</h1>
                 <div className="flex items-center gap-2 mt-2">
                   <Badge variant="secondary" className="capitalize bg-zinc-800 text-zinc-200 border-zinc-700">{userRole}</Badge>
                   {userRole === 'technician' && dashboardData?.stats && (

@@ -184,6 +184,7 @@ erDiagram
         int total_reviews
         boolean verified
         jsonb location
+        jsonb availability
     }
     
     BOOKINGS ||--o{ PAYMENTS : "has"
@@ -290,7 +291,37 @@ sequenceDiagram
     end
 ```
 
-### 📅 Booking Flow
+### �️ Repair Completion & Payment Flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant T as 🛠️ Technician
+    participant F as 🖥️ Frontend
+    participant B as ⚙️ Backend API
+    participant S as 🗄️ Supabase
+    participant ST as 💳 Stripe
+    participant C as 🛒 Customer
+
+    T->>F: Mark Job as Complete
+    F->>B: PATCH /api/technician/bookings/:id/complete
+    B->>S: Update Booking Status -> completed
+    S-->>B: Success
+    B->>S: Update Technician Stats (Earnings/Jobs)
+    B->>ST: Create Payment Settlement
+    B->>S: Create Notification for Customer
+    S-->>C: "Your repair is complete!"
+    C->>F: View Completed Booking
+    F->>C: Show Review Form
+    C->>F: Submit Rating & Review
+    F->>B: POST /api/customer/reviews
+    B->>S: Insert Review + Update Tech Rating
+    S-->>B: Updated
+    B-->>F: Review Success
+    F->>C: "Thank you for your feedback!"
+```
+
+### �📅 Booking Flow
 
 ```mermaid
 stateDiagram-v2

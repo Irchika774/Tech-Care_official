@@ -1,5 +1,11 @@
 # 📜 Version History
 
+## v2.5.1 - 2026-02-06
+### 🛠️ Technical Improvements & Bug Fixes
+- **Profile Loading Stability:** Resolved "Cannot read properties of undefined (reading 'name')" error on the profile page by implementing robust data unwrapping and safe fallbacks for all user roles.
+- **Technician API Fix:** Rectified a `ReferenceError` in the technician profile route where the `technician` object was accessed before being fetched from the database.
+- **UI Resiliency:** Added safe-guards in the profile header and avatar components to prevent crashes when extended profile data is partially missing or delayed.
+
 ## v2.5.0 - 2026-02-03
 ### 🏗️ Architecture & Maintenance
 - **Schema Simplification:** Removed redundant `TECHNICIAN_SERVICES` and `TECHNICIAN_AVAILABILITY` tables, consolidating into unified `TECHNICIANS` model.
