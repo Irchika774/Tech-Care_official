@@ -1045,7 +1045,7 @@ If you find TechCare helpful or interesting, please consider:
 
 ---
 
-**Last Updated**: February 3, 2026 | **Version**: 2.3.0 | **Status**: ✅ Production Ready
+**Last Updated**: February 6, 2026 | **Version**: 2.5.1 | **Status**: ✅ Production Ready
 
 [![Made with React](https://img.shields.io/badge/Made%20with-React-61DAFB?style=flat-square&logo=react)](https://reactjs.org)
 [![Powered by Supabase](https://img.shields.io/badge/Powered%20by-Supabase-3ECF8E?style=flat-square&logo=supabase)](https://supabase.io)
@@ -1060,6 +1060,18 @@ If you find TechCare helpful or interesting, please consider:
 ---
 
 ## 📅 Version History
+
+### v2.5.1 - Profile Stability & API Resilience (Feb 6, 2026)
+**Critical Stability & UI Upgrades:**
+- **Profile Load Fix**: Resolved the "Cannot read properties of undefined (reading 'name')" error in `Profile.jsx` by implementing robust data unwrapping for standardized API responses and adding fail-safe fallbacks for all user roles.
+- **Technician API Stabilization**: Fixed a major `ReferenceError` in the backend technician profile route, ensuring technician data is correctly fetched before being returned to the frontend.
+- **UI Resilience**: Enhanced the Avatar and Profile Header components with optional chaining and intelligent placeholders to prevent UI crashes during data synchronization.
+- **Documentation Overhaul**: Added high-fidelity "Repair Completion" sequence diagrams and refined the ERD to reflect simplified service/availability consolidation.
+
+### v2.5.0 - Architecture Consolidation & Schema Cleanup (Feb 3, 2026)
+**Major System Refinement:**
+- **Schema Optimization**: Consolidated redundant technician service and availability tables into a unified model for improved query performance.
+- **Maintenance & Cleanup**: Removed deprecated migration files and legacy Mongoose artifacts, finalizing the transition to a pure Supabase/Node architecture.
 
 ### v2.3.0 - Technician Workflow & Schedule Optimization (Feb 3, 2026)
 **Major Schedule & Notification Upgrades:**
