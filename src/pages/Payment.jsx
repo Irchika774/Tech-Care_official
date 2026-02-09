@@ -296,8 +296,11 @@ const Payment = () => {
                         throw new Error(data.error || 'Failed to initialize payment');
                     }
 
-                    setClientSecret(data.clientSecret);
-                    setPaymentIntentId(data.paymentIntentId);
+                    // Check if data is wrapped in a success response structure
+                    const paymentData = data.data || data;
+
+                    setClientSecret(paymentData.clientSecret);
+                    setPaymentIntentId(paymentData.paymentIntentId);
                 } catch (fetchError) {
                     console.warn('Backend payment service unavailable or blocked, switching to Demo Mode:', fetchError);
                     // Enable Demo Mode
@@ -340,10 +343,13 @@ const Payment = () => {
 
         setHistoryLoading(true);
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+            const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://server-seven-ecru.vercel.app');
             const response = await fetch(`${apiUrl}/api/payment/payments/customer/${user.id}`);
             const data = await response.json();
-            setPaymentHistory(Array.isArray(data) ? data : []);
+
+            // Handle wrapped response
+            const paymentsList = data.data?.payments || data.payments || (Array.isArray(data) ? data : []);
+            setPaymentHistory(Array.isArray(paymentsList) ? paymentsList : []);
         } catch (err) {
             console.error('Error fetching payment history:', err);
         } finally {
