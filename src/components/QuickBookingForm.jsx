@@ -210,7 +210,8 @@ export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
         throw new Error(`Failed to create booking: ${response.status} - ${responseText}`);
       }
 
-      const bookingData = JSON.parse(responseText);
+      const responseJson = JSON.parse(responseText);
+      const bookingData = responseJson.data || responseJson;
 
       const enrichedBooking = {
         ...bookingData,
