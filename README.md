@@ -5,7 +5,7 @@
 ### _Connecting Customers with Expert Technicians_
 
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-success?style=for-the-badge)](https://github.com)
-[![Version](https://img.shields.io/badge/Version-2.5.3-blue?style=for-the-badge)](https://github.com)
+[![Version](https://img.shields.io/badge/Version-2.6.0-blue?style=for-the-badge)](https://github.com)
 [![License](https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge)](LICENSE)
 [![Node](https://img.shields.io/badge/Node-24.x-green?style=for-the-badge&logo=node.js)](https://nodejs.org)
 [![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react)](https://reactjs.org)
@@ -34,6 +34,7 @@
 - 🗺️ **Location-Based Services** - Find nearby technicians with Google Maps integration
 - 💳 **Secure Payments** - Stripe-powered transaction processing
 - ⚡ **Real-time Updates** - Live booking status and notifications
+- 🛠️ **Technician Pro** - Advanced profile and service management for providers
 - 🏆 **Loyalty Program** - Reward points and tier-based benefits
 
 ---
@@ -208,6 +209,16 @@ erDiagram
         string comment
         timestamp created_at
     }
+
+    PAYMENTS {
+        uuid id PK
+        uuid booking_id FK
+        string stripe_payment_intent_id
+        decimal amount
+        string currency
+        enum status "succeeded|pending|failed"
+        timestamp created_at
+    }
     
     GIGS {
         uuid id PK
@@ -319,6 +330,25 @@ sequenceDiagram
     S-->>B: Updated
     B-->>F: Review Success
     F->>C: "Thank you for your feedback!"
+
+### 🔧 Technician Service Management Flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant T as 🛠️ Technician
+    participant D as 🖥️ Dashboard
+    participant S as 🗄️ Supabase
+    participant R as ⚡ Real-time Service
+
+    T->>D: Navigate to 'Profile' or 'Services'
+    T->>D: Update Bio / Price / Warranty
+    D->>S: UPDATE technicians (user_id = id)
+    S-->>D: Commit Success
+    D->>R: Trigger Refresh
+    R-->>D: Notify Listeners
+    D->>T: "Profile/Service Updated Successfully"
+```
 ```
 
 ### 🛡️ Admin Verification Flow

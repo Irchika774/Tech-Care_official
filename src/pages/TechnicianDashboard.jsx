@@ -56,6 +56,18 @@ const TechnicianDashboard = () => {
     duration: '',
     warranty: ''
   });
+
+  // Profile Management State
+  const [profileData, setProfileData] = useState({
+    name: '',
+    description: '',
+    experience: '',
+    district: '',
+    profile_image: '',
+    phone: '',
+    address: ''
+  });
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   const isFetchingRef = useRef(false);
@@ -196,6 +208,18 @@ const TechnicianDashboard = () => {
         if (techProfile?.services) {
           setServices(techProfile.services || []);
         }
+
+        // Set profile data
+        setProfileData({
+          name: techProfile?.name || user.user_metadata?.name || '',
+          description: techProfile?.description || '',
+          experience: techProfile?.experience || '',
+          district: techProfile?.district || '',
+          profile_image: techProfile?.profile_image || user.user_metadata?.avatar_url || '',
+          phone: techProfile?.phone || user.user_metadata?.phone || '',
+          address: techProfile?.address || techProfile?.location || ''
+        });
+
         setError(null);
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
@@ -508,6 +532,54 @@ const TechnicianDashboard = () => {
     setIsServiceModalOpen(true);
   };
 
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    if (!user) return;
+
+    setIsUpdatingProfile(true);
+    try {
+      const { error } = await supabase
+        .from('technicians')
+        .update({
+          name: profileData.name,
+          description: profileData.description,
+          experience: profileData.experience,
+          district: profileData.district,
+          profile_image: profileData.profile_image,
+          phone: profileData.phone,
+          address: profileData.address,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Profile Updated",
+        description: "Your technician profile has been updated successfully.",
+      });
+
+      // Refresh data
+      // Actually, since we updated it, we can just update local data state
+      setData(prev => ({
+        ...prev,
+        technician: {
+          ...prev.technician,
+          ...profileData
+        }
+      }));
+    } catch (err) {
+      console.error('Update profile error:', err);
+      toast({
+        title: "Update Failed",
+        description: err.message || "Failed to update profile.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUpdatingProfile(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-black text-white font-['Inter']">
       <SEO
@@ -737,17 +809,157 @@ const TechnicianDashboard = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-7 h-auto p-1 bg-zinc-900 border border-zinc-800 rounded-xl">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 h-auto p-1 bg-zinc-900 border border-zinc-800 rounded-xl">
             <TabsTrigger value="overview" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">Overview</TabsTrigger>
             <TabsTrigger value="jobs" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">Jobs</TabsTrigger>
             <TabsTrigger value="bids" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">Bids</TabsTrigger>
             <TabsTrigger value="earnings" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">Earnings</TabsTrigger>
-            <TabsTrigger value="analytics" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">Analytics</TabsTrigger>
+            <TabsTrigger value="analytics" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">Stats</TabsTrigger>
             <TabsTrigger value="services" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">Services</TabsTrigger>
+            <TabsTrigger value="profile" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">Profile</TabsTrigger>
             <TabsTrigger value="settings" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']"><Settings className="w-4 h-4 mr-2" />Settings</TabsTrigger>
           </TabsList >
 
-          {/* Overview Tab */}
+          <TabsContent value="profile" className="animate-in fade-in duration-500">
+            <Card className="bg-zinc-900 border-zinc-800 shadow-xl overflow-hidden">
+              <CardHeader className="bg-zinc-800/30 font-['Outfit'] border-b border-zinc-800">
+                <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
+                  <User className="w-5 h-5 text-primary" />
+                  Your Public Profile
+                </CardTitle>
+                <CardDescription>This information is visible to customers when they browse technicians.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-8">
+                <form onSubmit={handleUpdateProfile} className="space-y-8 max-w-2xl mx-auto">
+                  <div className="flex flex-col md:flex-row gap-8 items-start">
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="relative group">
+                        <div className="w-32 h-32 rounded-2xl overflow-hidden border-2 border-zinc-800 bg-zinc-950">
+                          {profileData.profile_image ? (
+                            <img src={profileData.profile_image} alt="Profile" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-zinc-700">
+                              <User className="w-12 h-12" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-2xl cursor-pointer">
+                          <Edit3 className="w-6 h-6 text-white" />
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Profile Photo</p>
+                    </div>
+
+                    <div className="flex-1 space-y-6 w-full">
+                      <div className="space-y-2">
+                        <Label className="text-zinc-400">Display Name</Label>
+                        <Input
+                          required
+                          value={profileData.name}
+                          onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                          placeholder="e.g. John Doe"
+                          className="bg-zinc-950 border-zinc-800 focus:border-white transition-all h-12"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-zinc-400">Profile Image URL</Label>
+                        <Input
+                          value={profileData.profile_image}
+                          onChange={(e) => setProfileData({ ...profileData, profile_image: e.target.value })}
+                          placeholder="https://example.com/photo.jpg"
+                          className="bg-zinc-950 border-zinc-800 focus:border-white transition-all h-12"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-zinc-800">
+                    <div className="space-y-2">
+                      <Label className="text-zinc-400">District / Service Area</Label>
+                      <Select
+                        value={profileData.district}
+                        onValueChange={(val) => setProfileData({ ...profileData, district: val })}
+                      >
+                        <SelectTrigger className="bg-zinc-950 border-zinc-800 h-12">
+                          <SelectValue placeholder="Select Area" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-zinc-900 border-zinc-800">
+                          <SelectItem value="Colombo">Colombo</SelectItem>
+                          <SelectItem value="Gampaha">Gampaha</SelectItem>
+                          <SelectItem value="Kalutara">Kalutara</SelectItem>
+                          <SelectItem value="Kandy">Kandy</SelectItem>
+                          <SelectItem value="Galle">Galle</SelectItem>
+                          <SelectItem value="Matara">Matara</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-zinc-400">Experience</Label>
+                      <Input
+                        value={profileData.experience}
+                        onChange={(e) => setProfileData({ ...profileData, experience: e.target.value })}
+                        placeholder="e.g. 5+ Years"
+                        className="bg-zinc-950 border-zinc-800 h-12"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-zinc-400">Provider Bio / Description</Label>
+                    <Textarea
+                      value={profileData.description}
+                      onChange={(e) => setProfileData({ ...profileData, description: e.target.value })}
+                      placeholder="Tell customers about your skills, tools, and repair philosophy..."
+                      className="bg-zinc-950 border-zinc-800 min-h-[150px] resize-none focus:border-white transition-all p-4"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label className="text-zinc-400">Phone Number</Label>
+                      <Input
+                        value={profileData.phone}
+                        onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                        placeholder="+94 7X XXX XXXX"
+                        className="bg-zinc-950 border-zinc-800 h-12"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-zinc-400">Business Address</Label>
+                      <Input
+                        value={profileData.address}
+                        onChange={(e) => setProfileData({ ...profileData, address: e.target.value })}
+                        placeholder="123 Repair St, Colombo"
+                        className="bg-zinc-950 border-zinc-800 h-12"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-6 flex justify-end">
+                    <Button
+                      type="submit"
+                      disabled={isUpdatingProfile}
+                      className="bg-white text-black hover:bg-zinc-200 px-10 h-12 rounded-full font-bold shadow-xl transition-all"
+                    >
+                      {isUpdatingProfile ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Saving Changes...
+                        </>
+                      ) : (
+                        'Save Profile Changes'
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Jobs Tab */}
           < TabsContent value="overview" className="space-y-6" >
             <div className="grid md:grid-cols-2 gap-6">
               {/* Performance Metrics */}
@@ -1012,139 +1224,171 @@ const TechnicianDashboard = () => {
             </Card>
           </TabsContent >
 
-          {/* Services Tab */}
-          <TabsContent value="services">
-            <Card className="bg-zinc-900 border-zinc-800">
-              <CardHeader className="flex flex-row items-center justify-between">
+          <TabsContent value="services" className="animate-in slide-in-from-bottom-4 duration-500">
+            <Card className="bg-zinc-900 border-zinc-800 shadow-xl overflow-hidden">
+              <CardHeader className="bg-zinc-800/20 border-b border-zinc-800 flex flex-row items-center justify-between">
                 <div>
-                  <CardTitle className="text-xl font-bold font-['Outfit'] text-white">Service & Pricing Management</CardTitle>
-                  <CardDescription>Set your custom rates for different repairs and devices</CardDescription>
+                  <CardTitle className="text-xl font-['Outfit'] font-bold text-white">Service Management</CardTitle>
+                  <CardDescription>Configure your rates and repair types for maximum reach.</CardDescription>
                 </div>
                 <Button onClick={() => openServiceModal()} className="bg-white text-black hover:bg-zinc-200">
-                  <Briefcase className="w-4 h-4 mr-2" /> Add Service
+                  <Plus className="w-4 h-4 mr-2" /> Add Service
                 </Button>
               </CardHeader>
-              <CardContent>
-                {services.length === 0 ? (
-                  <div className="text-center py-12 border-2 border-dashed border-zinc-800 rounded-xl">
-                    <Wrench className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-zinc-400">No Services Configured</h3>
-                    <p className="text-zinc-500 mb-6">Add your repair services to appear in search results</p>
-                    <Button onClick={() => openServiceModal()} variant="outline">Create First Service</Button>
-                  </div>
-                ) : (
-                  <div className="relative overflow-x-auto rounded-lg border border-zinc-800">
-                    <table className="w-full text-left text-sm text-zinc-400">
-                      <thead className="bg-zinc-950 text-xs uppercase text-zinc-500">
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead className="bg-zinc-950/50 text-zinc-500 text-[10px] uppercase tracking-widest font-bold">
+                      <tr>
+                        <th className="px-6 py-4">Service Type</th>
+                        <th className="px-6 py-4">Device Focus</th>
+                        <th className="px-6 py-4">Price (LKR)</th>
+                        <th className="px-6 py-4">Status & Warranty</th>
+                        <th className="px-6 py-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-800">
+                      {services.length === 0 ? (
                         <tr>
-                          <th className="px-6 py-3">Service Type</th>
-                          <th className="px-6 py-3">Device Brand</th>
-                          <th className="px-6 py-3">Model</th>
-                          <th className="px-6 py-3 text-right">Price (LKR)</th>
-                          <th className="px-6 py-3 text-right">Actions</th>
+                          <td colSpan="5" className="px-6 py-20 text-center text-zinc-500">
+                            <Wrench className="h-10 w-10 mx-auto mb-3 opacity-20" />
+                            <p>No custom services configured yet.</p>
+                            <Button variant="link" onClick={() => openServiceModal()} className="text-primary mt-1">Configure your first rate</Button>
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {services.map((service, index) => (
-                          <tr key={index} className="border-b border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800/50">
-                            <td className="px-6 py-4 font-medium text-white capitalize">
-                              {service.service?.replace('-', ' ')}
+                      ) : (
+                        services.map((s, idx) => (
+                          <tr key={idx} className="hover:bg-zinc-800/20 transition-colors">
+                            <td className="px-6 py-4">
+                              <span className="font-bold text-white capitalize">{s.service?.replace('-', ' ')}</span>
                             </td>
-                            <td className="px-6 py-4 text-white">
-                              {service.brand || <span className="text-zinc-600 italic">All Brands</span>}
+                            <td className="px-6 py-4 text-zinc-300">
+                              {s.brand || 'All Brands'} {s.model ? `• ${s.model}` : ''}
                             </td>
-                            <td className="px-6 py-4 text-white">
-                              {service.model || <span className="text-zinc-600 italic">All Models</span>}
+                            <td className="px-6 py-4 font-mono font-bold text-emerald-400">
+                              {Number(s.price).toLocaleString()}
                             </td>
-                            <td className="px-6 py-4 text-right font-bold text-emerald-400">
-                              <CurrencyDisplay amount={service.price} decimals={0} />
+                            <td className="px-6 py-4 text-xs text-zinc-500">
+                              {s.duration || 'Flexible'} {s.warranty ? `• ${s.warranty}` : ''}
                             </td>
                             <td className="px-6 py-4 text-right">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => openServiceModal(service, index)}
-                                className="text-blue-400 hover:text-blue-300 mr-2"
-                              >
-                                Edit
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteService(index)}
-                                className="text-red-400 hover:text-red-300"
-                              >
-                                Delete
-                              </Button>
+                              <div className="flex justify-end gap-2">
+                                <Button variant="ghost" size="icon" onClick={() => openServiceModal(s, idx)} className="h-8 w-8 text-zinc-400 hover:text-white">
+                                  <Edit3 className="w-4 h-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" onClick={() => handleDeleteService(idx)} className="h-8 w-8 text-zinc-600 hover:text-red-500">
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
                             </td>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
 
           {/* Settings Tab */}
-          <TabsContent value="settings">
-            <Card className="bg-zinc-900 border-zinc-800">
-              <CardHeader><CardTitle className="text-lg font-['Outfit'] font-bold text-white flex items-center gap-2"><Calendar className="w-5 h-5 text-primary" /> Availability Settings</CardTitle></CardHeader>
-              <CardContent className="space-y-8">
-                <div className="space-y-4">
-                  <Label className="text-base">Working Days</Label>
-                  <div className="flex gap-3 flex-wrap">
-                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                      <label key={day} className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-all ${availability.days.includes(day) ? 'bg-primary/20 border-primary text-white' : 'border-zinc-700 bg-zinc-950 text-zinc-400 hover:bg-zinc-900'}`}>
-                        <input type="checkbox"
-                          checked={availability.days.includes(day)}
-                          onChange={(e) => {
-                            if (e.target.checked) setAvailability(prev => ({ ...prev, days: [...prev.days, day] }));
-                            else setAvailability(prev => ({ ...prev, days: prev.days.filter(d => d !== day) }));
+          <TabsContent value="settings" className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              <Card className="bg-zinc-900 border-zinc-800 shadow-xl overflow-hidden">
+                <CardHeader className="bg-amber-500/10 border-b border-zinc-800">
+                  <CardTitle className="text-lg font-bold flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-amber-500" />
+                    Availability Blocks
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 space-y-6">
+                  <div className="space-y-4">
+                    <Label className="text-zinc-400">Working Days</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                        <button
+                          key={day}
+                          type="button"
+                          onClick={() => {
+                            const newDays = availability.days.includes(day)
+                              ? availability.days.filter(d => d !== day)
+                              : [...availability.days, day];
+                            setAvailability({ ...availability, days: newDays });
                           }}
-                          className="hidden" // rounded border-zinc-600 bg-zinc-800
-                        />
-                        <span className="font-medium">{day}</span>
-                      </label>
-                    ))}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${availability.days.includes(day)
+                            ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20'
+                            : 'bg-zinc-950 border border-zinc-800 text-zinc-500 hover:border-zinc-700'
+                            }`}
+                        >
+                          {day}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label>Shift Start Time</Label>
-                    <div className="relative">
-                      <Activity className="absolute left-3 top-3 h-4 w-4 text-zinc-500" />
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label className="text-zinc-400 font-bold uppercase text-[10px] tracking-widest">Start Time</Label>
                       <Input
                         type="time"
                         value={availability.startTime}
-                        onChange={e => setAvailability({ ...availability, startTime: e.target.value })}
-                        className="pl-10 bg-zinc-950 border-zinc-700"
+                        onChange={(e) => setAvailability({ ...availability, startTime: e.target.value })}
+                        className="bg-zinc-950 border-zinc-800 h-10"
                       />
                     </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Shift End Time</Label>
-                    <div className="relative">
-                      <Activity className="absolute left-3 top-3 h-4 w-4 text-zinc-500" />
+                    <div className="space-y-2">
+                      <Label className="text-zinc-400 font-bold uppercase text-[10px] tracking-widest">End Time</Label>
                       <Input
                         type="time"
                         value={availability.endTime}
-                        onChange={e => setAvailability({ ...availability, endTime: e.target.value })}
-                        className="pl-10 bg-zinc-950 border-zinc-700"
+                        onChange={(e) => setAvailability({ ...availability, endTime: e.target.value })}
+                        className="bg-zinc-950 border-zinc-800 h-10"
                       />
                     </div>
                   </div>
-                </div>
 
-                <div className="pt-4 border-t border-zinc-800">
-                  <Button onClick={saveSettings} className="w-full md:w-auto bg-white text-black hover:bg-zinc-200 font-semibold h-11 px-8">
-                    Save Availability
+                  <Button onClick={saveSettings} className="w-full bg-amber-500 text-black hover:bg-amber-600 font-bold">
+                    Save Schedule Pattern
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-zinc-900 border-zinc-800 shadow-xl overflow-hidden">
+                <CardHeader className="bg-zinc-800/10 border-b border-zinc-800">
+                  <CardTitle className="text-lg font-bold flex items-center gap-2">
+                    <Settings className="w-5 h-5 text-zinc-500" />
+                    System Controls
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 space-y-4">
+                  <div className="p-4 bg-zinc-950/80 rounded-xl border border-zinc-800 flex items-center justify-between group cursor-pointer hover:border-zinc-700 transition-all">
+                    <div>
+                      <p className="font-bold text-white">Vacation Mode</p>
+                      <p className="text-[10px] text-zinc-500 uppercase tracking-tight">Temporarily hide your profile from search</p>
+                    </div>
+                    <div className="w-12 h-6 bg-zinc-800 rounded-full relative">
+                      <div className="absolute left-1 top-1 w-4 h-4 bg-zinc-600 rounded-full shadow-lg" />
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-zinc-950/80 rounded-xl border border-zinc-800 flex items-center justify-between group cursor-pointer hover:border-zinc-700 transition-all">
+                    <div>
+                      <p className="font-bold text-white font-['Outfit']">Instant Booking</p>
+                      <p className="text-[10px] text-zinc-500 uppercase tracking-tight">Accept orders without prior bidding</p>
+                    </div>
+                    <div className="w-12 h-6 bg-emerald-500/20 border border-emerald-500/50 rounded-full relative">
+                      <div className="absolute right-1 top-1 w-4 h-4 bg-emerald-500 rounded-full shadow-lg shadow-emerald-500/50" />
+                    </div>
+                  </div>
+
+                  <div className="pt-6">
+                    <Button variant="outline" className="w-full border-red-900/30 text-red-500 hover:bg-red-500/10 hover:text-red-400 h-12 rounded-xl">
+                      Sign Out
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent >
         </Tabs >
       </main >

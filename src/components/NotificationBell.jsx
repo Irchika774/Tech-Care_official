@@ -75,22 +75,22 @@ const NotificationBell = () => {
                     <div className="max-h-96 overflow-y-auto">
                         {notifications.slice(0, 10).map(notif => (
                             <DropdownMenuItem
-                                key={notif._id}
-                                onClick={() => markAsRead(notif._id)}
-                                className={`cursor-pointer flex items-start gap-3 p-3 ${!notif.isRead ? 'bg-blue-500/10 border-l-2 border-blue-500' : ''}`}
+                                key={notif.id}
+                                onClick={() => markAsRead(notif.id)}
+                                className={`cursor-pointer flex items-start gap-3 p-3 ${!notif.read ? 'bg-blue-500/10 border-l-2 border-blue-500' : ''}`}
                             >
                                 <span className="text-lg">{getNotificationIcon(notif.type)}</span>
                                 <div className="flex-1 min-w-0">
                                     <div className="font-medium text-sm text-white truncate">{notif.title}</div>
                                     <div className="text-xs text-zinc-400 line-clamp-2">{notif.message}</div>
                                     <div className="text-[10px] text-zinc-600 mt-1 flex items-center gap-2">
-                                        <span>{new Date(notif.createdAt).toLocaleDateString()}</span>
-                                        {!notif.isRead && (
+                                        <span>{new Date(notif.created_at).toLocaleDateString()}</span>
+                                        {!notif.read && (
                                             <Badge variant="outline" className="h-4 text-[8px] text-blue-400 border-blue-500/30">NEW</Badge>
                                         )}
                                     </div>
                                 </div>
-                                {!notif.isRead && (
+                                {!notif.read && (
                                     <div className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0 mt-2" />
                                 )}
                             </DropdownMenuItem>

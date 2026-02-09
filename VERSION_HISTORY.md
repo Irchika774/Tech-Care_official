@@ -1,5 +1,20 @@
 # 📜 Version History
 
+## v2.6.0 - 2026-02-09
+### ✨ Technician Empowerment & Dashboard 2.0
+- **Public Profile Management:** Added a dedicated 'Profile' tab for technicians to manage their business identity, including bio, experience, and service areas.
+- **Custom Service Rates:** Implemented granular service management allowing technicians to set custom prices, durations, and warranties per device model.
+- **Improved Bidding Visibility:** Enhanced the 'Bids' tab with real-time status indicators and customer details.
+- **System Stability:** Improved Stripe initialization with robust error handling and seamless demo mode transition.
+- **Data Integrity:** Fixed technician deduplication issues across scheduling and booking interfaces.
+
+## v2.5.5 - 2026-02-09
+### 🐛 Bug Fixes & Stability
+- **Notification System Fix:** Resolved `invalid input syntax for type uuid` error by fixing ID access in `NotificationBell` component.
+- **Geolocation Handling:** Improved geolocation error handling to gracefully degrade to warning logs instead of errors when permission is denied.
+- **Auth Debugging:** Enhanced server-side authentication logging to provide better diagnostics for 401 Unauthorized errors during payment processing.
+- **Documentation:** Updated README Entity Relationship Diagram (ERD) to include the `PAYMENTS` table structure.
+
 ## v2.5.2 - 2026-02-09
 ### 🛠️ Admin Dashboard Stability
 - **Data Rendering Safety:** Implemented comprehensive null/undefined checks for users, technicians, appointments, and reviews data in `Admin.jsx` to prevent dashboard crashes during data fetching or API failures.
@@ -12,6 +27,12 @@
 - **Login Optimization:** Added `autocomplete` attributes to login inputs to resolve browser warnings and improve accessibility.
 - **Hero Video Refresh:** Replaced the landing page background video with a high-quality, relevant tech repair loop to enhance the visual appeal and brand alignment.
 - **Dependency Updates:** Ensured all UI components have necessary dependencies for error-free rendering.
+
+## v2.5.4 - 2026-02-09
+### 🐛 Bug Fixes & Stability
+- **Technician Selection Fix:** Resolved duplicate technician entries in the scheduling interface by implementing robust data deduplication.
+- **Booking Flow Stability:** Fixed "Missing booking reference" error during scheduling by implementing a fail-safe recovery mechanism from session storage and adding proper state validation guards.
+- **UI Responsiveness:** Improved empty state handling and loading indicators in the scheduling flow.
 
 ## v2.5.1 - 2026-02-06
 ### 🛠️ Technical Improvements & Bug Fixes

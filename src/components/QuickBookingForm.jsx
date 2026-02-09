@@ -123,11 +123,12 @@ export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
           .order('rating', { ascending: false });
 
         if (!error && supabaseTechs) {
-          // Deduplicate by ID
+          // Deduplicate by ID and ensure valid data
           const uniqueTechsMap = new Map();
           supabaseTechs.forEach(tech => {
-            if (!uniqueTechsMap.has(tech.id)) {
-              uniqueTechsMap.set(tech.id, tech);
+            const id = tech.id || tech._id;
+            if (id && !uniqueTechsMap.has(id)) {
+              uniqueTechsMap.set(id, tech);
             }
           });
           setTechnicians(Array.from(uniqueTechsMap.values()));
@@ -138,9 +139,10 @@ export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
           const data = await response.json();
           // Deduplicate fallback data too
           const uniqueDataMap = new Map();
-          (data || []).forEach(tech => {
-            if (!uniqueDataMap.has(tech.id)) {
-              uniqueDataMap.set(tech.id, tech);
+          (Array.isArray(data) ? data : (data?.data || [])).forEach(tech => {
+            const id = tech.id || tech._id;
+            if (id && !uniqueDataMap.has(id)) {
+              uniqueDataMap.set(id, tech);
             }
           });
           setTechnicians(Array.from(uniqueDataMap.values()));

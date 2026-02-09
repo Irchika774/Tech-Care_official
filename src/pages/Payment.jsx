@@ -245,14 +245,19 @@ const Payment = () => {
             setBookingDetails(booking);
 
             try {
-                // Ensure Stripe is loaded
+                // Ensure Stripe is loaded and key is valid
+                const stripeKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+                if (!stripeKey || stripeKey === 'your_stripe_publishable_key') {
+                    console.warn('Stripe Publishable Key is missing or invalid. Using Demo Mode.');
+                    setClientSecret('demo_secret');
+                    setPaymentIntentId(`pi_demo_${Date.now()}`);
+                    setLoading(false);
+                    return;
+                }
+
                 const stripe = await stripePromise;
                 if (!stripe) {
-                    console.error("Stripe failed to load.");
-                    // Don't throw immediately, maybe we can use demo mode?
-                    // No, if stripe js fails, we can't use Elements at all if we rely on it.
-                    // But let's proceed to try backend init, and if that fails, we use Demo Mode.
-                    // If backend init succeeds but frontend stripe is missing, we are in trouble.
+                    throw new Error("Stripe script failed to load. Please check your internet connection and verify that Stripe is not blocked.");
                 }
 
                 // Get the access token from Supabase session

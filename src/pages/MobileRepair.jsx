@@ -85,6 +85,7 @@ const MobileRepair = () => {
                     name: tech.name,
                     email: tech.email,
                     phone: tech.phone,
+                    status: tech.status || 'active', // Default to active if status is missing
                     specialization: tech.services || tech.specialization || ['Mobile Repair'],
                     rating: tech.rating || 4.5,
                     reviewCount: tech.review_count || 0,
@@ -101,9 +102,13 @@ const MobileRepair = () => {
                     brands: tech.brands || ['all'],
                     district: tech.district
                 }));
-                setTechnicians(transformed);
-                setFilteredTechnicians(transformed);
-                return transformed;
+
+                // Ensure unique technicians by ID
+                const uniqueTechs = Array.from(new Map(transformed.map(t => [t.id, t])).values());
+
+                setTechnicians(uniqueTechs);
+                setFilteredTechnicians(uniqueTechs);
+                return uniqueTechs;
             }
             return [];
         } catch (err) {
@@ -130,7 +135,7 @@ const MobileRepair = () => {
         return () => {
             if (unsubscribe) unsubscribe();
         };
-    }, [fetchTechniciansFromSupabase]);
+    }, []); // Only run once on mount
 
     const getUserLocation = async () => {
         setLocationLoading(true);
@@ -177,11 +182,11 @@ const MobileRepair = () => {
                         fetchNearbyTechnicians(longitude, latitude);
                     },
                     (error) => {
-                        console.error('Geolocation error:', error);
+                        console.warn('Geolocation permission denied or error:', error.message);
                         toast({
                             title: "Location Access Denied",
                             description: "Please enable location services to see nearby technicians.",
-                            variant: "destructive",
+                            variant: "default",
                         });
                         fetchAllTechnicians();
                     }
@@ -980,6 +985,14 @@ const TechnicianCard = ({
                     <div className="absolute top-4 left-4 px-4 py-2 bg-white text-black text-sm font-medium flex items-center gap-2">
                         <Star className="h-4 w-4 fill-black" />
                         Top Rated
+                    </div>
+                )}
+                {technician.status && (
+                    <div className={`absolute bottom-4 left-4 flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${technician.status === 'active' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50' : 'bg-red-500/20 text-red-400 border border-red-500/50'
+                        }`}>
+                        <div className={`w-1.5 h-1.5 rounded-full ${technician.status === 'active' ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'
+                            }`}></div>
+                        {technician.status}
                     </div>
                 )}
             </div>

@@ -52,10 +52,27 @@ const Schedule = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const initialData = location.state || {};
+  // Robust initialization of data
+  const initialData = useMemo(() => {
+    const stateData = location.state || {};
+
+    // If we are supposed to be in step 2 (payment confirmed), but missing booking data
+    if (stateData.paymentConfirmed && (!stateData.booking || (!stateData.booking.id && !stateData.booking._id))) {
+      try {
+        const savedBooking = sessionStorage.getItem('current_booking_payment');
+        if (savedBooking) {
+          const parsedBooking = JSON.parse(savedBooking);
+          return { ...stateData, booking: parsedBooking };
+        }
+      } catch (e) {
+        console.error("Failed to recover booking from session", e);
+      }
+    }
+    return stateData;
+  }, [location.state]);
 
   const [step, setStep] = useState(() => {
-    if (initialData.paymentConfirmed) return 2;
+    if (initialData.paymentConfirmed && (initialData.booking?.id || initialData.booking?._id)) return 2;
     return 1;
   });
 
@@ -174,7 +191,10 @@ const Schedule = () => {
             services: tech.technician_services || [],
             availability: tech.availability || { days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], startTime: '09:00', endTime: '18:00' }
           }));
-          setTechnicians(transformedTechs);
+
+          // Deduplicate by ID
+          const uniqueTechs = Array.from(new Map(transformedTechs.map(item => [item.id, item])).values());
+          setTechnicians(uniqueTechs);
         }
       } catch (err) {
         console.error("Data fetch error:", err);

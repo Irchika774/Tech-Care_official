@@ -97,8 +97,8 @@ export const supabaseAuth = async (req, res, next) => {
 
         next();
     } catch (error) {
-        console.error('[AUTH] Token verification error:', error.message);
-        res.status(401).json({ error: 'Invalid or expired token.' });
+        console.error(`[AUTH] Token verification error for token ${token ? token.substring(0, 10) + '...' : 'null'}:`, error.message);
+        res.status(401).json({ error: 'Invalid or expired token.', details: error.message });
     }
 };
 
