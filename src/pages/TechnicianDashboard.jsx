@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '../components/ui/label';
 import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
-import { Wallet, TrendingUp, CheckCircle, Star, Briefcase, Gavel, Smartphone, Monitor, Tablet, Loader2, User, Sparkles, ArrowRight, Activity, Calendar, Shield, Settings, Wrench } from 'lucide-react';
+import { Wallet, TrendingUp, CheckCircle, Star, Briefcase, Gavel, Smartphone, Monitor, Tablet, Loader2, User, Sparkles, ArrowRight, Activity, Calendar, Shield, Settings, Wrench, Edit3, Trash2, Plus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import CurrencyDisplay from '../components/CurrencyDisplay';
@@ -73,6 +73,33 @@ const TechnicianDashboard = () => {
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   const isFetchingRef = useRef(false);
+  const retryCountRef = useRef(0);
+  const MAX_RETRIES = 3;
+
+  // Helper function to wait with exponential backoff
+  const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+  // Fetch data with retry logic
+  const fetchWithRetry = async (fetchFn, maxRetries = MAX_RETRIES) => {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        return await fetchFn();
+      } catch (error) {
+        const isConnectionError = error.message?.includes('Failed to fetch') ||
+          error.message?.includes('connection') ||
+          error.status === 500 ||
+          error.status === 502;
+
+        if (isConnectionError && attempt < maxRetries) {
+          const delayMs = Math.pow(2, attempt) * 1000; // Exponential backoff: 2s, 4s, 8s
+          console.log(`[TechnicianDashboard] Connection error, retrying in ${delayMs}ms (attempt ${attempt}/${maxRetries})`);
+          await wait(delayMs);
+        } else {
+          throw error;
+        }
+      }
+    }
+  };
 
   useEffect(() => {
     const fetchDashboardData = async (isInitial = false) => {
@@ -83,30 +110,34 @@ const TechnicianDashboard = () => {
       if (isInitial) {
         supabase.from('services').select('*').eq('is_active', true).then(({ data, error }) => {
           if (!error && data) setAvailableMasterServices(data);
+        }).catch(err => {
+          console.warn('[TechnicianDashboard] Failed to fetch services:', err.message);
         });
       }
 
       let loadingTimeout;
       try {
         isFetchingRef.current = true;
+        retryCountRef.current = 0;
 
         // Only show full-screen loading on the very first load if we have no data
-        // and add a tiny delay to avoid flashing if data comes from cache/fast network
         if (isInitial && !data) {
           loadingTimeout = setTimeout(() => {
             if (isFetchingRef.current) setLoading(true);
           }, 300);
         }
 
-        // Fetch technician profile from Supabase
-        const { data: techProfile, error: techError } = await supabase
-          .from('technicians')
-          .select('*')
-          .eq('user_id', user.id)
-          .single();
+        // Fetch technician profile from Supabase with retry logic
+        const { data: techProfile, error: techError } = await fetchWithRetry(async () => {
+          return await supabase
+            .from('technicians')
+            .select('*')
+            .eq('user_id', user.id)
+            .single();
+        });
 
         if (techError && techError.code !== 'PGRST116') {
-          console.error('Technician profile error:', techError);
+          console.warn('[TechnicianDashboard] Technician profile error:', techError.message);
         }
 
         const technicianId = techProfile?.id;
@@ -115,78 +146,87 @@ const TechnicianDashboard = () => {
         let activeJobs = [];
         let completedJobs = [];
         if (technicianId) {
-          const { data: bookings, error: bookingsError } = await supabase
-            .from('bookings')
-            .select(`
-              *,
-              customer:customers(id, name, email, phone)
-            `)
-            .eq('technician_id', technicianId)
-            .order('created_at', { ascending: false });
+          const { data: bookings, error: bookingsError } = await fetchWithRetry(async () => {
+            return await supabase
+              .from('bookings')
+              .select(`
+                *,
+                customer:customers(id, name, email, phone)
+              `)
+              .eq('technician_id', technicianId)
+              .order('created_at', { ascending: false });
+          }, 2); // Fewer retries for bookings
 
-          if (bookingsError) console.error('Bookings error:', bookingsError);
+          if (bookingsError) {
+            console.warn('[TechnicianDashboard] Bookings error:', bookingsError.message);
+          } else {
+            // Transform bookings to match expected format and deduplicate
+            const uniqueBookingsMap = new Map();
+            (bookings || []).forEach(b => {
+              if (!uniqueBookingsMap.has(b.id)) {
+                uniqueBookingsMap.set(b.id, {
+                  _id: b.id,
+                  id: b.id,
+                  status: b.status,
+                  customer: b.customer,
+                  device: {
+                    brand: b.device_brand,
+                    model: b.device_model,
+                    type: b.device_type
+                  },
+                  issue: {
+                    description: b.issue_description,
+                    type: b.issue_type
+                  },
+                  estimatedCost: b.estimated_cost || b.price,
+                  scheduledDate: b.scheduled_date,
+                  createdAt: b.created_at
+                });
+              }
+            });
 
-          // Transform bookings to match expected format and deduplicate
-          const uniqueBookingsMap = new Map();
-          (bookings || []).forEach(b => {
-            if (!uniqueBookingsMap.has(b.id)) {
-              uniqueBookingsMap.set(b.id, {
-                _id: b.id,
-                id: b.id,
-                status: b.status,
-                customer: b.customer,
-                device: {
-                  brand: b.device_brand,
-                  model: b.device_model,
-                  type: b.device_type
-                },
-                issue: {
-                  description: b.issue_description,
-                  type: b.issue_type
-                },
-                estimatedCost: b.estimated_cost || b.price,
-                scheduledDate: b.scheduled_date,
-                createdAt: b.created_at
-              });
-            }
-          });
-
-          const formattedBookings = Array.from(uniqueBookingsMap.values());
-          activeJobs = formattedBookings.filter(b => !['completed', 'cancelled'].includes(b.status));
-          completedJobs = formattedBookings.filter(b => b.status === 'completed');
+            const formattedBookings = Array.from(uniqueBookingsMap.values());
+            activeJobs = formattedBookings.filter(b => !['completed', 'cancelled'].includes(b.status));
+            completedJobs = formattedBookings.filter(b => b.status === 'completed');
+          }
         }
 
         // Fetch active bids for this technician
         let activeBids = [];
         if (technicianId) {
-          const { data: bids, error: bidsError } = await supabase
-            .from('bids')
-            .select(`
-              *,
-              booking:bookings(
+          const { data: bids, error: bidsError } = await fetchWithRetry(async () => {
+            return await supabase
+              .from('bids')
+              .select(`
                 *,
-                customer:customers(id, name, email)
-              )
-            `)
-            .eq('technician_id', technicianId)
-            .in('status', ['pending', 'submitted'])
-            .order('created_at', { ascending: false });
+                booking:bookings(
+                  *,
+                  customer:customers(id, name, email)
+                )
+              `)
+              .eq('technician_id', technicianId)
+              .in('status', ['pending', 'submitted'])
+              .order('created_at', { ascending: false });
+          }, 2);
 
-          if (bidsError) console.error('Bids error:', bidsError);
-          activeBids = (bids || []).map(bid => ({
-            _id: bid.id,
-            amount: bid.amount,
-            status: bid.status,
-            estimatedDuration: bid.estimated_duration,
-            createdAt: bid.created_at,
-            booking: bid.booking ? {
-              device: {
-                brand: bid.booking.device_brand,
-                model: bid.booking.device_model
-              },
-              customer: bid.booking.customer
-            } : null
-          }));
+          if (bidsError) {
+            console.warn('[TechnicianDashboard] Bids error:', bidsError.message);
+          } else {
+            activeBids = (bids || []).map(bid => ({
+              _id: bid.id,
+              amount: bid.amount,
+              status: bid.status,
+              estimatedDuration: bid.estimated_duration,
+              createdAt: bid.created_at,
+              booking: bid.booking ? {
+                device: {
+                  brand: bid.booking.device_brand,
+                  model: bid.booking.device_model
+                },
+                customer: bid.booking.customer
+              } : null
+            }));
+          }
         }
 
         // Calculate stats
@@ -237,9 +277,9 @@ const TechnicianDashboard = () => {
 
         setError(null);
       } catch (err) {
-        console.error('Error fetching dashboard data:', err);
-        // Only show error if we don't have any data yet
-        if (!data) {
+        console.error('[TechnicianDashboard] Error fetching dashboard data:', err);
+        // Only show error if we don't have any data yet and it's not a connection error
+        if (!data && !err.message?.includes('Failed to fetch')) {
           setError(err.message);
         }
       } finally {
@@ -257,11 +297,32 @@ const TechnicianDashboard = () => {
       fetchDashboardData(false);
     });
 
-    // Refresh data every 30 seconds as a fallback
-    const interval = setInterval(() => fetchDashboardData(false), POLLING_INTERVALS.DASHBOARD_REFRESH);
+    // Refresh data every 60 seconds as a fallback (reduced from 30s)
+    // Only poll when tab is visible
+    let interval;
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        if (!interval) {
+          interval = setInterval(() => fetchDashboardData(false), POLLING_INTERVALS.DASHBOARD_REFRESH);
+        }
+      } else {
+        if (interval) {
+          clearInterval(interval);
+          interval = null;
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Start polling only if page is visible
+    if (!document.hidden) {
+      interval = setInterval(() => fetchDashboardData(false), POLLING_INTERVALS.DASHBOARD_REFRESH);
+    }
 
     return () => {
-      clearInterval(interval);
+      if (interval) clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (unsubscribeBookings) unsubscribeBookings();
     };
   }, [user?.id]); // Use user.id specifically for more stable dependency

@@ -139,7 +139,15 @@ export const AuthProvider = ({ children }) => {
                 console.log('[DEBUG] initializeAuth started');
                 const { data: { session: currentSession }, error } = await supabase.auth.getSession();
 
-                if (error) throw error;
+                if (error) {
+                    // Handle 400 errors and other auth errors gracefully
+                    if (error.status === 400) {
+                        console.warn('[AUTH] Token refresh failed (400), but continuing with existing session if available');
+                        // Don't throw - allow the app to continue with cached session or proceed to login
+                    } else {
+                        throw error;
+                    }
+                }
 
                 if (currentSession && isMounted.current) {
                     console.log('[DEBUG] Session found on init:', currentSession.user.id);
@@ -172,6 +180,8 @@ export const AuthProvider = ({ children }) => {
                 }
             } catch (error) {
                 console.error('[AUTH] Init error:', error.message);
+                // Don't set loading to false on error - let the auth state change handler handle it
+                // This ensures the app doesn't get stuck in a loading state
             } finally {
                 clearTimeout(perfTimer);
                 if (isMounted.current) {
@@ -268,6 +278,14 @@ export const AuthProvider = ({ children }) => {
             return { success: true };
         } catch (error) {
             setLoading(false);
+            // Handle 400 errors specifically - these are often token refresh issues that don't block login
+            if (error.status === 400) {
+                console.warn('[AUTH] Login encountered 400 error (token refresh issue), but login may still succeed');
+                return {
+                    success: false,
+                    error: 'Authentication error. Please try again.'
+                };
+            }
             return {
                 success: false,
                 error: error.message || 'Login failed. Please try again.'

@@ -20,6 +20,7 @@ import {
   CheckCircle, Users, BarChart3, Wrench, Package, Loader2, AlertCircle
 } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
+import realtimeService from '../utils/realtimeService';
 
 const Profile = () => {
   const { user, logout } = useAuth();
@@ -30,29 +31,93 @@ const Profile = () => {
   const [profileData, setProfileData] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
   const [profileForm, setProfileForm] = useState({
-    name: user?.name || '',
-    email: user?.email || '',
-    phone: user?.phone || '',
-    address: user?.address || '',
-    bio: user?.bio || '',
-    profileImage: user?.avatar || ''
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    bio: '',
+    profileImage: ''
   });
+
+  // Update profileForm when user data is available
+  useEffect(() => {
+    if (user) {
+      setProfileForm(prev => ({
+        name: prev.name || user.name || '',
+        email: prev.email || user.email || '',
+        phone: prev.phone || user.phone || '',
+        address: prev.address || user.address || '',
+        bio: prev.bio || user.bio || '',
+        profileImage: prev.profileImage || user.avatar || ''
+      }));
+    }
+  }, [user?.id]);
   const [notifications, setNotifications] = useState({
     email: true,
     sms: false,
     push: true
   });
+  const [unsubProfile, setUnsubProfile] = useState(null);
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   useEffect(() => {
     if (user) {
       fetchProfileData();
-      // Refresh data every 30 seconds for real-time updates
-      const interval = setInterval(fetchProfileData, 30000);
-      return () => clearInterval(interval);
+      // Refresh data every 60 seconds for real-time updates (reduced frequency)
+      const interval = setInterval(fetchProfileData, 60000);
+
+      // Set up real-time subscriptions based on user role
+      const unsubs = [];
+
+      // Subscribe to user-specific notifications
+      if (user.id) {
+        const unsubNotif = realtimeService.subscribeToNotifications(user.id, (payload) => {
+          console.log('[Profile] Notification received:', payload);
+          // Refresh profile data when notifications change
+          fetchProfileData();
+        });
+        unsubs.push(unsubNotif);
+      }
+
+      // Subscribe to role-specific table changes
+      if (user.role === 'technician') {
+        const unsubTech = realtimeService.subscribeToTechnicians((payload) => {
+          console.log('[Profile] Technician data changed:', payload);
+          if (payload.new?.user_id === user.id || payload.old?.user_id === user.id) {
+            fetchProfileData();
+          }
+        });
+        unsubs.push(unsubTech);
+      } else if (user.role === 'user') {
+        // Customers - subscribe to their bookings
+        const unsubBookings = realtimeService.subscribeToBookings((payload) => {
+          console.log('[Profile] Booking changed:', payload);
+          // Refresh dashboard data when bookings change
+          fetchProfileData();
+        }, user.id);
+        unsubs.push(unsubBookings);
+      }
+
+      // Store unsubscribe functions
+      setUnsubProfile(() => () => {
+        unsubs.forEach(unsub => {
+          if (typeof unsub === 'function') {
+            unsub();
+          }
+        });
+      });
+
+      return () => {
+        clearInterval(interval);
+        unsubs.forEach(unsub => {
+          if (typeof unsub === 'function') {
+            unsub();
+          }
+        });
+      };
     }
-  }, [user]);
+  }, [user?.id]);
 
   const fetchProfileData = async () => {
     if (!user) return;
@@ -108,9 +173,14 @@ const Profile = () => {
           setDashboardData(dashboardJson.data || dashboardJson);
         }
       }
+      setError(null);
     } catch (err) {
       console.error('Error fetching profile data:', err);
-      setError(err.message);
+      // Don't set error state on network errors to prevent infinite loop
+      // Just log it and keep existing data
+      if (err.name !== 'TypeError' || !err.message.includes('fetch')) {
+        setError(err.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -256,26 +326,31 @@ const Profile = () => {
                 {recentBookings.length === 0 ? (
                   <div className="text-center py-8 text-zinc-500">No orders found</div>
                 ) : (
-                  recentBookings.map((order) => (
-                    <div key={order._id} className="flex items-center justify-between p-6 border border-zinc-700 rounded-xl hover:bg-zinc-800/50 transition bg-zinc-800/30">
-                      <div className="space-y-1 flex-1">
-                        <div className="font-semibold text-lg text-white">{order.device?.brand} {order.device?.model}</div>
-                        <div className="flex items-center gap-4 text-sm text-zinc-400">
-                          <span className="flex items-center gap-1"><Wrench className="h-4 w-4" />{order.technician?.name || 'Pending'}</span>
-                          <span className="flex items-center gap-1"><Calendar className="h-4 w-4" />{new Date(order.scheduledDate).toLocaleDateString()}</span>
-                          <span className="flex items-center gap-1">ID: {order._id.substring(0, 8)}</span>
+                  recentBookings.map((order) => {
+                    // Ensure order has required properties
+                    if (!order || (!order._id && !order.id)) return null;
+                    const orderId = order._id || order.id || 'N/A';
+                    return (
+                      <div key={order._id} className="flex items-center justify-between p-6 border border-zinc-700 rounded-xl hover:bg-zinc-800/50 transition bg-zinc-800/30">
+                        <div className="space-y-1 flex-1">
+                          <div className="font-semibold text-lg text-white">{order.device?.brand} {order.device?.model}</div>
+                          <div className="flex items-center gap-4 text-sm text-zinc-400">
+                            <span className="flex items-center gap-1"><Wrench className="h-4 w-4" />{order.technician?.name || 'Pending'}</span>
+                            <span className="flex items-center gap-1"><Calendar className="h-4 w-4" />{new Date(order.scheduledDate).toLocaleDateString()}</span>
+                            <span className="flex items-center gap-1">ID: {order._id ? order._id.substring(0, 8) : 'N/A'}</span>
+                          </div>
+                        </div>
+                        <div className="text-right space-y-2">
+                          <div className="font-bold text-xl text-white">
+                            <CurrencyDisplay amount={order.estimatedCost || order.actualCost || 0} decimals={0} />
+                          </div>
+                          <Badge variant={order.status === 'completed' ? 'default' : order.status === 'in_progress' ? 'secondary' : 'destructive'}>
+                            {order.status.replace('_', ' ').toUpperCase()}
+                          </Badge>
                         </div>
                       </div>
-                      <div className="text-right space-y-2">
-                        <div className="font-bold text-xl text-white">
-                          <CurrencyDisplay amount={order.estimatedCost || order.actualCost || 0} decimals={0} />
-                        </div>
-                        <Badge variant={order.status === 'completed' ? 'default' : order.status === 'in_progress' ? 'secondary' : 'destructive'}>
-                          {order.status.replace('_', ' ').toUpperCase()}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </CardContent>

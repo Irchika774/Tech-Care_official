@@ -54,6 +54,7 @@ import EmptyState from '../components/EmptyState';
 import { QuickBookingForm } from '../components/QuickBookingForm';
 import LoyaltyPoints from '../components/LoyaltyPoints';
 import InvoiceGenerator from '../components/InvoiceGenerator';
+import RatingReviewDialog from '../components/RatingReviewDialog';
 import { format, formatDistanceToNow } from 'date-fns';
 import realtimeService from '../utils/realtimeService';
 
@@ -96,6 +97,11 @@ function CustomerDashboard() {
   const [newDevice, setNewDevice] = useState({ brand: '', model: '', type: 'smartphone', serial_number: '', purchase_date: '', warranty_expiry: '' });
   const [profileImage, setProfileImage] = useState('');
   const [invoiceBooking, setInvoiceBooking] = useState(null);
+  const [ratingDialog, setRatingDialog] = useState({
+    isOpen: false,
+    booking: null,
+    technician: null
+  });
 
   // Update profile image state when data loads
   useEffect(() => {
@@ -306,6 +312,7 @@ function CustomerDashboard() {
     let unsubTechnicians;
     let unsubNotifications;
     let unsubBids;
+    let unsubReviews;
 
     if (user?.id) {
       fetchData(); // Fetch immediately when user ID is available
@@ -331,6 +338,12 @@ function CustomerDashboard() {
         fetchData(true);
       });
 
+      // Subscribe to reviews for real-time updates
+      const unsubReviews = realtimeService.subscribeToReviews(() => {
+        console.log('[CustomerDashboard] Review update');
+        fetchData(true);
+      });
+
       // Fallback polling every 30 seconds
       interval = setInterval(() => fetchData(true), POLLING_INTERVALS.DASHBOARD);
     }
@@ -341,6 +354,7 @@ function CustomerDashboard() {
       if (unsubTechnicians) unsubTechnicians();
       if (unsubNotifications) unsubNotifications();
       if (unsubBids) unsubBids();
+      if (unsubReviews) unsubReviews();
     };
   }, [user?.id]); // Only re-run if user ID changes (e.g. login/logout)
 
@@ -878,6 +892,16 @@ function CustomerDashboard() {
                               <td className="py-4 text-right">
                                 <div className="font-bold mb-1"><CurrencyDisplay amount={booking.estimated_cost} /></div>
                                 <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  {booking.status === 'completed' && (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-7 text-[10px] text-yellow-400 hover:text-yellow-300 px-2"
+                                      onClick={() => setRatingDialog({ isOpen: true, booking, technician: booking.technician })}
+                                    >
+                                      <Star className="w-3 h-3 mr-1" /> Rate
+                                    </Button>
+                                  )}
                                   <Button
                                     size="sm"
                                     variant="ghost"
@@ -1248,6 +1272,17 @@ function CustomerDashboard() {
             />
           </div>
         </div>
+      )}
+
+      {/* Rating Dialog */}
+      {ratingDialog.isOpen && (
+        <RatingReviewDialog
+          isOpen={ratingDialog.isOpen}
+          onClose={() => setRatingDialog({ isOpen: false, booking: null, technician: null })}
+          booking={ratingDialog.booking}
+          technician={ratingDialog.technician}
+          onReviewSubmitted={() => fetchData(true)}
+        />
       )}
 
     </div>

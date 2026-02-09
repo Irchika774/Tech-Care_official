@@ -12,6 +12,17 @@ export const signUp = async (email, password, name, role = 'user') => {
         ? `${siteUrl}/technician-dashboard`
         : `${siteUrl}/customer-dashboard`;
 
+    // Check if user already exists in profiles
+    const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id, email')
+        .eq('email', email.toLowerCase())
+        .single();
+
+    if (existingProfile) {
+        throw new Error('An account with this email already exists');
+    }
+
     const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -24,36 +35,66 @@ export const signUp = async (email, password, name, role = 'user') => {
     if (authError) throw authError;
 
     if (authData.user) {
+        // Use upsert to prevent duplicates on concurrent registrations
         const { error: profileError } = await supabase
             .from('profiles')
-            .insert({
+            .upsert({
                 id: authData.user.id,
-                email,
+                email: email.toLowerCase(),
                 name,
-                role
-            });
+                role,
+                created_at: new Date().toISOString()
+            }, { onConflict: 'id', ignoreDuplicates: false });
 
-        if (profileError) throw profileError;
+        if (profileError && !profileError.message.includes('duplicate key')) {
+            throw profileError;
+        }
 
         if (role === 'technician') {
-            const { error: techError } = await supabase
+            // Check if technician record already exists
+            const { data: existingTech } = await supabase
                 .from('technicians')
-                .insert({
-                    user_id: authData.user.id,
-                    name,
-                    email,
-                    phone: 'Not provided'
-                });
-            if (techError) throw techError;
+                .select('id')
+                .eq('user_id', authData.user.id)
+                .single();
+
+            if (!existingTech) {
+                const { error: techError } = await supabase
+                    .from('technicians')
+                    .upsert({
+                        user_id: authData.user.id,
+                        name,
+                        email: email.toLowerCase(),
+                        phone: 'Not provided',
+                        created_at: new Date().toISOString()
+                    }, { onConflict: 'user_id', ignoreDuplicates: false });
+
+                if (techError && !techError.message.includes('duplicate key')) {
+                    throw techError;
+                }
+            }
         } else {
-            const { error: custError } = await supabase
+            // Check if customer record already exists
+            const { data: existingCust } = await supabase
                 .from('customers')
-                .insert({
-                    user_id: authData.user.id,
-                    name,
-                    email
-                });
-            if (custError) throw custError;
+                .select('id')
+                .eq('user_id', authData.user.id)
+                .single();
+
+            if (!existingCust) {
+                const { error: custError } = await supabase
+                    .from('customers')
+                    .upsert({
+                        user_id: authData.user.id,
+                        name,
+                        email: email.toLowerCase(),
+                        created_at: new Date().toISOString()
+                    }, { onConflict: 'user_id', ignoreDuplicates: false });
+
+                if (custError && !custError.message.includes('duplicate key')) {
+                    throw custError;
+                }
+            }
         }
     }
 

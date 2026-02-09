@@ -502,20 +502,54 @@ router.get('/profile', supabaseAuth, verifyTechnician, async (req, res) => {
 router.patch('/profile', supabaseAuth, verifyTechnician, async (req, res) => {
     try {
         const userId = req.user.id;
-        const updates = { ...req.body, updated_at: new Date().toISOString() };
+
+        // First, find the technician record by user_id
+        const { data: existingTech, error: findError } = await supabaseAdmin
+            .from('technicians')
+            .select('id')
+            .eq('user_id', userId)
+            .order('id', { ascending: true })
+            .limit(1);
+
+        if (findError) throw findError;
+
+        if (!existingTech || existingTech.length === 0) {
+            return res.status(404).json({ error: 'Technician profile not found' });
+        }
+
+        const technicianId = existingTech[0].id;
+
+        // Filter out fields that shouldn't be updated directly
+        const allowedFields = ['name', 'email', 'phone', 'address', 'bio', 'profile_image',
+            'description', 'experience', 'district', 'profile_image', 'avatar'];
+        const updates = {};
+
+        Object.keys(req.body).forEach(key => {
+            if (allowedFields.includes(key)) {
+                updates[key] = req.body[key];
+            }
+        });
+
+        updates.updated_at = new Date().toISOString();
 
         const { data: technician, error } = await supabaseAdmin
             .from('technicians')
             .update(updates)
-            .eq('user_id', userId)
+            .eq('id', technicianId)
             .select()
             .single();
 
-        if (error) throw error;
+        if (error) {
+            // Handle duplicate key error gracefully
+            if (error.code === '23505') {
+                return res.status(409).json({ error: 'A profile with this information already exists' });
+            }
+            throw error;
+        }
         return successResponse(res, technician, 'Profile updated successfully');
     } catch (error) {
         console.error('Profile update error:', error);
-        return errorResponse(res, 'Failed to update profile');
+        return errorResponse(res, 'Failed to update profile: ' + error.message);
     }
 });
 

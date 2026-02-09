@@ -169,6 +169,8 @@ erDiagram
     CUSTOMERS ||--o{ BOOKINGS : "creates"
     CUSTOMERS ||--o{ REVIEWS : "writes"
     CUSTOMERS ||--|| LOYALTY_ACCOUNTS : "has"
+    CUSTOMERS ||--o{ USER_DEVICES : "owns"
+    CUSTOMERS ||--o{ FAVORITES : "bookmarks"
     CUSTOMERS {
         uuid id PK
         uuid profile_id FK
@@ -179,10 +181,11 @@ erDiagram
     
     TECHNICIANS ||--o{ BOOKINGS : "receives"
     TECHNICIANS ||--o{ REVIEWS : "gets"
+    TECHNICIANS ||--o{ GIGS : "offers"
     TECHNICIANS {
         uuid id PK
-        uuid profile_id FK
-        string name
+        uuid profile_id FK "UNIQUE"
+        string name "UNIQUE (Case-Insensitive)"
         string description
         string experience
         string district
@@ -198,6 +201,7 @@ erDiagram
     }
     
     BOOKINGS ||--o{ PAYMENTS : "has"
+    BOOKINGS ||--o{ MESSAGES : "contains"
     BOOKINGS {
         uuid id PK
         uuid customer_id FK
@@ -225,7 +229,7 @@ erDiagram
         string stripe_payment_intent_id
         decimal amount
         string currency
-        enum status "succeeded|pending|failed"
+        enum status "paid|pending|failed"
         timestamp created_at
     }
     
@@ -236,7 +240,6 @@ erDiagram
         string description
         decimal price
         timestamp created_at
-        timestamp approved_at
     }
     
     LOYALTY_ACCOUNTS ||--o{ LOYALTY_TRANSACTIONS : "records"
@@ -246,6 +249,14 @@ erDiagram
         int points
         enum tier "bronze|silver|gold|platinum"
     }
+
+    LOYALTY_TRANSACTIONS {
+        uuid id PK
+        uuid account_id FK
+        int amount
+        string type "earn|redeem"
+        timestamp created_at
+    }
     
     NOTIFICATIONS {
         uuid id PK
@@ -253,6 +264,28 @@ erDiagram
         string title
         string message
         boolean read
+        timestamp created_at
+    }
+
+    USER_DEVICES {
+        uuid id PK
+        uuid user_id FK
+        string brand
+        string model
+        string serial_number
+    }
+
+    FAVORITES {
+        uuid id PK
+        uuid customer_id FK
+        uuid technician_id FK
+    }
+
+    MESSAGES {
+        uuid id PK
+        uuid booking_id FK
+        uuid sender_id FK
+        text content
         timestamp created_at
     }
 ```
@@ -363,6 +396,39 @@ sequenceDiagram
     D->>R: Trigger Refresh
     R-->>D: Notify Listeners
     D->>T: "Profile/Service Updated Successfully"
+```
+
+### 🌟 Customer Review & Rating Flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as 🛒 Customer
+    participant F as 🖥️ Frontend
+    participant B as ⚙️ Backend API
+    participant S as 🗄️ Supabase
+    participant R as ⚡ Real-time Service
+    participant T as 🛠️ Technician
+
+    Note over C,F: Only for Completed Bookings
+    C->>F: Click "Rate Technician"
+    F->>C: Open Rating Dialog
+    C->>F: Select Stars (1-5) & Comment
+    F->>B: POST /api/reviews
+    
+    rect rgb(60, 40, 60)
+        Note over B,S: Validation & Processing
+        B->>S: Verify Booking Status ('completed')
+        B->>S: Check for Existing Review (Update if exists)
+        B->>S: INSERT / UPDATE reviews table
+        B->>S: Recalculate Technician Avg Rating
+    end
+
+    S-->>B: Success
+    B->>R: Broadcast 'review_update'
+    R-->>F: Update UI (Customer)
+    R-->>T: Notification: "New Review Received!"
+    B-->>F: "Review Submitted! You earned 50 Points."
 ```
 ```
 

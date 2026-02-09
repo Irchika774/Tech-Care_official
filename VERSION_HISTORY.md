@@ -1,5 +1,13 @@
 # 📜 Version History
 
+## v2.6.4 - 2026-02-09
+### 🆕 Enhancements
+- **Data Integrity:** Implemented comprehensive duplicate detection and cleaning for technician records, enforcing strict uniqueness constraints.
+- **Rating System:** Introduced a new Technician Rating & Review system with dialog integration in the Customer Dashboard.
+- **Resilience:** Enhanced dashboard data fetching with exponential backoff retry logic and better error handling for network interruptions.
+- **Real-time:** Expanded real-time capabilities to include review and rating updates.
+- **Testing:** Added robust script (`comprehensive-fix-duplicates.cjs`) for ongoing data health checks.
+
 ## v2.6.3 - 2026-02-09
 ### 🆕 Enhancements
 - **Real-time:** Integrated cross-dashboard real-time synchronization using a centralized `realtimeService.js` for instant updates.
