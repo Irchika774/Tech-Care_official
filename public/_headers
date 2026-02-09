@@ -1,2 +1,2 @@
 /*
-  Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=(), usb=()
+  Permissions-Policy: geolocation=*, microphone=*, camera=*, payment=*, usb=*

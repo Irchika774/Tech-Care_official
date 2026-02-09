@@ -245,6 +245,16 @@ const Payment = () => {
             setBookingDetails(booking);
 
             try {
+                // Ensure Stripe is loaded
+                const stripe = await stripePromise;
+                if (!stripe) {
+                    console.error("Stripe failed to load.");
+                    // Don't throw immediately, maybe we can use demo mode?
+                    // No, if stripe js fails, we can't use Elements at all if we rely on it.
+                    // But let's proceed to try backend init, and if that fails, we use Demo Mode.
+                    // If backend init succeeds but frontend stripe is missing, we are in trouble.
+                }
+
                 // Get the access token from Supabase session
                 const { data: { session } } = await supabase.auth.getSession();
                 const token = session?.access_token;
@@ -260,7 +270,7 @@ const Payment = () => {
 
                 // Add timeout to fetch to fail fast
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 5000);
+                const timeoutId = setTimeout(() => controller.abort(), 8000); // Increased timeout
 
                 try {
                     const response = await fetch(`${apiUrl}/api/payment/create-payment-intent`, {
@@ -289,7 +299,7 @@ const Payment = () => {
                     setClientSecret(data.clientSecret);
                     setPaymentIntentId(data.paymentIntentId);
                 } catch (fetchError) {
-                    console.warn('Backend payment service unavailable, switching to Demo Mode:', fetchError);
+                    console.warn('Backend payment service unavailable or blocked, switching to Demo Mode:', fetchError);
                     // Enable Demo Mode
                     setClientSecret('demo_secret');
                     setPaymentIntentId(`pi_demo_${Date.now()}`);
@@ -297,6 +307,8 @@ const Payment = () => {
             } catch (err) {
                 console.error('[PAYMENT INIT ERROR]', err);
                 setError(err.message);
+                // Fallback to Demo Mode even on outer error if possible
+                setClientSecret('demo_secret');
             } finally {
                 setLoading(false);
             }

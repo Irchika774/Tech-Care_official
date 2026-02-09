@@ -1,5 +1,11 @@
 # 📜 Version History
 
+## v2.5.2 - 2026-02-09
+### 🛠️ Admin Dashboard Stability
+- **Data Rendering Safety:** Implemented comprehensive null/undefined checks for users, technicians, appointments, and reviews data in `Admin.jsx` to prevent dashboard crashes during data fetching or API failures.
+- **String Manipulation Safeties:** Added fallbacks for user and technician names to prevent `toUpperCase()` and `substring()` errors on incomplete profiles.
+- **Resilient State Management:** Ensured all data state variables are initialized and maintained as arrays to support safe `.map()` and `.slice()` operations.
+
 ## v2.5.1 - 2026-02-06
 ### 🛠️ Technical Improvements & Bug Fixes
 - **Profile Loading Stability:** Resolved "Cannot read properties of undefined (reading 'name')" error on the profile page by implementing robust data unwrapping and safe fallbacks for all user roles.

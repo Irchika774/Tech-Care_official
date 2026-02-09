@@ -51,10 +51,10 @@ export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
   }, [initialData]);
 
   const serviceDetails = {
-    battery: { label: 'Battery Replacement', price: 5000 },
-    screen: { label: 'Screen Repair', price: 12000 },
-    'water-damage': { label: 'Water Damage', price: 8500 },
-    general: { label: 'General Repair', price: 4000 }
+    battery: { label: 'Battery Replacement' },
+    screen: { label: 'Screen Repair' },
+    'water-damage': { label: 'Water Damage' },
+    general: { label: 'General Repair' }
   };
 
   const getCustomPrice = (tech) => {
@@ -66,26 +66,32 @@ export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
       s.brand?.toLowerCase() === deviceBrand?.toLowerCase() &&
       s.model?.toLowerCase() === deviceModel?.toLowerCase()
     );
-    if (exactMatch) return exactMatch.price;
-
-    // 2. Brand Match: Service + Brand + (All Models/Empty)
-    const brandMatch = tech.services.find(s =>
-      s.service === repairService &&
-      s.brand?.toLowerCase() === deviceBrand?.toLowerCase() &&
-      (!s.model || s.model === 'All Models')
-    );
-    if (brandMatch) return brandMatch.price;
-
-    return null;
+    return exactMatch || brandMatch || serviceMatch || null;
   };
 
-  // Base price (default)
-  const defaultPrice = serviceDetails[repairService]?.price || 4000;
+  const getAveragePrice = () => {
+    if (!techniciansList.length) return 4000; // Fallback if no techs
 
-  // Effective price: Technician's custom price -> or Default
-  const effectivePrice = technician
-    ? (getCustomPrice(technician) || defaultPrice)
-    : defaultPrice;
+    // Get all valid prices for this service from all techs
+    const prices = techniciansList
+      .map(tech => {
+        const s = getCustomPrice(tech);
+        return s ? Number(s.price) : null;
+      })
+      .filter(p => p !== null && p > 0);
+
+    if (!prices.length) return 4000; // Fallback if no prices found
+
+    const sum = prices.reduce((a, b) => a + b, 0);
+    return Math.round(sum / prices.length);
+  };
+
+  // Base price (dynamic average)
+  const defaultPrice = getAveragePrice();
+
+  // Effective price: Technician's custom price -> or Default (Average)
+  const selectedService = technician ? getCustomPrice(technician) : null;
+  const effectivePrice = selectedService ? Number(selectedService.price) : defaultPrice;
 
   const platformFee = 500;
   const totalAmount = effectivePrice + platformFee;
@@ -102,23 +108,51 @@ export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
       try {
         const { data: supabaseTechs, error } = await supabase
           .from('technicians')
-          .select('*') // Select all to get services JSON
+          .select('*')
           .order('rating', { ascending: false });
 
         if (!error && supabaseTechs) {
-          setTechnicians(supabaseTechs);
+          // Deduplicate by ID
+          const uniqueTechsMap = new Map();
+          supabaseTechs.forEach(tech => {
+            if (!uniqueTechsMap.has(tech.id)) {
+              uniqueTechsMap.set(tech.id, tech);
+            }
+          });
+          setTechnicians(Array.from(uniqueTechsMap.values()));
         } else {
           // Fallback
           const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
           const response = await fetch(`${apiUrl}/api/technicians`);
           const data = await response.json();
-          setTechnicians(data || []);
+          // Deduplicate fallback data too
+          const uniqueDataMap = new Map();
+          (data || []).forEach(tech => {
+            if (!uniqueDataMap.has(tech.id)) {
+              uniqueDataMap.set(tech.id, tech);
+            }
+          });
+          setTechnicians(Array.from(uniqueDataMap.values()));
         }
       } catch (error) {
         console.error('Error fetching technicians:', error);
       }
     };
+
     fetchTechs();
+
+    // Subscribe to realtime changes
+    const subscription = supabase
+      .channel('public:technicians')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'technicians' }, (payload) => {
+        console.log('Technician update received:', payload);
+        fetchTechs();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
   }, []);
 
   const handleSubmit = async (e) => {
@@ -281,7 +315,12 @@ export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
                     <div>
                       <div className="text-white font-medium">{technician.name || technician.shopName}</div>
                       <div className="text-xs text-emerald-400 font-medium">
-                        {getCustomPrice(technician) ? `Custom Price: LKR ${getCustomPrice(technician).toLocaleString()}` : 'Standard Rate'}
+                        {(() => {
+                          const s = getCustomPrice(technician);
+                          return s
+                            ? `Custom Price: LKR ${Number(s.price).toLocaleString()} ${s.warranty ? `(${s.warranty})` : ''}`
+                            : 'Standard Rate';
+                        })()}
                       </div>
                     </div>
                   </>
@@ -306,7 +345,7 @@ export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
                 onClick={() => { setTechnician(null); setShowTechList(false); }}
               >
                 <span className="text-white">Any Technician</span>
-                <span className="text-emerald-500 text-sm">LKR {serviceDetails[repairService].price.toLocaleString()}</span>
+                <span className="text-emerald-500 text-sm">LKR {defaultPrice.toLocaleString()}</span>
               </div>
               {techniciansList.map(tech => {
                 const techPrice = getCustomPrice(tech);
@@ -329,9 +368,18 @@ export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
                     </div>
                     <div className="text-right">
                       <div className={`text-sm font-bold ${techPrice ? 'text-emerald-400' : 'text-zinc-400'}`}>
-                        LKR {(techPrice || defaultPrice).toLocaleString()}
+                        LKR {(techPrice ? Number(techPrice.price) : defaultPrice).toLocaleString()}
                       </div>
-                      {techPrice && <div className="text-[10px] text-emerald-500/80">Special Deal</div>}
+                      {techPrice && (
+                        <div className="flex flex-col items-end">
+                          <span className="text-[10px] text-emerald-500/80">Special Deal</span>
+                          {(techPrice.warranty || techPrice.duration) && (
+                            <span className="text-[10px] text-zinc-500">
+                              {[techPrice.duration, techPrice.warranty].filter(Boolean).join(' • ')}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );

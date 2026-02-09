@@ -42,6 +42,20 @@ const TechnicianDashboard = () => {
     startTime: '09:00',
     endTime: '17:00'
   });
+
+  // Services Management State
+  const [services, setServices] = useState([]);
+  const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
+  const [editingServiceIndex, setEditingServiceIndex] = useState(null);
+  const [newService, setNewService] = useState({
+    service: 'general',
+    brand: '',
+    model: '',
+    price: '',
+    description: '',
+    duration: '',
+    warranty: ''
+  });
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   const isFetchingRef = useRef(false);
@@ -178,6 +192,9 @@ const TechnicianDashboard = () => {
 
         if (techProfile?.availability) {
           setAvailability(techProfile.availability);
+        }
+        if (techProfile?.services) {
+          setServices(techProfile.services || []);
         }
         setError(null);
       } catch (err) {
@@ -411,6 +428,86 @@ const TechnicianDashboard = () => {
     }
   };
 
+  const handleSaveService = async () => {
+    try {
+      if (!newService.price || isNaN(newService.price)) {
+        toast({ title: "Invalid Price", description: "Please enter a valid price.", variant: "destructive" });
+        return;
+      }
+
+      const updatedServices = [...services];
+      const serviceEntry = {
+        ...newService,
+        price: Number(newService.price)
+      };
+
+      if (editingServiceIndex !== null) {
+        updatedServices[editingServiceIndex] = serviceEntry;
+      } else {
+        updatedServices.push(serviceEntry);
+      }
+
+      const { error } = await supabase
+        .from('technicians')
+        .update({
+          services: updatedServices,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setServices(updatedServices);
+      setIsServiceModalOpen(false);
+      setEditingServiceIndex(null);
+      setNewService({ service: 'general', brand: '', model: '', price: '', description: '', duration: '', warranty: '' });
+
+      toast({
+        title: editingServiceIndex !== null ? "Service Updated" : "Service Added",
+        description: "Your service pricing has been updated.",
+        variant: "default"
+      });
+    } catch (err) {
+      console.error('Save service error:', err);
+      toast({ title: "Error", description: "Failed to update services.", variant: "destructive" });
+    }
+  };
+
+  const handleDeleteService = async (index) => {
+    if (!window.confirm("Are you sure you want to remove this service?")) return;
+
+    try {
+      const updatedServices = services.filter((_, i) => i !== index);
+
+      const { error } = await supabase
+        .from('technicians')
+        .update({
+          services: updatedServices,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setServices(updatedServices);
+      toast({ title: "Service Removed", description: "Service configuration deleted." });
+    } catch (err) {
+      console.error('Delete service error:', err);
+      toast({ title: "Error", description: "Failed to delete service.", variant: "destructive" });
+    }
+  };
+
+  const openServiceModal = (service = null, index = null) => {
+    if (service) {
+      setNewService(service);
+      setEditingServiceIndex(index);
+    } else {
+      setNewService({ service: 'general', brand: '', model: '', price: '', description: '', duration: '', warranty: '' });
+      setEditingServiceIndex(null);
+    }
+    setIsServiceModalOpen(true);
+  };
+
   return (
     <div className="min-h-screen bg-black text-white font-['Inter']">
       <SEO
@@ -453,6 +550,102 @@ const TechnicianDashboard = () => {
               </div>
               <Button onClick={handleCompleteJobSubmit} className="w-full bg-emerald-600 hover:bg-emerald-700">
                 Confirm Completion
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Service Edit Modal */}
+        <Dialog open={isServiceModalOpen} onOpenChange={setIsServiceModalOpen}>
+          <DialogContent className="bg-zinc-900 border-zinc-800 text-white">
+            <DialogHeader>
+              <DialogTitle>{editingServiceIndex !== null ? 'Edit Service' : 'Add New Service'}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Service Type</Label>
+                <Select
+                  value={newService.service}
+                  onValueChange={(val) => setNewService({ ...newService, service: val })}
+                >
+                  <SelectTrigger className="bg-zinc-800 border-zinc-700">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-zinc-800 border-zinc-700">
+                    <SelectItem value="general">General Repair</SelectItem>
+                    <SelectItem value="screen">Screen Replacement</SelectItem>
+                    <SelectItem value="battery">Battery Replacement</SelectItem>
+                    <SelectItem value="water-damage">Water Damage</SelectItem>
+                    <SelectItem value="software">Software Issue</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Brand (Optional)</Label>
+                  <Input
+                    value={newService.brand}
+                    onChange={(e) => setNewService({ ...newService, brand: e.target.value })}
+                    placeholder="e.g. Apple"
+                    className="bg-zinc-800 border-zinc-700"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Model (Optional)</Label>
+                  <Input
+                    value={newService.model}
+                    onChange={(e) => setNewService({ ...newService, model: e.target.value })}
+                    placeholder="e.g. iPhone 13"
+                    className="bg-zinc-800 border-zinc-700"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Price (LKR)</Label>
+                <Input
+                  type="number"
+                  value={newService.price}
+                  onChange={(e) => setNewService({ ...newService, price: e.target.value })}
+                  placeholder="0.00"
+                  className="bg-zinc-800 border-zinc-700"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Description (Optional)</Label>
+                <Textarea
+                  value={newService.description}
+                  onChange={(e) => setNewService({ ...newService, description: e.target.value })}
+                  placeholder="Describe what's included in this service..."
+                  className="bg-zinc-800 border-zinc-700 min-h-[80px]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Duration</Label>
+                  <Input
+                    value={newService.duration}
+                    onChange={(e) => setNewService({ ...newService, duration: e.target.value })}
+                    placeholder="e.g. 1 hour"
+                    className="bg-zinc-800 border-zinc-700"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Warranty</Label>
+                  <Input
+                    value={newService.warranty}
+                    onChange={(e) => setNewService({ ...newService, warranty: e.target.value })}
+                    placeholder="e.g. 6 Months"
+                    className="bg-zinc-800 border-zinc-700"
+                  />
+                </div>
+              </div>
+
+              <Button onClick={handleSaveService} className="w-full bg-white text-black hover:bg-zinc-200">
+                {editingServiceIndex !== null ? 'Update Service' : 'Add Service'}
               </Button>
             </div>
           </DialogContent>
@@ -544,12 +737,13 @@ const TechnicianDashboard = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-6 h-auto p-1 bg-zinc-900 border border-zinc-800 rounded-xl">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-7 h-auto p-1 bg-zinc-900 border border-zinc-800 rounded-xl">
             <TabsTrigger value="overview" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">Overview</TabsTrigger>
             <TabsTrigger value="jobs" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">Jobs</TabsTrigger>
             <TabsTrigger value="bids" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">Bids</TabsTrigger>
             <TabsTrigger value="earnings" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">Earnings</TabsTrigger>
             <TabsTrigger value="analytics" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">Analytics</TabsTrigger>
+            <TabsTrigger value="services" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']">Services</TabsTrigger>
             <TabsTrigger value="settings" className="py-2 data-[state=active]:bg-white data-[state=active]:text-black rounded-lg font-['Inter']"><Settings className="w-4 h-4 mr-2" />Settings</TabsTrigger>
           </TabsList >
 
@@ -817,6 +1011,81 @@ const TechnicianDashboard = () => {
               </CardContent>
             </Card>
           </TabsContent >
+
+          {/* Services Tab */}
+          <TabsContent value="services">
+            <Card className="bg-zinc-900 border-zinc-800">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-xl font-bold font-['Outfit'] text-white">Service & Pricing Management</CardTitle>
+                  <CardDescription>Set your custom rates for different repairs and devices</CardDescription>
+                </div>
+                <Button onClick={() => openServiceModal()} className="bg-white text-black hover:bg-zinc-200">
+                  <Briefcase className="w-4 h-4 mr-2" /> Add Service
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {services.length === 0 ? (
+                  <div className="text-center py-12 border-2 border-dashed border-zinc-800 rounded-xl">
+                    <Wrench className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-zinc-400">No Services Configured</h3>
+                    <p className="text-zinc-500 mb-6">Add your repair services to appear in search results</p>
+                    <Button onClick={() => openServiceModal()} variant="outline">Create First Service</Button>
+                  </div>
+                ) : (
+                  <div className="relative overflow-x-auto rounded-lg border border-zinc-800">
+                    <table className="w-full text-left text-sm text-zinc-400">
+                      <thead className="bg-zinc-950 text-xs uppercase text-zinc-500">
+                        <tr>
+                          <th className="px-6 py-3">Service Type</th>
+                          <th className="px-6 py-3">Device Brand</th>
+                          <th className="px-6 py-3">Model</th>
+                          <th className="px-6 py-3 text-right">Price (LKR)</th>
+                          <th className="px-6 py-3 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {services.map((service, index) => (
+                          <tr key={index} className="border-b border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800/50">
+                            <td className="px-6 py-4 font-medium text-white capitalize">
+                              {service.service?.replace('-', ' ')}
+                            </td>
+                            <td className="px-6 py-4 text-white">
+                              {service.brand || <span className="text-zinc-600 italic">All Brands</span>}
+                            </td>
+                            <td className="px-6 py-4 text-white">
+                              {service.model || <span className="text-zinc-600 italic">All Models</span>}
+                            </td>
+                            <td className="px-6 py-4 text-right font-bold text-emerald-400">
+                              <CurrencyDisplay amount={service.price} decimals={0} />
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openServiceModal(service, index)}
+                                className="text-blue-400 hover:text-blue-300 mr-2"
+                              >
+                                Edit
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteService(index)}
+                                className="text-red-400 hover:text-red-300"
+                              >
+                                Delete
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           {/* Settings Tab */}
           <TabsContent value="settings">

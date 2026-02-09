@@ -185,14 +185,15 @@ const Admin = () => {
       const response = await axios.get(`${API_URL}/api/admin/users`, {
         headers: await getAuthHeader()
       });
-      setUsers(response.data);
+      setUsers(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('[ADMIN] Error fetching users:', error);
       try {
         const response = await axios.get(`${API_URL}/api/users`);
-        setUsers(response.data);
+        setUsers(Array.isArray(response.data) ? response.data : []);
       } catch (err) {
         console.error('[ADMIN] Fallback fetch also failed:', err);
+        setUsers([]);
       }
     }
   };
@@ -203,12 +204,12 @@ const Admin = () => {
       const response = await axios.get(`${API_URL}/api/admin/technicians`, {
         headers: await getAuthHeader()
       });
-      setTechnicians(response.data);
+      setTechnicians(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('[ADMIN] Error fetching technicians:', error);
       try {
         const response = await axios.get(`${API_URL}/api/technicians/all`);
-        setTechnicians(response.data);
+        setTechnicians(Array.isArray(response.data) ? response.data : []);
       } catch (err) {
         console.error('[ADMIN] Fallback fetch also failed:', err);
         setTechnicians([]);
@@ -222,7 +223,7 @@ const Admin = () => {
       const response = await axios.get(`${API_URL}/api/admin/bookings`, {
         headers: await getAuthHeader()
       });
-      setAppointments(response.data);
+      setAppointments(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('[ADMIN] Error fetching appointments:', error);
       setAppointments([]);
@@ -235,7 +236,7 @@ const Admin = () => {
       const response = await axios.get(`${API_URL}/api/admin/reviews`, {
         headers: await getAuthHeader()
       });
-      setReviews(response.data);
+      setReviews(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('[ADMIN] Error fetching reviews:', error);
       setReviews([]);
@@ -665,7 +666,7 @@ const Admin = () => {
           </CardHeader>
           <CardContent>
             <ScrollArea className="h-[280px]">
-              {(!appointments || appointments.length === 0) ? (
+              {(!Array.isArray(appointments) || appointments.length === 0) ? (
                 <div className="text-center py-8 text-zinc-500">
                   <AlertCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
                   <p className="font-['Inter']">No appointments yet</p>
@@ -705,7 +706,7 @@ const Admin = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {(!technicians || technicians.length === 0) ? (
+            {(!Array.isArray(technicians) || technicians.length === 0) ? (
               <div className="text-center py-8 text-zinc-500">
                 <Wrench className="h-12 w-12 mx-auto mb-2 opacity-50" />
                 <p className="font-['Inter']">No technicians registered yet</p>
@@ -718,7 +719,7 @@ const Admin = () => {
                   </div>
                   <Avatar className="h-10 w-10 border-2 border-zinc-600">
                     <AvatarImage src={tech.profile_image || tech.profileImage} />
-                    <AvatarFallback className="bg-zinc-700 text-white font-['Outfit']">{tech.name?.substring(0, 2).toUpperCase()}</AvatarFallback>
+                    <AvatarFallback className="bg-zinc-700 text-white font-['Outfit']">{(tech.name || '').substring(0, 2).toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
                     <p className="font-['Outfit'] font-medium text-white">{tech.name}</p>
@@ -778,13 +779,13 @@ const Admin = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(users || []).map((user) => (
+                {(Array.isArray(users) ? users : []).map((user) => (
                   <TableRow key={user.id} className="border-zinc-800 hover:bg-zinc-800/50">
                     <TableCell className="font-['Inter'] font-medium text-white">
                       <div className="flex items-center gap-3">
                         <Avatar className="border-2 border-zinc-600">
                           <AvatarImage src={user.profile_image || user.profileImage} />
-                          <AvatarFallback className="bg-zinc-700 text-white">{user.name?.substring(0, 2).toUpperCase()}</AvatarFallback>
+                          <AvatarFallback className="bg-zinc-700 text-white">{(user.name || '').substring(0, 2).toUpperCase()}</AvatarFallback>
                         </Avatar>
                         {user.name}
                       </div>
@@ -821,7 +822,7 @@ const Admin = () => {
   );
 
   const renderTechnicians = () => {
-    const filteredTechnicians = (technicians || []).filter(tech => {
+    const filteredTechnicians = (Array.isArray(technicians) ? technicians : []).filter(tech => {
       const isVerified = (tech.is_verified || tech.verified);
       if (techFilter === 'verified') return isVerified;
       if (techFilter === 'unverified') return !isVerified;
@@ -885,7 +886,7 @@ const Admin = () => {
                       <div className="flex items-center gap-3">
                         <Avatar className="h-12 w-12 border-2 border-zinc-600">
                           <AvatarImage src={tech.profile_image || tech.profileImage} />
-                          <AvatarFallback className="bg-zinc-700 text-white font-['Outfit'] font-bold">{tech.name?.substring(0, 2).toUpperCase()}</AvatarFallback>
+                          <AvatarFallback className="bg-zinc-700 text-white font-['Outfit'] font-bold">{(tech.name || '').substring(0, 2).toUpperCase()}</AvatarFallback>
                         </Avatar>
                         <div>
                           <CardTitle className="text-lg font-['Outfit'] text-white">{tech.name}</CardTitle>
@@ -919,7 +920,7 @@ const Admin = () => {
                       <span className="font-['Inter'] truncate">{tech.location?.address || 'No location'}</span>
                     </div>
                     <div className="flex flex-wrap gap-1 mt-2">
-                      {tech.specialization?.slice(0, 3).map((spec, i) => (
+                      {(Array.isArray(tech.specialization) ? tech.specialization : []).slice(0, 3).map((spec, i) => (
                         <Badge key={i} variant="outline" className="text-xs border-zinc-700 text-zinc-300">{spec}</Badge>
                       ))}
                     </div>
@@ -979,7 +980,7 @@ const Admin = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(appointments || []).map((apt) => (
+                {(Array.isArray(appointments) ? appointments : []).map((apt) => (
                   <TableRow key={apt.id} className="border-zinc-800 hover:bg-zinc-800/50">
                     <TableCell className="font-['Inter'] text-white">{(apt.customer?.name || apt.customerName) || '-'}</TableCell>
                     <TableCell className="font-['Inter'] text-zinc-300">{(apt.technician?.name || apt.technicianName) || 'Pending'}</TableCell>
@@ -1024,7 +1025,7 @@ const Admin = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {(!reviews || reviews.length === 0) ? (
+        {(!Array.isArray(reviews) || reviews.length === 0) ? (
           <div className="col-span-full text-center py-12">
             <Star className="h-16 w-16 mx-auto mb-4 text-zinc-500 opacity-50" />
             <p className="text-zinc-400 font-['Inter']">No reviews found</p>
@@ -1036,7 +1037,7 @@ const Admin = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Avatar className="border-2 border-zinc-600">
-                      <AvatarFallback className="bg-zinc-700 text-white">{(review.customer?.name || review.customerName)?.substring(0, 2).toUpperCase() || 'U'}</AvatarFallback>
+                      <AvatarFallback className="bg-zinc-700 text-white">{(review.customer?.name || review.customerName || '').substring(0, 2).toUpperCase() || 'U'}</AvatarFallback>
                     </Avatar>
                     <div>
                       <CardTitle className="text-sm font-['Outfit'] text-white">{review.customer?.name || review.customerName || 'Customer'}</CardTitle>
@@ -1132,7 +1133,7 @@ const Admin = () => {
             <div className="flex items-center gap-4">
               <Avatar className="h-16 w-16 border-2 border-zinc-600">
                 <AvatarImage src={user?.profile_image || user?.profileImage} />
-                <AvatarFallback className="bg-zinc-700 text-white font-['Outfit'] font-bold text-xl">{user?.name?.substring(0, 2).toUpperCase() || 'AD'}</AvatarFallback>
+                <AvatarFallback className="bg-zinc-700 text-white font-['Outfit'] font-bold text-xl">{(user?.name || '').substring(0, 2).toUpperCase() || 'AD'}</AvatarFallback>
               </Avatar>
               <div>
                 <p className="font-['Outfit'] font-semibold text-xl text-white">{user?.name || 'Admin'}</p>

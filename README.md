@@ -5,7 +5,7 @@
 ### _Connecting Customers with Expert Technicians_
 
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-success?style=for-the-badge)](https://github.com)
-[![Version](https://img.shields.io/badge/Version-2.3.0-blue?style=for-the-badge)](https://github.com)
+[![Version](https://img.shields.io/badge/Version-2.5.2-blue?style=for-the-badge)](https://github.com)
 [![License](https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge)](LICENSE)
 [![Node](https://img.shields.io/badge/Node-24.x-green?style=for-the-badge&logo=node.js)](https://nodejs.org)
 [![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react)](https://reactjs.org)
@@ -321,7 +321,32 @@ sequenceDiagram
     F->>C: "Thank you for your feedback!"
 ```
 
-### �📅 Booking Flow
+### 🛡️ Admin Verification Flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant A as 👑 Admin
+    participant F as 🖥️ Admin Dashboard
+    participant B as ⚙️ Backend API
+    participant D as 🗄️ Database
+
+    A->>F: View Pending Technicians
+    F->>B: GET /api/admin/technicians?status=pending
+    B->>D: Query technicians
+    D-->>B: List of unverified techs
+    B-->>F: Display list
+    
+    A->>F: Click "Verify" on Technician
+    F->>B: PATCH /api/admin/technicians/:id/verify
+    B->>D: Update verified = true
+    D-->>B: Success
+    B-->>F: Return updated status
+    F->>A: Show "Verified" Badge
+    F->>B: Trigger Notification (Email/In-App)
+```
+
+### 📅 Booking Flow
 
 ```mermaid
 stateDiagram-v2
@@ -393,6 +418,9 @@ graph TD
     ADM --- UC10
     ADM --- UC11
     ADM --- UC6
+    ADM --- UC13([Manage Users])
+    ADM --- UC14([Moderate Reviews])
+    ADM --- UC15([Oversee Appointments])
 ```
 
 ---
