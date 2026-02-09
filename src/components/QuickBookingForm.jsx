@@ -183,7 +183,7 @@ export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
         throw new Error('No authentication token - please log in again');
       }
 
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://server-seven-ecru.vercel.app');
 
       const bookingPayload = {
         technician_id: technician?.id || null,

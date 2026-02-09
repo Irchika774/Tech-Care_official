@@ -76,6 +76,65 @@ router.post('/', supabaseAuth, async (req, res) => {
         return errorResponse(res, 'Failed to create booking');
     }
 });
+// POST endpoint to cancel booking
+router.post('/:id/cancel', supabaseAuth, async (req, res) => {
+    try {
+        const bookingId = req.params.id;
+        const customerId = req.user.customerId;
+        // User ID extraction might vary depending on your auth implementation, 
+        // using customerId as primary check.
+
+        // Fetch booking to verify ownership and status
+        const { data: booking, error: fetchError } = await supabaseAdmin
+            .from('bookings')
+            .select('*')
+            .eq('id', bookingId)
+            .single();
+
+        if (fetchError || !booking) {
+            return errorResponse(res, 'Booking not found', 404);
+        }
+
+        // Authorization check
+        if (booking.customer_id !== customerId) {
+            return errorResponse(res, 'Access denied. You can only cancel your own bookings.', 403);
+        }
+
+        // Validity check
+        if (!['pending', 'confirmed'].includes(booking.status)) {
+            return errorResponse(res, `Cannot cancel booking with status: ${booking.status}`, 400);
+        }
+
+        // Update status to 'cancelled'
+        const { data: updatedBooking, error: updateError } = await supabaseAdmin
+            .from('bookings')
+            .update({
+                status: 'cancelled',
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', bookingId)
+            .select()
+            .single();
+
+        if (updateError) throw updateError;
+
+        // Notify technician if one was assigned
+        if (booking.technician_id) {
+            await supabaseAdmin.from('notifications').insert([{
+                user_id: booking.technician_id,
+                title: 'Booking Cancelled',
+                message: 'A customer has cancelled their booking request.',
+                type: 'booking_cancelled',
+                data: { booking_id: bookingId }
+            }]);
+        }
+
+        return successResponse(res, updatedBooking, 'Booking cancelled successfully');
+    } catch (error) {
+        console.error('Booking cancellation error:', error);
+        return errorResponse(res, 'Failed to cancel booking');
+    }
+});
 
 // PATCH endpoint for updating booking (confirmation, scheduling)
 router.patch('/:id', supabaseAuth, async (req, res) => {

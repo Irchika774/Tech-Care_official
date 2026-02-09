@@ -2,7 +2,7 @@ import axios from 'axios';
 
 import { supabase } from './supabase';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://server-seven-ecru.vercel.app');
 
 // API client with error handling
 const apiClient = axios.create({

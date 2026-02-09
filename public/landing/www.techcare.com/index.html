@@ -214,6 +214,7 @@
           .text-style-3lines {
             display: -webkit-box;
             overflow: hidden;
+            line-clamp: 3;
             -webkit-line-clamp: 3;
             -webkit-box-orient: vertical;
           }
@@ -222,6 +223,7 @@
           .text-style-2lines {
             display: -webkit-box;
             overflow: hidden;
+            line-clamp: 2;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
           }
@@ -238,6 +240,7 @@
 
           /* Remove default Webflow chevron from form select */
           select {
+            appearance: none;
             -webkit-appearance: none;
           }
 
@@ -465,6 +468,8 @@
           /* Color Schemes Controls */
           .color-scheme-1 {
             /*All sections should point to Color Scheme 1*/
+            --color-scheme-1--text: var(--color-scheme-1--text);
+            /* Placeholder prop to avoid empty ruleset */
           }
 
           .color-scheme-2 {
