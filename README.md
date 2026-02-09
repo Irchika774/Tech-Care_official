@@ -178,9 +178,14 @@ erDiagram
     TECHNICIANS {
         uuid id PK
         uuid profile_id FK
-        string business_name
+        string name
+        string description
+        string experience
+        string district
+        string profile_image
+        string phone
+        string address
         string[] services
-        string[] districts
         float rating
         int total_reviews
         boolean verified
@@ -448,9 +453,10 @@ graph TD
     ADM --- UC10
     ADM --- UC11
     ADM --- UC6
-    ADM --- UC13([Manage Users])
-    ADM --- UC14([Moderate Reviews])
-    ADM --- UC15([Oversee Appointments])
+    ADM --- UC13([Manage Users]):::usecase
+    ADM --- UC14([Moderate Reviews]):::usecase
+    ADM --- UC15([Oversee Appointments]):::usecase
+    ADM --- UC16([Manage System Status]):::usecase
 ```
 
 ---
