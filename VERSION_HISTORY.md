@@ -10,6 +10,7 @@
 ### 🐛 Bug Fixes & Stability
 - **Technician Dashboard Fix:** Resolved a critical `ReferenceError: Wrench is not defined` by importing the missing icon from `lucide-react`.
 - **Login Optimization:** Added `autocomplete` attributes to login inputs to resolve browser warnings and improve accessibility.
+- **Hero Video Refresh:** Replaced the landing page background video with a high-quality, relevant tech repair loop to enhance the visual appeal and brand alignment.
 - **Dependency Updates:** Ensured all UI components have necessary dependencies for error-free rendering.
 
 ## v2.5.1 - 2026-02-06
