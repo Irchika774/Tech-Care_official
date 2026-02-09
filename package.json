@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "vercel-build": "echo 'Skipping frontend build for Vercel backend deployment'"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.0.4",

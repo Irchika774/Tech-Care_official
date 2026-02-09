@@ -6,6 +6,12 @@
 - **String Manipulation Safeties:** Added fallbacks for user and technician names to prevent `toUpperCase()` and `substring()` errors on incomplete profiles.
 - **Resilient State Management:** Ensured all data state variables are initialized and maintained as arrays to support safe `.map()` and `.slice()` operations.
 
+## v2.5.3 - 2026-02-09
+### 🐛 Bug Fixes & Stability
+- **Technician Dashboard Fix:** Resolved a critical `ReferenceError: Wrench is not defined` by importing the missing icon from `lucide-react`.
+- **Login Optimization:** Added `autocomplete` attributes to login inputs to resolve browser warnings and improve accessibility.
+- **Dependency Updates:** Ensured all UI components have necessary dependencies for error-free rendering.
+
 ## v2.5.1 - 2026-02-06
 ### 🛠️ Technical Improvements & Bug Fixes
 - **Profile Loading Stability:** Resolved "Cannot read properties of undefined (reading 'name')" error on the profile page by implementing robust data unwrapping and safe fallbacks for all user roles.
