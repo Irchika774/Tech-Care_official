@@ -1,5 +1,23 @@
 # 📜 Version History
 
+## v2.6.3 - 2026-02-09
+### 🆕 Enhancements
+- **Real-time:** Integrated cross-dashboard real-time synchronization using a centralized `realtimeService.js` for instant updates.
+- **Automation:** Implemented automatic booking status transition to "Confirmed" upon successful Stripe payment.
+- **UI/UX:** Added "Back to History" and enhanced modal interactions (overlay click to close) for Invoice previews.
+- **Workflow:** Standardized booking status options and visual badge variants across Customer, Technician, and Admin dashboards.
+- **Architecture:** Transitioned from polling to event-driven updates for better performance and scalability.
+
+## v2.6.2 - 2026-02-09
+### 🐛 Hotfix
+- **Services & Pricing:** Implemented dynamic real-time service types and pricing system.
+- **Duplicates:** Resolved duplicate booking entries in Technician Dashboard.
+- **Payment:** Optimized payment page loading and fallback for client-side restrictions.
+
+## v2.6.1 - 2026-02-09
+### 🐛 Hotfix
+- **Booking Tracker:** Fixed a regression in data parsing where nested API responses caused a "Booking Not Found" error.
+
 ## v2.6.0 - 2026-02-09
 ### ✨ Technician Empowerment & Dashboard 2.0
 - **Public Profile Management:** Added a dedicated 'Profile' tab for technicians to manage their business identity, including bio, experience, and service areas.

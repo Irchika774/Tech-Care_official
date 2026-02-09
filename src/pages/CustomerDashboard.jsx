@@ -1214,8 +1214,21 @@ function CustomerDashboard() {
 
       {/* Invoice Modal */}
       {invoiceBooking && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="relative max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
+          onClick={() => setInvoiceBooking(null)}
+        >
+          <div
+            className="relative max-w-4xl w-full max-h-[90vh] overflow-y-auto cursor-default"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Button
+              variant="ghost"
+              className="absolute -top-12 right-0 text-white hover:text-zinc-300 gap-2 mb-2"
+              onClick={() => setInvoiceBooking(null)}
+            >
+              <XCircle className="w-5 h-5" /> Close Preview
+            </Button>
             <InvoiceGenerator
               booking={invoiceBooking}
               payment={{

@@ -161,6 +161,7 @@ router.post('/confirm-payment', async (req, res) => {
             .from('bookings')
             .update({
                 payment_status: 'paid',
+                status: 'confirmed',
                 payment_intent_id: paymentIntentId,
                 updated_at: new Date().toISOString()
             })

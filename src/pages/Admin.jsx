@@ -28,6 +28,7 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import CurrencyDisplay from '../components/CurrencyDisplay';
 import SEO from '../components/SEO';
+import realtimeService from '../utils/realtimeService';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -128,6 +129,22 @@ const Admin = () => {
   // Initial data load
   useEffect(() => {
     fetchAllData(true);
+
+    // Subscribe to real-time updates
+    const unsubBookings = realtimeService.subscribeToBookings(() => {
+      console.log('[Admin] Booking update received');
+      fetchAllData(false);
+    });
+
+    const unsubTechnicians = realtimeService.subscribeToTechnicians(() => {
+      console.log('[Admin] Technician update received');
+      fetchAllData(false);
+    });
+
+    return () => {
+      if (unsubBookings) unsubBookings();
+      if (unsubTechnicians) unsubTechnicians();
+    };
   }, []);
 
   // Fetch all data
@@ -252,13 +269,13 @@ const Admin = () => {
 
     const totalUsersCount = safeUsers.filter(u => u.role !== 'technician').length;
     const activeTechniciansCount = safeTechs.length;
-    const pendingAppointmentsCount = safeAppts.filter(a => a.status === 'pending' || a.status === 'scheduled').length;
+    const pendingAppointmentsCount = safeAppts.filter(a => a.status === 'pending' || a.status === 'scheduled' || a.status === 'confirmed').length;
     const completedAppointmentsCount = safeAppts.filter(a => a.status === 'completed').length;
     const cancelledAppointmentsCount = safeAppts.filter(a => a.status === 'cancelled').length;
 
     const totalRevenue = safeAppts
       .filter(a => a.status === 'completed')
-      .reduce((sum, a) => sum + (a.price || a.amount || a.estimated_cost || 0), 0);
+      .reduce((sum, a) => sum + (Number(a.price || a.amount || a.estimated_cost) || 0), 0);
 
     const avgRating = safeTechs.length > 0
       ? safeTechs.reduce((sum, t) => sum + (parseFloat(t.rating) || 0), 0) / safeTechs.length
@@ -478,6 +495,8 @@ const Admin = () => {
         return 'default';
       case 'pending':
       case 'scheduled':
+        return 'secondary';
+      case 'confirmed':
         return 'secondary';
       case 'inactive':
       case 'cancelled':

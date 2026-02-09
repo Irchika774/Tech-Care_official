@@ -238,6 +238,11 @@ const InvoiceGenerator = ({
                         </div>
                     </div>
                     <div className="flex gap-2">
+                        {onClose && (
+                            <Button variant="ghost" size="sm" onClick={onClose} className="text-zinc-400 hover:text-white hover:bg-zinc-800 mr-2">
+                                Back to History
+                            </Button>
+                        )}
                         <Button variant="outline" size="sm" onClick={handlePrint} className="border-zinc-700">
                             <Printer className="h-4 w-4 mr-2" />
                             Print

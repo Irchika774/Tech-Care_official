@@ -5,7 +5,7 @@
 ### _Connecting Customers with Expert Technicians_
 
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-success?style=for-the-badge)](https://github.com)
-[![Version](https://img.shields.io/badge/Version-2.6.0-blue?style=for-the-badge)](https://github.com)
+[![Version](https://img.shields.io/badge/Version-2.6.3-blue?style=for-the-badge)](https://github.com)
 [![License](https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge)](LICENSE)
 [![Node](https://img.shields.io/badge/Node-24.x-green?style=for-the-badge&logo=node.js)](https://nodejs.org)
 [![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react)](https://reactjs.org)
@@ -32,10 +32,11 @@
 **TechCare** is a modern, enterprise-grade full-stack web application that revolutionizes the device repair industry in Sri Lanka. It connects customers with verified technicians through an intelligent matching system, featuring:
 
 - 🗺️ **Location-Based Services** - Find nearby technicians with Google Maps integration
-- 💳 **Secure Payments** - Stripe-powered transaction processing
-- ⚡ **Real-time Updates** - Live booking status and notifications
-- 🛠️ **Technician Pro** - Advanced profile and service management for providers
-- 🏆 **Loyalty Program** - Reward points and tier-based benefits
+- 💳 **Secure Payments** - Stripe-powered transaction processing with automated status workflows
+- ⚡ **Real-time Synchronization** - Centralized Supabase Realtime service for instant cross-dashboard updates
+- 🛠️ **Technician Pro** - Advanced profile, service management, and dynamic pricing for providers
+- 🏆 **Loyalty Program** - Reward points and tier-based benefits integrated with booking lifecycle
+- 📑 **Invoice Automation** - Dynamic PDF generation and email delivery for every repair
 
 ---
 
@@ -63,8 +64,11 @@ flowchart TB
             UI["UI Components<br/>• Header • Footer<br/>• Cards • Modals"]
             FEAT["Feature Components<br/>• Maps • Charts<br/>• Invoices"]
         end
+        subgraph Services["⚡ Real-time Layer"]
+            RTS["realtimeService.js<br/>• Subscription Manager<br/>• Event Bus • Auto-Recovery"]
+        end
         subgraph State["🔄 State Management"]
-            CTX["Context Providers<br/>• AuthContext (v2.2 Stable)<br/>• ThemeContext<br/>• NotificationContext"]
+            CTX["Context Providers<br/>• AuthContext (v2.6 Stable)<br/>• ThemeContext<br/>• NotificationContext"]
         end
     end
 
@@ -77,8 +81,8 @@ flowchart TB
             SEC["Security<br/>• Helmet • CORS<br/>• Rate Limiting"]
             AUTH["Authentication<br/>• JWT Verification<br/>• Supabase Auth"]
         end
-        subgraph Services["📦 Services"]
-            BIZ["Business Logic<br/>• Booking Management<br/>• Payment Processing<br/>• Notification Service"]
+        subgraph Workers["🤖 Background Services"]
+            AUTO["Status Automation<br/>• Payment Verification<br/>• Notification Triggers"]
         end
     end
 
@@ -307,35 +311,41 @@ sequenceDiagram
     end
 ```
 
-### �️ Repair Completion & Payment Flow
+### 💳 Repair Completion & Payment Flow
 
 ```mermaid
 sequenceDiagram
     autonumber
     participant T as 🛠️ Technician
+    participant C as 🛒 Customer
     participant F as 🖥️ Frontend
     participant B as ⚙️ Backend API
     participant S as 🗄️ Supabase
     participant ST as 💳 Stripe
-    participant C as 🛒 Customer
 
     T->>F: Mark Job as Complete
     F->>B: PATCH /api/technician/bookings/:id/complete
     B->>S: Update Booking Status -> completed
-    S-->>B: Success
-    B->>S: Update Technician Stats (Earnings/Jobs)
-    B->>ST: Create Payment Settlement
-    B->>S: Create Notification for Customer
-    S-->>C: "Your repair is complete!"
-    C->>F: View Completed Booking
-    F->>C: Show Review Form
-    C->>F: Submit Rating & Review
-    F->>B: POST /api/customer/reviews
-    B->>S: Insert Review + Update Tech Rating
-    S-->>B: Updated
-    B-->>F: Review Success
-    F->>C: "Thank you for your feedback!"
+    B->>S: Create Billing Record
+    S-->>F: Job Completed Successfully
 
+    C->>F: Open Invoice & Pay
+    F->>ST: Initialize Payment
+    ST-->>C: Card Input UI
+    C->>ST: Submit Payment
+    ST-->>B: Webhook / Callback (Success)
+    
+    rect rgb(40, 60, 40)
+        Note over B,S: Automated Workflow
+        B->>S: Update payment_status = 'paid'
+        B->>S: Update booking_status = 'confirmed'
+        B->>S: Trigger Real-time Event
+    end
+
+    S-->>F: Live Update (All Dashboards)
+    F->>C: "Payment Confirmed! Repair Scheduled."
+    F->>T: "Payment Received! Proceed with Repair."
+```
 ### 🔧 Technician Service Management Flow
 
 ```mermaid

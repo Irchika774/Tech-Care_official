@@ -36,6 +36,7 @@ export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
   const [deviceBrand, setDeviceBrand] = useState(initialData?.brand || '');
   const [deviceModel, setDeviceModel] = useState(initialData?.model || '');
   const [repairService, setRepairService] = useState('general');
+  const [availableServices, setAvailableServices] = useState([]);
   const [issueDescription, setIssueDescription] = useState('');
   const [technician, setTechnician] = useState(null); // Changed to object to store full tech data
   const [techniciansList, setTechnicians] = useState([]);
@@ -50,40 +51,70 @@ export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
     }
   }, [initialData]);
 
-  const serviceDetails = {
-    battery: { label: 'Battery Replacement' },
-    screen: { label: 'Screen Repair' },
-    'water-damage': { label: 'Water Damage' },
-    general: { label: 'General Repair' }
-  };
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('services')
+          .select('*')
+          .eq('is_active', true);
+        if (!error && data) {
+          setAvailableServices(data);
+          // Set initial service if none selected or if it's 'general'
+          if (repairService === 'general' && data.length > 0) {
+            const gen = data.find(s => s.name?.toLowerCase().includes('general') || s.id === 'general');
+            if (gen) setRepairService(gen.id);
+            else setRepairService(data[0].id);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching services:', err);
+      }
+    };
+    fetchServices();
+
+    const subscription = supabase
+      .channel('public:services')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'services' }, fetchServices)
+      .subscribe();
+
+    return () => supabase.removeChannel(subscription);
+  }, []);
 
   const getCustomPrice = (tech) => {
     if (!tech?.services || !Array.isArray(tech.services)) return null;
 
-    // 1. Exact Match: Service + Brand + Model
+    const currentService = availableServices.find(s => s.id === repairService);
+    const serviceName = currentService?.name || repairService;
+
+    // 1. Exact Match: Service Name/ID + Brand + Model
     const exactMatch = tech.services.find(s =>
-      s.service === repairService &&
+      (s.service === serviceName || s.service === repairService) &&
       s.brand?.toLowerCase() === deviceBrand?.toLowerCase() &&
       s.model?.toLowerCase() === deviceModel?.toLowerCase()
     );
     // 2. Brand Match: Service + Brand
     const brandMatch = tech.services.find(s =>
-      s.service === repairService &&
+      (s.service === serviceName || s.service === repairService) &&
       s.brand?.toLowerCase() === deviceBrand?.toLowerCase()
     );
 
     // 3. Service Match: Just Service
     const serviceMatch = tech.services.find(s =>
-      s.service === repairService
+      (s.service === serviceName || s.service === repairService)
     );
 
     return exactMatch || brandMatch || serviceMatch || null;
   };
 
-  const getAveragePrice = () => {
-    if (!techniciansList.length) return 4000; // Fallback if no techs
+  const getBasePrice = () => {
+    const service = availableServices.find(s => s.id === repairService);
+    return service ? Number(service.base_price) : 4000;
+  };
 
-    // Get all valid prices for this service from all techs
+  const getAveragePrice = () => {
+    if (!techniciansList.length) return getBasePrice();
+
     const prices = techniciansList
       .map(tech => {
         const s = getCustomPrice(tech);
@@ -91,13 +122,13 @@ export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
       })
       .filter(p => p !== null && p > 0);
 
-    if (!prices.length) return 4000; // Fallback if no prices found
+    if (!prices.length) return getBasePrice();
 
     const sum = prices.reduce((a, b) => a + b, 0);
     return Math.round(sum / prices.length);
   };
 
-  // Base price (dynamic average)
+  // Base price (dynamic average or base table price)
   const defaultPrice = getAveragePrice();
 
   // Effective price: Technician's custom price -> or Default (Average)
@@ -192,7 +223,7 @@ export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
         device_type: deviceType,
         device_brand: deviceBrand || deviceType,
         device_model: deviceModel || 'Unknown',
-        issue_description: issueDescription || serviceDetails[repairService]?.label,
+        issue_description: issueDescription || availableServices.find(s => s.id === repairService)?.name || 'General Repair',
         status: 'pending',
         estimated_cost: totalAmount
       };
@@ -217,7 +248,7 @@ export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
 
       const enrichedBooking = {
         ...bookingData,
-        serviceType: serviceDetails[repairService]?.label || 'General Repair',
+        serviceType: availableServices.find(s => s.id === repairService)?.name || 'General Repair',
         total: totalAmount
       };
 
@@ -293,10 +324,22 @@ export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-zinc-900 border-zinc-800">
-              <SelectItem value="battery" className="text-white">Battery Replacement</SelectItem>
-              <SelectItem value="screen" className="text-white">Screen Repair</SelectItem>
-              <SelectItem value="water-damage" className="text-white">Water Damage</SelectItem>
-              <SelectItem value="general" className="text-white">General Repair</SelectItem>
+              {availableServices.length > 0 ? (
+                availableServices
+                  .filter(s => !s.device_type || s.device_type === deviceType)
+                  .map(service => (
+                    <SelectItem key={service.id} value={service.id} className="text-white">
+                      {service.name}
+                    </SelectItem>
+                  ))
+              ) : (
+                <>
+                  <SelectItem value="battery" className="text-white">Battery Replacement</SelectItem>
+                  <SelectItem value="screen" className="text-white">Screen Repair</SelectItem>
+                  <SelectItem value="water-damage" className="text-white">Water Damage</SelectItem>
+                  <SelectItem value="general" className="text-white">General Repair</SelectItem>
+                </>
+              )}
             </SelectContent>
           </Select>
         </div>

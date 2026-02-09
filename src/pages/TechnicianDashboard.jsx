@@ -19,6 +19,7 @@ import { formatDistanceToNow } from 'date-fns';
 import SEO from '../components/SEO';
 import EarningsChart from '../components/EarningsChart';
 import { POLLING_INTERVALS } from '../lib/constants';
+import realtimeService from '../utils/realtimeService';
 
 const TechnicianDashboard = () => {
   const navigate = useNavigate();
@@ -45,6 +46,7 @@ const TechnicianDashboard = () => {
 
   // Services Management State
   const [services, setServices] = useState([]);
+  const [availableMasterServices, setAvailableMasterServices] = useState([]);
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
   const [editingServiceIndex, setEditingServiceIndex] = useState(null);
   const [newService, setNewService] = useState({
@@ -76,6 +78,13 @@ const TechnicianDashboard = () => {
     const fetchDashboardData = async (isInitial = false) => {
       if (!user) return;
       if (isFetchingRef.current) return;
+
+      // Fetch master services list once
+      if (isInitial) {
+        supabase.from('services').select('*').eq('is_active', true).then(({ data, error }) => {
+          if (!error && data) setAvailableMasterServices(data);
+        });
+      }
 
       let loadingTimeout;
       try {
@@ -117,26 +126,32 @@ const TechnicianDashboard = () => {
 
           if (bookingsError) console.error('Bookings error:', bookingsError);
 
-          // Transform bookings to match expected format
-          const formattedBookings = (bookings || []).map(b => ({
-            _id: b.id,
-            id: b.id,
-            status: b.status,
-            customer: b.customer,
-            device: {
-              brand: b.device_brand,
-              model: b.device_model,
-              type: b.device_type
-            },
-            issue: {
-              description: b.issue_description,
-              type: b.issue_type
-            },
-            estimatedCost: b.estimated_cost || b.price,
-            scheduledDate: b.scheduled_date,
-            createdAt: b.created_at
-          }));
+          // Transform bookings to match expected format and deduplicate
+          const uniqueBookingsMap = new Map();
+          (bookings || []).forEach(b => {
+            if (!uniqueBookingsMap.has(b.id)) {
+              uniqueBookingsMap.set(b.id, {
+                _id: b.id,
+                id: b.id,
+                status: b.status,
+                customer: b.customer,
+                device: {
+                  brand: b.device_brand,
+                  model: b.device_model,
+                  type: b.device_type
+                },
+                issue: {
+                  description: b.issue_description,
+                  type: b.issue_type
+                },
+                estimatedCost: b.estimated_cost || b.price,
+                scheduledDate: b.scheduled_date,
+                createdAt: b.created_at
+              });
+            }
+          });
 
+          const formattedBookings = Array.from(uniqueBookingsMap.values());
           activeJobs = formattedBookings.filter(b => !['completed', 'cancelled'].includes(b.status));
           completedJobs = formattedBookings.filter(b => b.status === 'completed');
         }
@@ -236,9 +251,19 @@ const TechnicianDashboard = () => {
 
     fetchDashboardData(true);
 
-    // Refresh data every 30 seconds for real-time updates
+    // Subscribe to real-time updates for bookings
+    const unsubscribeBookings = realtimeService.subscribeToBookings(() => {
+      console.log('[TechnicianDashboard] Real-time booking update received');
+      fetchDashboardData(false);
+    });
+
+    // Refresh data every 30 seconds as a fallback
     const interval = setInterval(() => fetchDashboardData(false), POLLING_INTERVALS.DASHBOARD_REFRESH);
-    return () => clearInterval(interval);
+
+    return () => {
+      clearInterval(interval);
+      if (unsubscribeBookings) unsubscribeBookings();
+    };
   }, [user?.id]); // Use user.id specifically for more stable dependency
 
   // Synchronize activeTab with search params
@@ -315,14 +340,18 @@ const TechnicianDashboard = () => {
   const { stats, activeJobs, activeBids } = data;
 
   const getStatusBadgeVariant = (status) => {
-    switch (status) {
+    switch (status?.toLowerCase()) {
       case 'completed':
         return 'default';
+      case 'confirmed':
+      case 'pending':
       case 'in_progress':
       case 'in-progress':
         return 'secondary';
       case 'scheduled':
         return 'outline';
+      case 'cancelled':
+        return 'destructive';
       default:
         return 'secondary';
     }
@@ -644,11 +673,21 @@ const TechnicianDashboard = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-zinc-800 border-zinc-700">
-                    <SelectItem value="general">General Repair</SelectItem>
-                    <SelectItem value="screen">Screen Replacement</SelectItem>
-                    <SelectItem value="battery">Battery Replacement</SelectItem>
-                    <SelectItem value="water-damage">Water Damage</SelectItem>
-                    <SelectItem value="software">Software Issue</SelectItem>
+                    {availableMasterServices.length > 0 ? (
+                      availableMasterServices.map(s => (
+                        <SelectItem key={s.id} value={s.id} className="text-white">
+                          {s.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <>
+                        <SelectItem value="general">General Repair</SelectItem>
+                        <SelectItem value="screen">Screen Replacement</SelectItem>
+                        <SelectItem value="battery">Battery Replacement</SelectItem>
+                        <SelectItem value="water-damage">Water Damage</SelectItem>
+                        <SelectItem value="software">Software Issue</SelectItem>
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -1091,6 +1130,7 @@ const TechnicianDashboard = () => {
                               </SelectTrigger>
                               <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
                                 <SelectItem value="pending">Pending</SelectItem>
+                                <SelectItem value="confirmed">Confirmed</SelectItem>
                                 <SelectItem value="diagnosing">Diagnosing</SelectItem>
                                 <SelectItem value="waiting_for_parts">Waiting Parts</SelectItem>
                                 <SelectItem value="in_progress">In Progress</SelectItem>

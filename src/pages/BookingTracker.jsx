@@ -74,8 +74,12 @@ const BookingTracker = () => {
                     throw new Error('Failed to fetch booking details');
                 }
 
-                const data = await response.json();
-                setBooking(data.booking);
+                const result = await response.json();
+                if (result.success && result.data) {
+                    setBooking(result.data.booking);
+                } else {
+                    setBooking(result.booking); // Fallback for direct responses
+                }
             } catch (err) {
                 console.error('Error fetching booking:', err);
                 setError(err.message);
