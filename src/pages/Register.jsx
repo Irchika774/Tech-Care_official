@@ -216,6 +216,7 @@ const Register = () => {
                                                     value={name}
                                                     onChange={(e) => setName(e.target.value)}
                                                     required
+                                                    autoComplete="name"
                                                     className="bg-zinc-800 border-zinc-700 text-white placeholder-zinc-500 focus:border-white/50 py-5"
                                                 />
                                             </div>
@@ -232,6 +233,7 @@ const Register = () => {
                                                     value={email}
                                                     onChange={(e) => setEmail(e.target.value)}
                                                     required
+                                                    autoComplete="email"
                                                     className="bg-zinc-800 border-zinc-700 text-white placeholder-zinc-500 focus:border-white/50 py-5"
                                                 />
                                             </div>
@@ -249,6 +251,7 @@ const Register = () => {
                                                             value={password}
                                                             onChange={(e) => setPassword(e.target.value)}
                                                             required
+                                                            autoComplete="new-password"
                                                             className="bg-zinc-800 border-zinc-700 text-white placeholder-zinc-500 focus:border-white/50 py-5 pr-10"
                                                         />
                                                         <button
@@ -273,6 +276,7 @@ const Register = () => {
                                                             value={confirmPassword}
                                                             onChange={(e) => setConfirmPassword(e.target.value)}
                                                             required
+                                                            autoComplete="new-password"
                                                             className="bg-zinc-800 border-zinc-700 text-white placeholder-zinc-500 focus:border-white/50 py-5 pr-10"
                                                         />
                                                         <button

@@ -768,6 +768,62 @@ Tech-Care_official/
 
 ---
 
+## 🔄 Project Life Cycle
+
+```mermaid
+graph TD
+    subgraph Planning["Phase 1: Planning & Analysis"]
+        A1[Requirement Gathering] --> A2[Feasibility Study]
+        A2 --> A3[Project Scheduling]
+        A3 --> A4[Resource Allocation]
+    end
+
+    subgraph Design["Phase 2: System Design"]
+        B1[Architecture Design] --> B2[Database Schema]
+        B2 --> B3[UI/UX Prototyping]
+        B3 --> B4[API Specification]
+    end
+
+    subgraph Development["Phase 3: Development"]
+        C1[Frontend Implementation] --> C2[Backend Implementation]
+        C2 --> C3[Database Integration]
+        C3 --> C4[Real-time Features]
+    end
+
+    subgraph Testing["Phase 4: Testing & QA"]
+        D1[Unit Testing] --> D2[Integration Testing]
+        D2 --> D3[User Acceptance Testing]
+        D3 --> D4[Security Auditing]
+    end
+
+    subgraph Deployment["Phase 5: Deployment"]
+        E1[CI/CD Pipeline] --> E2[Staging Environment]
+        E2 --> E3[Production Release]
+        E3 --> E4[Monitoring Setup]
+    end
+
+    subgraph Maintenance["Phase 6: Maintenance"]
+        F1[Bug Fixes] --> F2[Performance Optimization]
+        F2 --> F3[Feature Updates]
+        F3 --> F4[User Support]
+    end
+
+    Planning --> Design
+    Design --> Development
+    Development --> Testing
+    Testing --> Deployment
+    Deployment --> Maintenance
+
+    style Planning fill:#1a1a2e,stroke:#333,color:#fff
+    style Design fill:#16213e,stroke:#333,color:#fff
+    style Development fill:#0f3460,stroke:#333,color:#fff
+    style Testing fill:#533483,stroke:#333,color:#fff
+    style Deployment fill:#e94560,stroke:#333,color:#fff
+    style Maintenance fill:#22c55e,stroke:#333,color:#fff
+```
+
+---
+
 ## 🛠️ Tech Stack
 
 ### Technology Architecture

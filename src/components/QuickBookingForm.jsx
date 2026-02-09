@@ -66,6 +66,17 @@ export function QuickBookingForm({ onSuccess, onCancel, initialData }) {
       s.brand?.toLowerCase() === deviceBrand?.toLowerCase() &&
       s.model?.toLowerCase() === deviceModel?.toLowerCase()
     );
+    // 2. Brand Match: Service + Brand
+    const brandMatch = tech.services.find(s =>
+      s.service === repairService &&
+      s.brand?.toLowerCase() === deviceBrand?.toLowerCase()
+    );
+
+    // 3. Service Match: Just Service
+    const serviceMatch = tech.services.find(s =>
+      s.service === repairService
+    );
+
     return exactMatch || brandMatch || serviceMatch || null;
   };
 
