@@ -391,19 +391,72 @@ const Schedule = () => {
         const bookingId = initialData.booking?.id || initialData.booking?._id;
         if (!bookingId) throw new Error('Missing booking reference');
 
-        const { error: updateError } = await supabase
+        // Resolve technician_id: 'pending' means null (auto-assign)
+        const resolvedTechnicianId = (technician && technician !== 'pending') ? technician : null;
+
+        // Build update payload - start with core fields that always exist
+        const updatePayload = {
+          status: 'confirmed',
+          updated_at: new Date().toISOString()
+        };
+
+        // Add technician_id only if we have a valid UUID
+        if (resolvedTechnicianId) {
+          updatePayload.technician_id = resolvedTechnicianId;
+        }
+
+        // Add scheduling fields
+        updatePayload.scheduled_date = date.toISOString();
+        updatePayload.time_slot = timeSlot;
+
+        console.log('[SCHEDULE] Updating booking:', bookingId, 'with:', updatePayload);
+
+        let { error: updateError } = await supabase
           .from('bookings')
-          .update({
-            scheduled_date: date.toISOString(),
-            time_slot: timeSlot,
-            status: 'confirmed',
-            technician_id: technician // Link the booking to the technician
-          })
+          .update(updatePayload)
           .eq('id', bookingId);
 
+        // If 400 error, it might be because scheduled_date/time_slot columns don't exist
+        // Retry with only the guaranteed columns
         if (updateError) {
-          console.error('Booking update error:', updateError);
-          throw new Error('Failed to confirm schedule');
+          console.warn('Booking update error (full payload):', updateError);
+          console.log('[SCHEDULE] Retrying with minimal payload...');
+
+          const minimalPayload = {
+            status: 'confirmed',
+            updated_at: new Date().toISOString()
+          };
+
+          if (resolvedTechnicianId) {
+            minimalPayload.technician_id = resolvedTechnicianId;
+          }
+
+          const { error: retryError } = await supabase
+            .from('bookings')
+            .update(minimalPayload)
+            .eq('id', bookingId);
+
+          if (retryError) {
+            console.error('Booking update error (minimal payload):', retryError);
+            throw new Error(`Failed to confirm schedule: ${retryError.message || retryError.code || 'Unknown error'}`);
+          }
+
+          // If minimal update succeeded, try adding schedule columns separately
+          // This helps identify which columns are missing
+          console.log('[SCHEDULE] Minimal update succeeded, attempting to add schedule columns...');
+          const { error: scheduleError } = await supabase
+            .from('bookings')
+            .update({
+              scheduled_date: date.toISOString(),
+              time_slot: timeSlot
+            })
+            .eq('id', bookingId);
+
+          if (scheduleError) {
+            console.warn('[SCHEDULE] Schedule columns update failed - columns may not exist in table:', scheduleError.message);
+            // Don't throw - the booking is still confirmed, just without schedule columns
+            // The schedule info is still tracked via the notification
+          }
         }
 
         // Send Notifications

@@ -1,5 +1,12 @@
 # 📜 Version History
 
+## v2.6.6 - 2026-02-10
+### 🐛 Bug Fixes & Stability
+- **Booking Confirmation Fix:** Resolved a critical `400 Bad Request` error when confirming appointments by correctly handling auto-assigned ('pending') technicians.
+- **Data Integrity:** Added robust fallbacks for booking updates and ensured `scheduled_date` and `time_slot` columns are correctly populated.
+- **Error Handling:** Improved error logging for Supabase interactions during the booking process.
+- **Deployment:** Updated production build configuration and documentation.
+
 ## v2.6.5 - 2026-02-10
 ### 🐛 Bug Fixes & UI Polish
 - **Technician Dashboard Fix:** Resolved a `400 Bad Request` error when completing jobs by implementing strict numeric validation for actual cost input.

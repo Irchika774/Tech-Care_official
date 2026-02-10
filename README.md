@@ -5,7 +5,7 @@
 ### _Connecting Customers with Expert Technicians_
 
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-success?style=for-the-badge)](https://github.com)
-[![Version](https://img.shields.io/badge/Version-2.6.5-blue?style=for-the-badge)](https://github.com)
+[![Version](https://img.shields.io/badge/Version-2.6.6-blue?style=for-the-badge)](https://github.com)
 [![License](https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge)](LICENSE)
 [![Node](https://img.shields.io/badge/Node-24.x-green?style=for-the-badge&logo=node.js)](https://nodejs.org)
 [![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react)](https://reactjs.org)
@@ -210,7 +210,10 @@ erDiagram
         string issue_description
         enum status "pending|confirmed|in_progress|completed|cancelled"
         datetime scheduled_date
+        datetime time_slot
         decimal amount
+        string payment_status
+        string payment_intent_id
     }
     
     REVIEWS {
