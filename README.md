@@ -5,7 +5,7 @@
 ### _Connecting Customers with Expert Technicians_
 
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-success?style=for-the-badge)](https://github.com)
-[![Version](https://img.shields.io/badge/Version-2.6.3-blue?style=for-the-badge)](https://github.com)
+[![Version](https://img.shields.io/badge/Version-2.6.5-blue?style=for-the-badge)](https://github.com)
 [![License](https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge)](LICENSE)
 [![Node](https://img.shields.io/badge/Node-24.x-green?style=for-the-badge&logo=node.js)](https://nodejs.org)
 [![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react)](https://reactjs.org)
@@ -356,7 +356,10 @@ sequenceDiagram
     participant S as 🗄️ Supabase
     participant ST as 💳 Stripe
 
-    T->>F: Mark Job as Complete
+    T->>F: Click "Confirm Completion"
+    F->>T: Show Completion Dialog
+    T->>F: Enter Cost & Notes
+    F->>F: Validate Input (Numeric Check)
     F->>B: PATCH /api/technician/bookings/:id/complete
     B->>S: Update Booking Status -> completed
     B->>S: Create Billing Record

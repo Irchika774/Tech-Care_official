@@ -1,5 +1,11 @@
 # 📜 Version History
 
+## v2.6.5 - 2026-02-10
+### 🐛 Bug Fixes & UI Polish
+- **Technician Dashboard Fix:** Resolved a `400 Bad Request` error when completing jobs by implementing strict numeric validation for actual cost input.
+- **Dark Mode Visibility:** Fixed invisible text issues in `Textarea` and `Input` components within dialogs by enforcing explicit text color styles.
+- **UI Consistency:** Standardized the "Complete Job" dialog styling to match the application's dark theme design system.
+
 ## v2.6.4 - 2026-02-09
 ### 🆕 Enhancements
 - **Data Integrity:** Implemented comprehensive duplicate detection and cleaning for technician records, enforcing strict uniqueness constraints.

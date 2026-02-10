@@ -483,6 +483,15 @@ const TechnicianDashboard = () => {
 
   const handleCompleteJobSubmit = async () => {
     try {
+      if (!completeJob.actualCost || isNaN(parseFloat(completeJob.actualCost))) {
+        toast({
+          title: "Invalid Cost",
+          description: "Please enter a valid numeric cost.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       // Update booking to completed status directly in Supabase
       const { error } = await supabase
         .from('bookings')
@@ -686,7 +695,7 @@ const TechnicianDashboard = () => {
       <main className="relative container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Completion Dialog */}
         <Dialog open={completeJob.isOpen} onOpenChange={(open) => !open && setCompleteJob(prev => ({ ...prev, isOpen: false }))}>
-          <DialogContent>
+          <DialogContent className="bg-zinc-900 border-zinc-800 text-white">
             <DialogHeader>
               <DialogTitle>Complete Job</DialogTitle>
             </DialogHeader>
@@ -699,6 +708,7 @@ const TechnicianDashboard = () => {
                   value={completeJob.actualCost}
                   onChange={(e) => setCompleteJob(prev => ({ ...prev, actualCost: e.target.value }))}
                   placeholder="Enter final amount"
+                  className="bg-zinc-800 border-zinc-700 text-white"
                 />
               </div>
               <div className="space-y-2">
@@ -708,6 +718,7 @@ const TechnicianDashboard = () => {
                   value={completeJob.notes}
                   onChange={(e) => setCompleteJob(prev => ({ ...prev, notes: e.target.value }))}
                   placeholder="Describe the repair details..."
+                  className="bg-zinc-800 border-zinc-700 text-white"
                 />
               </div>
               <Button onClick={handleCompleteJobSubmit} className="w-full bg-emerald-600 hover:bg-emerald-700">
@@ -791,7 +802,7 @@ const TechnicianDashboard = () => {
                   value={newService.description}
                   onChange={(e) => setNewService({ ...newService, description: e.target.value })}
                   placeholder="Describe what's included in this service..."
-                  className="bg-zinc-800 border-zinc-700 min-h-[80px]"
+                  className="bg-zinc-800 border-zinc-700 min-h-[80px] text-white"
                 />
               </div>
 
@@ -1013,7 +1024,7 @@ const TechnicianDashboard = () => {
                       value={profileData.description}
                       onChange={(e) => setProfileData({ ...profileData, description: e.target.value })}
                       placeholder="Tell customers about your skills, tools, and repair philosophy..."
-                      className="bg-zinc-950 border-zinc-800 min-h-[150px] resize-none focus:border-white transition-all p-4"
+                      className="bg-zinc-950 border-zinc-800 min-h-[150px] resize-none focus:border-white transition-all p-4 text-white"
                     />
                   </div>
 
